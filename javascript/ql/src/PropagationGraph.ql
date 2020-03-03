@@ -5,11 +5,18 @@
 import javascript
 
 module PropagationGraph {
+  /**
+   * A propagation-graph node, or "event" in Merlin terminology (cf Section 5.1 of
+   * Seldon paper).
+   */
   class Node extends DataFlow::Node {
     Node() {
-      this instanceof DataFlow::InvokeNode or
-      this instanceof DataFlow::PropRead or
-      this instanceof DataFlow::ParameterNode or
+      this instanceof DataFlow::InvokeNode
+      or
+      this instanceof DataFlow::PropRead
+      or
+      this instanceof DataFlow::ParameterNode
+      or
       exists(DataFlow::InvokeNode invk |
         this = invk.(DataFlow::MethodCallNode).getReceiver() or
         this = invk.getAnArgument()
@@ -21,11 +28,12 @@ module PropagationGraph {
     }
   }
 
+  /**
+   * Holds if there is an edge between `pred` and `succ` in the propagation graph
+   * (cf Section 5.2 of Seldon paper).
+   */
   predicate edge(Node pred, Node succ) {
-    exists(DataFlow::CallNode c | c = succ |
-      //not c instanceof DataFlow::MethodCallNode and
-      pred.flowsTo(c.getAnArgument())
-    )
+    exists(DataFlow::CallNode c | c = succ | pred.flowsTo(c.getAnArgument()))
     or
     exists(ObjectExpr obj | obj.flow() = succ | pred.flowsTo(obj.getAProperty().getInit().flow()))
     or
@@ -34,23 +42,32 @@ module PropagationGraph {
     pred = pointsTo(_, succ)
   }
 
-  class AllocationSite extends DataFlow::InvokeNode {
-    AllocationSite() {
-      not exists(getACallee()) or
-      getACallee().getFile() != this.getFile()
-    }
-  }
-
-  predicate calls(DataFlow::MethodCallNode call, DataFlow::FunctionNode callee) {
+  /**
+   * Holds if `call` calls `callee` within the same file.
+   *
+   * As explained in Section 5.2 of the Seldon paper, calles outside the same file are
+   * not considered.
+   */
+  private predicate calls(DataFlow::MethodCallNode call, DataFlow::FunctionNode callee) {
     callee = call.getACallee().flow() and
     callee.getFile() = call.getFile()
   }
 
-  newtype Context =
+  /**
+   * An allocation site as tracked by the points-to analysis, that is,
+   * an unresolvable call.
+   */
+  private class AllocationSite extends DataFlow::InvokeNode {
+    AllocationSite() { not calls(this, _) }
+  }
+
+  /** A (1-CFA) context. */
+  private newtype Context =
     Top() or
     Call(DataFlow::MethodCallNode c) { not c instanceof AllocationSite }
 
-  Context push(DataFlow::MethodCallNode c, Context base) {
+  /** Gets the context resulting from adding call site `c` to context `base`. */
+  private Context push(DataFlow::MethodCallNode c, Context base) {
     base = Top() and
     result = Call(c)
     or
@@ -58,7 +75,8 @@ module PropagationGraph {
     result = Call(c)
   }
 
-  predicate viableContext(Context ctxt, DataFlow::Node nd) {
+  /** Holds if `nd` should be analyzed in context `ctxt`. */
+  private predicate viableContext(Context ctxt, DataFlow::Node nd) {
     ctxt = Top()
     or
     exists(DataFlow::MethodCallNode c, DataFlow::FunctionNode fn |
@@ -68,7 +86,8 @@ module PropagationGraph {
     )
   }
 
-  AllocationSite pointsTo(Context ctxt, DataFlow::Node nd) {
+  /** Gets the allocation sites `nd` may refer to in context `ctxt`. */
+  private AllocationSite pointsTo(Context ctxt, DataFlow::Node nd) {
     viableContext(ctxt, nd) and
     result = nd
     or
@@ -97,14 +116,16 @@ module PropagationGraph {
     )
   }
 
-  AllocationSite fieldPointsTo(Context ctxt, AllocationSite a, string field) {
+  /** Gets an allocation site field `f` of allocation site `a` may point to. */
+  private AllocationSite fieldPointsTo(Context ctxt, AllocationSite a, string field) {
     exists(DataFlow::PropWrite pw |
       a = fieldWriteBasePointsTo(ctxt, pw, field) and
       result = pointsTo(ctxt, pw.getRhs())
     )
   }
 
-  AllocationSite fieldWriteBasePointsTo(Context ctxt, DataFlow::PropWrite pw, string field) {
+  /** Holds if `pw` is a property write to field `f` and its base may point to `a`. */
+  private AllocationSite fieldWriteBasePointsTo(Context ctxt, DataFlow::PropWrite pw, string field) {
     viableContext(ctxt, pw) and
     result = pointsTo(ctxt, pw.getBase()) and
     field = pw.getPropertyName()
