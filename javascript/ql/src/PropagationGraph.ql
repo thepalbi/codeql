@@ -94,11 +94,16 @@ module PropagationGraph {
   }
 
   AllocationSite fieldPointsTo(Context ctxt, AllocationSite a, string field) {
-    exists(DataFlow::PropWrite pw | viableContext(ctxt, pw) |
-      a = pointsTo(ctxt, pw.getBase()) and
-      field = pw.getPropertyName() and
+    exists(DataFlow::PropWrite pw |
+      a = fieldWriteBasePointsTo(ctxt, pw, field) and
       result = pointsTo(ctxt, pw.getRhs())
     )
+  }
+
+  AllocationSite fieldWriteBasePointsTo(Context ctxt, DataFlow::PropWrite pw, string field) {
+    viableContext(ctxt, pw) and
+    result = pointsTo(ctxt, pw.getBase()) and
+    field = pw.getPropertyName()
   }
 }
 
