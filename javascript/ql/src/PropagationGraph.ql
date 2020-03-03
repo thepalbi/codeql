@@ -15,17 +15,21 @@ module PropagationGraph {
         this = invk.getAnArgument()
       )
     }
+
+    predicate flowsTo(DataFlow::Node sink) {
+      this = sink or this.(DataFlow::SourceNode).flowsTo(sink)
+    }
   }
 
   predicate edge(Node pred, Node succ) {
     exists(DataFlow::CallNode c | c = succ |
       //not c instanceof DataFlow::MethodCallNode and
-      pred = c.getAnArgument()
+      pred.flowsTo(c.getAnArgument())
     )
     or
-    exists(ObjectExpr obj | obj.flow() = succ | pred = obj.getAProperty().getInit().flow())
+    exists(ObjectExpr obj | obj.flow() = succ | pred.flowsTo(obj.getAProperty().getInit().flow()))
     or
-    succ.(DataFlow::ArrayLiteralNode).getAnElement() = pred
+    pred.flowsTo(succ.(DataFlow::ArrayLiteralNode).getAnElement())
     or
     pred = pointsTo(_, succ)
   }
