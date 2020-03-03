@@ -39,7 +39,8 @@ module PropagationGraph {
     or
     pred.flowsTo(succ.(DataFlow::ArrayLiteralNode).getAnElement())
     or
-    pred = pointsTo(_, succ)
+    pred = pointsTo(_, succ) and
+    pred != succ
   }
 
   /**
@@ -94,7 +95,7 @@ module PropagationGraph {
     result = pointsTo(ctxt, nd.getAPredecessor())
     or
     exists(DataFlow::PropRead pr | nd = pr |
-      result = fieldPointsTo(ctxt, pointsTo(ctxt, pr.getBase()), pr.getPropertyName())
+      result = fieldPointsTo(pointsTo(ctxt, pr.getBase()), pr.getPropertyName())
     )
     or
     exists(DataFlow::MethodCallNode call, DataFlow::FunctionNode callee | calls(call, callee) |
@@ -117,18 +118,19 @@ module PropagationGraph {
   }
 
   /** Gets an allocation site field `f` of allocation site `a` may point to. */
-  private AllocationSite fieldPointsTo(Context ctxt, AllocationSite a, string field) {
-    exists(DataFlow::PropWrite pw |
-      a = fieldWriteBasePointsTo(ctxt, pw, field) and
+  private AllocationSite fieldPointsTo(AllocationSite a, string f) {
+    exists(DataFlow::PropWrite pw, Context ctxt |
+      fieldWriteBasePointsTo(ctxt, pw, f, a) and
       result = pointsTo(ctxt, pw.getRhs())
     )
   }
 
   /** Holds if `pw` is a property write to field `f` and its base may point to `a`. */
-  private AllocationSite fieldWriteBasePointsTo(Context ctxt, DataFlow::PropWrite pw, string field) {
-    viableContext(ctxt, pw) and
-    result = pointsTo(ctxt, pw.getBase()) and
-    field = pw.getPropertyName()
+  private predicate fieldWriteBasePointsTo(
+    Context ctxt, DataFlow::PropWrite pw, string f, AllocationSite a
+  ) {
+    a = pointsTo(ctxt, pw.getBase()) and
+    f = pw.getPropertyName()
   }
 }
 
