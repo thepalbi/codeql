@@ -135,5 +135,6 @@ module PropagationGraph {
 }
 
 query predicate edges(DataFlow::Node pred, DataFlow::Node succ) {
-  PropagationGraph::edge(pred, succ)
+  PropagationGraph::edge(pred, succ) and
+  exists(RemoteFlowSource rfs | edges*(rfs, pred))
 }
