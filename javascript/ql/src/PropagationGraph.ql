@@ -143,3 +143,11 @@ module PropagationGraph {
 query predicate edges(DataFlow::Node pred, DataFlow::Node succ) {
   PropagationGraph::edge(pred, succ)
 }
+
+query predicate triples(DataFlow::Node src, DataFlow::Node san, DataFlow::Node snk) {
+  PropagationGraph::edge(src, san) and 
+  PropagationGraph::edge(san, snk) and 
+  src != san and
+  san != snk and
+  src != snk
+}
