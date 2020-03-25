@@ -138,8 +138,16 @@ module PropagationGraph {
     a = pointsTo(ctxt, pw.getBase()) and
     f = pw.getPropertyName()
   }
-}
 
+  predicate isArgumentOfACall(DataFlow::Node n) {
+    exists(DataFlow::InvokeNode invk |
+          n = invk.(DataFlow::MethodCallNode).getReceiver() or
+          n = invk.getAnArgument()
+        )
+
+  }
+}
+/*
 query predicate edges(DataFlow::Node pred, DataFlow::Node succ) {
   PropagationGraph::edge(pred, succ)
 }
@@ -151,3 +159,19 @@ query predicate triples(DataFlow::Node src, DataFlow::Node san, DataFlow::Node s
   san != snk and
   src != snk
 }
+*/
+query predicate triples(DataFlow::Node src, DataFlow::Node san, DataFlow::Node snk) {
+  PropagationGraph::edge(src, san) and 
+  PropagationGraph::edge(san, snk) and 
+  src != san and
+  san != snk and
+  src != snk and
+  // src is Parameter | property read | return of a call (??)
+  (src instanceof DataFlow::ParameterNode /* or src instanceof DataFlow::PropRead */)  and
+  // san is CallNode 
+  san instanceof DataFlow::MethodCallNode and 
+  // snk is arg to callee | return of enclosing func (??) | property write
+  (PropagationGraph::isArgumentOfACall(snk) /* or snk instanceof DataFlow::PropWrite */)
+}
+
+
