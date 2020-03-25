@@ -55,7 +55,7 @@ module PropagationGraph {
    * As explained in Section 5.2 of the Seldon paper, calles outside the same file are
    * not considered.
    */
-  private predicate calls(DataFlow::MethodCallNode call, DataFlow::FunctionNode callee) {
+  private predicate calls(DataFlow::CallNode call, DataFlow::FunctionNode callee) {
     callee = call.getACallee().flow() and
     callee.getFile() = call.getFile()
   }
@@ -71,10 +71,10 @@ module PropagationGraph {
   /** A (1-CFA) context. */
   private newtype Context =
     Top() or
-    Call(DataFlow::MethodCallNode c) { not c instanceof AllocationSite }
+    Call(DataFlow::CallNode c) { not c instanceof AllocationSite }
 
   /** Gets the context resulting from adding call site `c` to context `base`. */
-  private Context push(DataFlow::MethodCallNode c, Context base) {
+  private Context push(DataFlow::CallNode c, Context base) {
     base = Top() and
     result = Call(c)
     or
@@ -86,7 +86,7 @@ module PropagationGraph {
   private predicate viableContext(Context ctxt, DataFlow::Node nd) {
     ctxt = Top()
     or
-    exists(DataFlow::MethodCallNode c, DataFlow::FunctionNode fn |
+    exists(DataFlow::CallNode c, DataFlow::FunctionNode fn |
       calls(c, fn) and
       fn.getFunction() = nd.getContainer() and
       ctxt = Call(c)
@@ -104,19 +104,22 @@ module PropagationGraph {
       result = fieldPointsTo(pointsTo(ctxt, pr.getBase()), pr.getPropertyName())
     )
     or
-    exists(DataFlow::MethodCallNode call, DataFlow::FunctionNode callee | calls(call, callee) |
+    exists(DataFlow::CallNode call, DataFlow::FunctionNode callee | calls(call, callee) |
+      // flow from the `i`th argument of a call to the corresponding parameter
       exists(int i, Context base |
         nd = callee.getParameter(i) and
         ctxt = push(call, base) and
         result = pointsTo(base, call.getArgument(i))
       )
       or
+      // flow from the receiver of a method call to the `this` value of the callee
       exists(Context base |
         nd = callee.getReceiver() and
         ctxt = push(call, base) and
         result = pointsTo(base, call.getReceiver())
       )
       or
+      // flow from a returned value to a call to the function
       nd = call and
       viableContext(ctxt, nd) and
       result = pointsTo(push(call, ctxt), callee.getAReturn())
