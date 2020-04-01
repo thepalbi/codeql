@@ -45,7 +45,7 @@ module PropagationGraph {
     or
     pred.flowsTo(succ.(DataFlow::ArrayLiteralNode).getAnElement())
     or
-    pred = pointsTo(_, succ) and
+    pointsTo(_, pred) = pointsTo(_, succ) and
     pred != succ
   }
 
