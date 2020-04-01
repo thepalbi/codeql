@@ -66,10 +66,7 @@ module PropagationGraph {
 
   /** Gets the context resulting from adding call site `c` to context `base`. */
   private Context push(DataFlow::CallNode c, Context base) {
-    base = Top() and
-    result = Call(c)
-    or
-    base = Call(_) and
+    base = any(Context ctxt) and
     result = Call(c)
   }
 
