@@ -9,7 +9,7 @@ module PropagationGraph {
    * A propagation-graph node, or "event" in Merlin terminology (cf Section 5.1 of
    * Seldon paper).
    */
-  class Node extends DataFlow::Node {
+  class Node extends DataFlow::SourceNode {
     Node() {
       (
         this instanceof DataFlow::InvokeNode
@@ -17,20 +17,11 @@ module PropagationGraph {
         this instanceof DataFlow::PropRead
         or
         this instanceof DataFlow::ParameterNode
-        or
-        exists(DataFlow::InvokeNode invk |
-          this = invk.(DataFlow::MethodCallNode).getReceiver() or
-          this = invk.getAnArgument()
-        )
       ) and
       // exclude externs files (i.e., our manually-written API models) and ambient files (such as
       // TypeScript `.d.ts` files); there is no real data flow going on in those
       not this.getTopLevel().isExterns() and
       not this.getTopLevel().isAmbient()
-    }
-
-    predicate flowsTo(DataFlow::Node sink) {
-      this = sink or this.(DataFlow::SourceNode).flowsTo(sink)
     }
   }
 
