@@ -59,6 +59,8 @@ module PropagationGraph {
     predicate unrepresentable() {
       not exists(candidateRep())
     }
+
+    override string toString() { result = rep() }
   }
 
   /**
