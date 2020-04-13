@@ -3,6 +3,7 @@
  */
 
 import javascript
+private import semmle.javascript.dataflow.Portals
 
 module PropagationGraph {
   /**
@@ -23,6 +24,43 @@ module PropagationGraph {
       not this.getTopLevel().isExterns() and
       not this.getTopLevel().isAmbient()
     }
+
+    /**
+     * Gets a candidate representation of this node as a (suffix of an) access path.
+     */
+    private string candidateRep() {
+      exists(Portal p | this = p.getAnExitNode(_) |
+        exists(int i, string prefix |
+          prefix = p.getBasePortal(i).toString() and
+          result = p.toString().replaceAll(prefix, "*") and
+          // ensure the suffix isn't entirely composed of `parameter` and `return` steps
+          result.regexpMatch(".*\\((global|member|root).*")
+        )
+        or
+        result = p.toString()
+      )
+    }
+
+    /**
+     * Gets an abstract representation of this node, corresponding to the REP function
+     * in the Seldon paper.
+     */
+    string rep() {
+      result = candidateRep() and
+      // eliminate rare representations
+      count(Node n | n.candidateRep() = result) >= 5
+    }
+
+    /**
+     * Holds if there is no candidate representation for this node.
+     *
+     * This can happen, for instance, for parameters of purely local functions.
+     */
+    predicate unrepresentable() {
+      not exists(candidateRep())
+    }
+
+    override string toString() { result = rep() }
   }
 
   /**
