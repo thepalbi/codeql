@@ -9,17 +9,21 @@ module PropagationGraph {
   private newtype TNode =
     MkNode(DataFlow::Node nd) {
       (
-        nd instanceof DataFlow::InvokeNode
+        nd instanceof DataFlow::InvokeNode and
+        exists(nd.getASuccessor())
         or
-        nd instanceof DataFlow::PropRead
+        nd instanceof DataFlow::PropRead and
+        exists(nd.getASuccessor())
         or
-        nd instanceof DataFlow::ParameterNode
+        nd instanceof DataFlow::ParameterNode and
+        exists(nd.getASuccessor())
         or
         exists(DataFlow::InvokeNode invk | not calls(invk, _) |
           nd = invk.getAnArgument()
           or
           nd = invk.(DataFlow::MethodCallNode).getReceiver()
-        )
+        ) and
+        exists(nd.getAPredecessor())
       ) and
       // exclude externs files (i.e., our manually-written API models) and ambient files (such as
       // TypeScript `.d.ts` files); there is no real data flow going on in those
@@ -36,6 +40,22 @@ module PropagationGraph {
     DataFlow::Node nd;
 
     Node() { this = MkNode(nd) }
+
+    predicate isSourceCandidate() {
+      nd instanceof DataFlow::InvokeNode or
+      nd instanceof DataFlow::PropRead or
+      nd instanceof DataFlow::ParameterNode
+    }
+
+    predicate isSanitizerCandidate() { nd instanceof DataFlow::InvokeNode }
+
+    predicate isSinkCandidate() {
+      exists(DataFlow::InvokeNode invk |
+        nd = invk.getAnArgument()
+        or
+        nd = invk.(DataFlow::MethodCallNode).getReceiver()
+      )
+    }
 
     /**
      * Gets a candidate representation of this node as a (suffix of an) access path.
