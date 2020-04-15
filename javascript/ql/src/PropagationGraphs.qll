@@ -7,13 +7,19 @@ private import semmle.javascript.dataflow.Portals
 
 module PropagationGraph {
   private newtype TNode =
-    MkNode(DataFlow::SourceNode nd) {
+    MkNode(DataFlow::Node nd) {
       (
         nd instanceof DataFlow::InvokeNode
         or
         nd instanceof DataFlow::PropRead
         or
         nd instanceof DataFlow::ParameterNode
+        or
+        exists(DataFlow::InvokeNode invk | not calls(invk, _) |
+          nd = invk.getAnArgument()
+          or
+          nd = invk.(DataFlow::MethodCallNode).getReceiver()
+        )
       ) and
       // exclude externs files (i.e., our manually-written API models) and ambient files (such as
       // TypeScript `.d.ts` files); there is no real data flow going on in those
@@ -27,7 +33,7 @@ module PropagationGraph {
    * Seldon paper).
    */
   class Node extends TNode {
-    DataFlow::SourceNode nd;
+    DataFlow::Node nd;
 
     Node() { this = MkNode(nd) }
 
@@ -72,7 +78,11 @@ module PropagationGraph {
 
     string toString() { result = rep() }
 
-    predicate flowsTo(DataFlow::Node sink) { nd.flowsTo(sink) }
+    predicate flowsTo(DataFlow::Node sink) {
+      nd = sink
+      or
+      nd.(DataFlow::SourceNode).flowsTo(sink)
+    }
 
     DataFlow::Node asDataFlowNode() { result = nd }
   }
@@ -82,7 +92,12 @@ module PropagationGraph {
    * (cf Section 5.2 of Seldon paper).
    */
   predicate edge(Node pred, Node succ) {
-    exists(DataFlow::CallNode c | c = succ.asDataFlowNode() | pred.flowsTo(c.getAnArgument()))
+    exists(DataFlow::CallNode c | not calls(c, _) and c = succ.asDataFlowNode() |
+      pred.flowsTo(c.getAnArgument())
+    )
+    or
+    pred.flowsTo(succ.asDataFlowNode()) and
+    pred != succ
     or
     exists(ObjectExpr obj | obj.flow() = succ.asDataFlowNode() |
       pred.flowsTo(obj.getAProperty().getInit().flow())
