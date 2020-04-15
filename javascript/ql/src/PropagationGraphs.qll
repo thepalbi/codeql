@@ -6,30 +6,36 @@ import javascript
 private import semmle.javascript.dataflow.Portals
 
 module PropagationGraph {
+  private newtype TNode =
+    MkNode(DataFlow::SourceNode nd) {
+      (
+        nd instanceof DataFlow::InvokeNode
+        or
+        nd instanceof DataFlow::PropRead
+        or
+        nd instanceof DataFlow::ParameterNode
+      ) and
+      // exclude externs files (i.e., our manually-written API models) and ambient files (such as
+      // TypeScript `.d.ts` files); there is no real data flow going on in those
+      not nd.getTopLevel().isExterns() and
+      not nd.getTopLevel().isAmbient() and
+      nd.getBasicBlock() instanceof ReachableBasicBlock
+    }
+
   /**
    * A propagation-graph node, or "event" in Merlin terminology (cf Section 5.1 of
    * Seldon paper).
    */
-  class Node extends DataFlow::SourceNode {
-    Node() {
-      (
-        this instanceof DataFlow::InvokeNode
-        or
-        this instanceof DataFlow::PropRead
-        or
-        this instanceof DataFlow::ParameterNode
-      ) and
-      // exclude externs files (i.e., our manually-written API models) and ambient files (such as
-      // TypeScript `.d.ts` files); there is no real data flow going on in those
-      not this.getTopLevel().isExterns() and
-      not this.getTopLevel().isAmbient()
-    }
+  class Node extends TNode {
+    DataFlow::SourceNode nd;
+
+    Node() { this = MkNode(nd) }
 
     /**
      * Gets a candidate representation of this node as a (suffix of an) access path.
      */
     private string candidateRep() {
-      exists(Portal p | this = p.getAnExitNode(_) |
+      exists(Portal p | nd = p.getAnExitNode(_) |
         exists(int i, string prefix |
           prefix = p.getBasePortal(i).toString() and
           result = p.toString().replaceAll(prefix, "*") and
@@ -56,11 +62,19 @@ module PropagationGraph {
      *
      * This can happen, for instance, for parameters of purely local functions.
      */
-    predicate unrepresentable() {
-      not exists(candidateRep())
+    predicate unrepresentable() { not exists(candidateRep()) }
+
+    predicate hasLocationInfo(
+      string filepath, int startline, int startcolumn, int endline, int endcolumn
+    ) {
+      nd.hasLocationInfo(filepath, startline, startcolumn, endline, endcolumn)
     }
 
-    override string toString() { result = rep() }
+    string toString() { result = rep() }
+
+    predicate flowsTo(DataFlow::Node sink) { nd.flowsTo(sink) }
+
+    DataFlow::Node asDataFlowNode() { result = nd }
   }
 
   /**
@@ -68,13 +82,15 @@ module PropagationGraph {
    * (cf Section 5.2 of Seldon paper).
    */
   predicate edge(Node pred, Node succ) {
-    exists(DataFlow::CallNode c | c = succ | pred.flowsTo(c.getAnArgument()))
+    exists(DataFlow::CallNode c | c = succ.asDataFlowNode() | pred.flowsTo(c.getAnArgument()))
     or
-    exists(ObjectExpr obj | obj.flow() = succ | pred.flowsTo(obj.getAProperty().getInit().flow()))
+    exists(ObjectExpr obj | obj.flow() = succ.asDataFlowNode() |
+      pred.flowsTo(obj.getAProperty().getInit().flow())
+    )
     or
-    pred.flowsTo(succ.(DataFlow::ArrayLiteralNode).getAnElement())
+    pred.flowsTo(succ.asDataFlowNode().(DataFlow::ArrayLiteralNode).getAnElement())
     or
-    pointsTo(_, pred) = pointsTo(_, succ) and
+    pointsTo(_, pred.asDataFlowNode()) = pointsTo(_, succ.asDataFlowNode()) and
     pred != succ
   }
 
@@ -85,7 +101,7 @@ module PropagationGraph {
    * not considered.
    */
   private predicate calls(DataFlow::CallNode call, DataFlow::FunctionNode callee) {
-    callee = call.getACallee().flow() and
+    callee = call.getACallee(_).flow() and
     callee.getFile() = call.getFile()
   }
 
@@ -94,7 +110,10 @@ module PropagationGraph {
    * an unresolvable call.
    */
   private class AllocationSite extends DataFlow::InvokeNode {
-    AllocationSite() { not calls(this, _) }
+    AllocationSite() {
+      getBasicBlock() instanceof ReachableBasicBlock and
+      not calls(this, _)
+    }
   }
 
   /** A (1-CFA) context. */
@@ -110,11 +129,13 @@ module PropagationGraph {
 
   /** Holds if `nd` should be analyzed in context `ctxt`. */
   private predicate viableContext(Context ctxt, DataFlow::Node nd) {
-    ctxt = Top()
+    ctxt = Top() and
+    nd.getBasicBlock() instanceof ReachableBasicBlock
     or
     exists(DataFlow::CallNode c, DataFlow::FunctionNode fn |
       calls(c, fn) and
       fn.getFunction() = nd.getContainer() and
+      nd.getBasicBlock() instanceof ReachableBasicBlock and
       ctxt = Call(c)
     )
   }
