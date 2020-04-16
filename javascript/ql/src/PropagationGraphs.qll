@@ -102,7 +102,7 @@ module PropagationGraph {
       nd.hasLocationInfo(filepath, startline, startcolumn, endline, endcolumn)
     }
 
-    string toString() { result = rep() }
+    string toString() { result = nd.toString() }
 
     predicate flowsTo(DataFlow::Node sink) {
       nd = sink
