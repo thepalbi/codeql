@@ -42,14 +42,20 @@ module PropagationGraph {
     Node() { this = MkNode(nd) }
 
     predicate isSourceCandidate() {
-      nd instanceof DataFlow::InvokeNode or
-      nd instanceof DataFlow::PropRead or
-      nd instanceof DataFlow::ParameterNode
+      exists(candidateRep()) and
+      (
+        nd instanceof DataFlow::InvokeNode or
+        nd instanceof DataFlow::PropRead or
+        nd instanceof DataFlow::ParameterNode
+      )
     }
 
-    predicate isSanitizerCandidate() { nd instanceof DataFlow::InvokeNode }
+    predicate isSanitizerCandidate() {
+      exists(candidateRep()) and nd instanceof DataFlow::InvokeNode
+    }
 
     predicate isSinkCandidate() {
+      exists(candidateRep()) and
       exists(DataFlow::InvokeNode invk |
         nd = invk.getAnArgument()
         or
@@ -61,7 +67,7 @@ module PropagationGraph {
      * Gets a candidate representation of this node as a (suffix of an) access path.
      */
     private string candidateRep() {
-      exists(Portal p | nd = p.getAnExitNode(_) |
+      exists(Portal p | nd = p.getAnExitNode(_) or nd = p.getAnEntryNode(_) |
         exists(int i, string prefix |
           prefix = p.getBasePortal(i).toString() and
           result = p.toString().replaceAll(prefix, "*") and
@@ -96,7 +102,7 @@ module PropagationGraph {
       nd.hasLocationInfo(filepath, startline, startcolumn, endline, endcolumn)
     }
 
-    string toString() { result = rep() }
+    string toString() { result = nd.toString() }
 
     predicate flowsTo(DataFlow::Node sink) {
       nd = sink
