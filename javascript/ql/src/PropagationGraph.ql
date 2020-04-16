@@ -25,8 +25,7 @@ predicate reachableFromSanitizerCandidate(PropagationGraph::Node san, Propagatio
   )
 }
 
-from PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk
-where
+predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk) {
   reachableFromSourceCandidate(src, san) and
   san.isSanitizerCandidate() and
   src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
@@ -34,4 +33,8 @@ where
   snk.isSinkCandidate()
   // NB: we do not require `san` and `snk` to be different, since we might have a situation like
   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
+}
+
+from PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk
+where triple(src, san, snk)
 select src, san, snk
