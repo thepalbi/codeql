@@ -42,14 +42,20 @@ module PropagationGraph {
     Node() { this = MkNode(nd) }
 
     predicate isSourceCandidate() {
-      nd instanceof DataFlow::InvokeNode or
-      nd instanceof DataFlow::PropRead or
-      nd instanceof DataFlow::ParameterNode
+      exists(candidateRep()) and
+      (
+        nd instanceof DataFlow::InvokeNode or
+        nd instanceof DataFlow::PropRead or
+        nd instanceof DataFlow::ParameterNode
+      )
     }
 
-    predicate isSanitizerCandidate() { nd instanceof DataFlow::InvokeNode }
+    predicate isSanitizerCandidate() {
+      exists(candidateRep()) and nd instanceof DataFlow::InvokeNode
+    }
 
     predicate isSinkCandidate() {
+      exists(candidateRep()) and
       exists(DataFlow::InvokeNode invk |
         nd = invk.getAnArgument()
         or
