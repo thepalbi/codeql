@@ -61,7 +61,7 @@ module PropagationGraph {
      * Gets a candidate representation of this node as a (suffix of an) access path.
      */
     private string candidateRep() {
-      exists(Portal p | nd = p.getAnExitNode(_) |
+      exists(Portal p | nd = p.getAnExitNode(_) or nd = p.getAnEntryNode(_) |
         exists(int i, string prefix |
           prefix = p.getBasePortal(i).toString() and
           result = p.toString().replaceAll(prefix, "*") and
