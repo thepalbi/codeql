@@ -44,14 +44,14 @@ module PropagationGraph {
     predicate isSourceCandidate() {
       exists(candidateRep()) and
       (
-        nd instanceof DataFlow::InvokeNode or
+        nd instanceof DataFlow::CallNode or
         nd instanceof DataFlow::PropRead or
         nd instanceof DataFlow::ParameterNode
       )
     }
 
     predicate isSanitizerCandidate() {
-      exists(candidateRep()) and nd instanceof DataFlow::InvokeNode
+      exists(candidateRep()) and nd instanceof DataFlow::CallNode
     }
 
     predicate isSinkCandidate() {
