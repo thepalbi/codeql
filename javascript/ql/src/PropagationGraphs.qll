@@ -69,6 +69,7 @@ module PropagationGraph {
     private string candidateRep() {
       exists(Portal p | nd = p.getAnExitNode(_) or nd = p.getAnEntryNode(_) |
         exists(int i, string prefix |
+          i < 2 and 
           prefix = p.getBasePortal(i).toString() and
           result = p.toString().replaceAll(prefix, "*") and
           // ensure the suffix isn't entirely composed of `parameter` and `return` steps
@@ -86,7 +87,7 @@ module PropagationGraph {
     string rep() {
       result = candidateRep() and
       // eliminate rare representations
-      count(Node n | n.candidateRep() = result) >= 5
+      count(Node n | n.candidateRep() = result) >= 10
     }
 
     /**
@@ -102,7 +103,8 @@ module PropagationGraph {
       nd.hasLocationInfo(filepath, startline, startcolumn, endline, endcolumn)
     }
 
-    string toString() { result = nd.toString() }
+    // string toString() { result = nd.toString() }
+    string toString() { result = rep() }
 
     predicate flowsTo(DataFlow::Node sink) {
       nd = sink
