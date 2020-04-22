@@ -35,6 +35,27 @@ predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, Propaga
   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
 }
 
-from PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk
-where triple(src, san, snk)
-select src, san, snk
+// from PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk
+// where triple(src, san, snk)
+// select src, san, snk
+
+query predicate countoftypes(string type, int nodecnt, int repcnt) {
+  type = "Source"  
+  and nodecnt = count(PropagationGraph::Node nd | nd.isSourceCandidate()) 
+  and repcnt = count(string rep | exists(PropagationGraph::Node nd | nd.isSourceCandidate() and rep = nd.rep())) or
+  type = "Source.PropRead"  
+  and nodecnt = count(PropagationGraph::Node nd | nd.isSourceCandidate() and nd.asDataFlowNode() instanceof DataFlow::PropRead) 
+  and repcnt = count(string rep | exists(PropagationGraph::Node nd | nd.isSourceCandidate() and nd.asDataFlowNode() instanceof DataFlow::PropRead and rep = nd.rep())) or
+  type = "Source.ParameterNode"  
+  and nodecnt = count(PropagationGraph::Node nd | nd.isSourceCandidate() and nd.asDataFlowNode() instanceof DataFlow::ParameterNode) 
+  and repcnt = count(string rep | exists(PropagationGraph::Node nd | nd.isSourceCandidate() and nd.asDataFlowNode() instanceof DataFlow::ParameterNode and rep = nd.rep())) or
+  type = "Sanitizer" 
+  and nodecnt = count(PropagationGraph::Node nd | nd.isSanitizerCandidate()) 
+  and repcnt = count(string rep | exists(PropagationGraph::Node nd | nd.isSanitizerCandidate() and rep=nd.rep())) or
+  type = "Sanitizer.Callsonly" 
+  and nodecnt = count(PropagationGraph::Node nd | nd.isSanitizerCandidate() and nd.asDataFlowNode() instanceof DataFlow::CallNode) 
+  and repcnt = count(string rep | exists(PropagationGraph::Node nd | nd.isSanitizerCandidate() and nd.asDataFlowNode() instanceof DataFlow::CallNode and rep=nd.rep())) or
+  type = "Sink" 
+  and nodecnt = count(PropagationGraph::Node nd | nd.isSinkCandidate()) 
+  and repcnt = count(string rep | exists(PropagationGraph::Node nd | nd.isSinkCandidate() and rep=nd.rep()))
+}
