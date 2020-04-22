@@ -38,3 +38,21 @@ predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, Propaga
 from PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk
 where triple(src, san, snk)
 select src, san, snk
+
+query predicate seldonConstraint1(
+  PropagationGraph::Node src, PropagationGraph::Node san, int snkCount
+ ) {
+  snkCount = strictcount(PropagationGraph::Node snk | triple(src, san, snk))
+ }
+
+query predicate seldonConstraint2(
+  PropagationGraph::Node san, PropagationGraph::Node snk, int srcCount
+ ) {
+  srcCount = strictcount(PropagationGraph::Node src | triple(src, san, snk))
+ }
+
+query predicate seldonConstraint3(
+  PropagationGraph::Node src, PropagationGraph::Node snk, int sanCount
+ ) {
+  sanCount = strictcount(PropagationGraph::Node san | triple(src, san, snk))
+ }
