@@ -35,9 +35,11 @@ predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, Propaga
   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
 }
 
+/*
 from PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk
 where triple(src, san, snk)
 select src, san, snk
+*/
 
 query predicate seldonConstraint1(
   PropagationGraph::Node src, PropagationGraph::Node san, int snkCount
