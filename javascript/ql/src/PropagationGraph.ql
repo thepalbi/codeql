@@ -35,12 +35,30 @@ predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, Propaga
   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
 }
 
-/*
-from PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk
-where triple(src, san, snk)
-select src, san, snk
-*/
+class NodeWithFewReps extends PropagationGraph::Node {
+  NodeWithFewReps() { strictcount(rep()) <= 1000 }
 
+  string toString() {result = strictconcat(string repr | repr = rep() | repr, ", ") + 
+                        "//" + 
+                        strictcount(string repr | repr = rep())}
+}
+
+query predicate seldonConstraint1AsString(
+    string srcRepr,
+    string sanRepr,
+    string snkConstraint
+) {
+  exists (NodeWithFewReps src | 
+       (exists (NodeWithFewReps san | 
+              srcRepr = src.toString() and 
+              sanRepr = san.toString() and
+              snkConstraint = strictconcat(string repr | 
+                     (exists (NodeWithFewReps snk | triple(src, san, snk) and repr = snk.toString()))
+                     | repr, " ++  ")
+           )))
+}
+
+/*
 query predicate seldonConstraint1(
   PropagationGraph::Node src, PropagationGraph::Node san, int snkCount
  ) {
@@ -58,6 +76,7 @@ query predicate seldonConstraint3(
  ) {
   sanCount = strictcount(PropagationGraph::Node san | triple(src, san, snk))
  }
+ */
 
 query predicate countoftypes(string type, int nodecnt, int repcnt) {
   type = "Source"  
