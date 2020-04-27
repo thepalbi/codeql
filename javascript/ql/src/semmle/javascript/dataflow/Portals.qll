@@ -298,7 +298,7 @@ private module MemberPortal {
 
   /** Holds if `read` is a read of property `prop` of a value flowing through `base`. */
   predicate reads(Portal base, string prop, DataFlow::SourceNode read, boolean isRemote) {
-    read = portalBaseRef(base, isRemote).getAPropertyRead(prop)
+    read = base.getAnExitNode(isRemote).getAPropertyRead(prop)
     or
     // imports are a kind of property read
     exists(string pkg |
@@ -327,14 +327,9 @@ private module MemberPortal {
    */
   predicate writes(Portal base, string prop, DataFlow::Node rhs, boolean escapes) {
     exists(DataFlow::SourceNode baseRef, DataFlow::PropWrite pw |
-      baseRef = portalBaseRef(base, escapes) and
+      baseRef = base.getAnEntryNode(escapes).getALocalSource() and
       pw = baseRef.getAPropertyWrite(prop) and
-      rhs = pw.getRhs() and
-      // don't track through cyclic property writes `base.prop = base`
-      not exists(Variable v |
-        pw.getBase().asExpr() = v.getAnAccess() and
-        rhs.asExpr() = v.getAnAccess()
-      )
+      rhs = pw.getRhs()
     )
     or
     InstancePortal::instanceMemberDef(base.(InstancePortal).getBasePortal(), prop, rhs, escapes)
@@ -509,9 +504,7 @@ private module ReturnPortal {
   predicate returns(Portal base, DataFlow::Node ret, boolean escapes) {
     exists(DataFlow::FunctionNode fn |
       fn = base.getAnEntryNode(escapes).getALocalSource() and
-      ret = fn.getAReturn() and
-      // don't track through chaining functions
-      not ret.asExpr() = fn.getFunction().getVariable().getAnAccess()
+      ret = fn.getAReturn()
     )
   }
 }
