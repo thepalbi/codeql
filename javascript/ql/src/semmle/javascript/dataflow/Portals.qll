@@ -457,7 +457,13 @@ class ParameterPortal extends CompoundPortal, MkParameterPortal {
     ParameterPortal::argument(base, i, result, escapes)
   }
 
-  override string toString() { result = "(parameter " + i + " " + base + ")" }
+  private DataFlow::ParameterNode getParam() { ParameterPortal::parameter(base, i, result, _) }
+
+  override string toString() {
+    if exists(getParam().getName())
+    then result = "(parameter " + getParam().getName() + " " + base + ")"
+    else result = "(parameter " + i + " " + base + ")"
+  }
 }
 
 private module ParameterPortal {
