@@ -69,7 +69,6 @@ module PropagationGraph {
     private string candidateRep() {
       exists(Portal p | nd = p.getAnExitNode(_) or nd = p.getAnEntryNode(_) |
         exists(int i, string prefix |
-           i < 3 and  // restrict to k most specific only
           prefix = p.getBasePortal(i).toString() and
           result = p.toString().replaceAll(prefix, "*") and
           // ensure the suffix isn't entirely composed of `parameter` and `return` steps
