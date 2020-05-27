@@ -25,7 +25,8 @@ predicate reachableFromSanitizerCandidate(PropagationGraph::Node san, Propagatio
   )
 }
 
-predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk) {
+// print the set of connected triples
+query predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk) {
   reachableFromSourceCandidate(src, san) and
   san.isSanitizerCandidate() and
   src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
@@ -35,14 +36,21 @@ predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, Propaga
   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
 }
 
+// prints 1 representation of event
+query predicate eventToRep(PropagationGraph::Node node, string str)
+{ 
+  str = node.rep()
+}
+
 class NodeWithFewReps extends PropagationGraph::Node {
   NodeWithFewReps() { strictcount(rep()) <= 10000  }
-
-  string toString() {
+  
+  string toStr() {
     result = strictconcat(string repr | repr = rep() | repr, ", ") + 
                 " / " + 
                 strictcount(string repr | repr = rep())}
 }
+
 
 query predicate seldonConstraint1AsString(
     NodeWithFewReps src,  
@@ -50,7 +58,7 @@ query predicate seldonConstraint1AsString(
     string snkConstraint
 ) {
               snkConstraint = strictconcat(string repr | 
-                     (exists (NodeWithFewReps snk | triple(src, san, snk) and repr = snk.toString()))
+                     (exists (NodeWithFewReps snk | triple(src, san, snk) and repr = snk.toStr()))
                      | repr, " ++  ")
 }
 
@@ -60,10 +68,10 @@ query predicate seldonConstraint1Nolinks(
     string snkConstraint
 ) {
     exists (NodeWithFewReps src, NodeWithFewReps san | 
-              srcExpr = src.toString() and
-              sanExpr = san.toString() and
+              srcExpr = src.toStr() and
+              sanExpr = san.toStr() and
               snkConstraint = strictconcat(string repr | 
-                     (exists (NodeWithFewReps snk | triple(src, san, snk) and repr = snk.toString()))
+                     (exists (NodeWithFewReps snk | triple(src, san, snk) and repr = snk.toStr()))
                      | repr, " ++  ")
     )
 }
@@ -74,7 +82,7 @@ query predicate seldonConstraint2AsString(
     string sanConstraint
 ) {
               sanConstraint = strictconcat(string repr | 
-                     (exists (NodeWithFewReps san | triple(src, san, snk) and repr = san.toString()))
+                     (exists (NodeWithFewReps san | triple(src, san, snk) and repr = san.toStr()))
                      | repr, " ++  ")
 }
 
@@ -84,7 +92,7 @@ query predicate seldonConstraint3AsString(
     string srcConstraint
 ) {
               srcConstraint = strictconcat(string repr | 
-                     (exists (NodeWithFewReps src | triple(src, san, snk) and repr = src.toString()))
+                     (exists (NodeWithFewReps src | triple(src, san, snk) and repr = src.toStr()))
                      | repr, " ++  ")
 }
 

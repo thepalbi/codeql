@@ -76,4 +76,4 @@ where
     nd instanceof ZipSlip::Sanitizer
   ) and
   nd = p.getAnExitNode(_)
-select p.toString()
+select nd, p.toString()
