@@ -34,8 +34,10 @@ import semmle.javascript.security.dataflow.Xss
 import semmle.javascript.security.dataflow.XxeCustomizations
 import semmle.javascript.security.dataflow.ZipSlipCustomizations
 import semmle.javascript.dataflow.Portals
+import PropagationGraphs
 
-from Portal p, DataFlow::Node nd
+
+from PropagationGraph::Node pnd, DataFlow::Node nd
 where
   (
     nd instanceof BrokenCryptoAlgorithm::Sanitizer or
@@ -75,5 +77,6 @@ where
     nd instanceof Xxe::Sanitizer or
     nd instanceof ZipSlip::Sanitizer
   ) and
-  nd = p.getAnExitNode(_)
-select nd, p.toString()
+  // nd = p.getAnExitNode(_)
+  nd = pnd.asDataFlowNode()
+select pnd

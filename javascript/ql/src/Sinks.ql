@@ -39,8 +39,9 @@ import semmle.javascript.security.dataflow.Xss
 import semmle.javascript.security.dataflow.XxeCustomizations
 import semmle.javascript.security.dataflow.ZipSlipCustomizations
 import semmle.javascript.dataflow.Portals
+import PropagationGraphs
 
-from Portal p, DataFlow::Node nd
+from PropagationGraph::Node pnd, DataFlow::Node nd
 where
   (
     nd instanceof BrokenCryptoAlgorithm::Sink or
@@ -85,5 +86,5 @@ where
     nd instanceof Xxe::Sink or
     nd instanceof ZipSlip::Sink
   ) and
-  nd = p.getAnEntryNode(_)
-select p.toString()
+  nd = pnd.asDataFlowNode()
+select pnd
