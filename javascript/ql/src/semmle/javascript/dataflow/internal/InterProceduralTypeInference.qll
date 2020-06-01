@@ -46,6 +46,19 @@ private class AnalyzedThisInBoundFunction extends AnalyzedThisExpr {
 }
 
 /**
+ * Flow analysis for `this` expressions in node modules.
+ *
+ * These expressions are assumed to refer to the `module.exports` object.
+ */
+private class AnalyzedThisAsModuleExports extends DataFlow::AnalyzedNode, DataFlow::ThisNode {
+  NodeModule m;
+
+  AnalyzedThisAsModuleExports() { m = getBindingContainer() }
+
+  override AbstractValue getALocalValue() { result = TAbstractExportsObject(m) }
+}
+
+/**
  * Flow analysis for `this` expressions inside a function that is instantiated.
  *
  * These expressions are assumed to refer to an instance of that function. Since
@@ -174,8 +187,7 @@ private class IIFEWithAnalyzedReturnFlow extends CallWithAnalyzedReturnFlow {
  */
 private VarAccess getOnlyAccess(FunctionDeclStmt fn, LocalVariable v) {
   v = fn.getVariable() and
-  result = v.getAnAccess() and
-  strictcount(v.getAnAccess()) = 1
+  result = unique(VarAccess acc | acc = v.getAnAccess())
 }
 
 /** A function that only is used locally, making it amenable to type inference. */

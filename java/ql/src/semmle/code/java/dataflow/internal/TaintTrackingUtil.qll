@@ -10,6 +10,7 @@ private import semmle.code.java.frameworks.Guice
 private import semmle.code.java.frameworks.Protobuf
 private import semmle.code.java.Maps
 private import semmle.code.java.dataflow.internal.ContainerFlow
+private import semmle.code.java.frameworks.jackson.JacksonSerializability
 
 /**
  * Holds if taint can flow from `src` to `sink` in zero or more
@@ -295,6 +296,7 @@ private predicate taintPreservingQualifierToMethod(Method m) {
   (
     m.getName() = "concat" or
     m.getName() = "endsWith" or
+    m.getName() = "formatted" or
     m.getName() = "getBytes" or
     m.getName() = "split" or
     m.getName() = "substring" or
@@ -394,7 +396,7 @@ private predicate argToMethodStep(Expr tracked, MethodAccess sink) {
  */
 private predicate taintPreservingArgumentToMethod(Method method) {
   method.getDeclaringType() instanceof TypeString and
-  (method.hasName("format") or method.hasName("join"))
+  (method.hasName("format") or method.hasName("formatted") or method.hasName("join"))
 }
 
 /**
@@ -433,7 +435,15 @@ private predicate taintPreservingArgumentToMethod(Method method, int arg) {
   or
   (
     method.getDeclaringType().hasQualifiedName("java.util", "Base64$Encoder") or
-    method.getDeclaringType().hasQualifiedName("java.util", "Base64$Decoder")
+    method.getDeclaringType().hasQualifiedName("java.util", "Base64$Decoder") or
+    method
+        .getDeclaringType()
+        .getASupertype*()
+        .hasQualifiedName("org.apache.commons.codec", "Encoder") or
+    method
+        .getDeclaringType()
+        .getASupertype*()
+        .hasQualifiedName("org.apache.commons.codec", "Decoder")
   ) and
   (
     method.getName() = "encode" and arg = 0 and method.getNumberOfParameters() = 1
@@ -443,6 +453,13 @@ private predicate taintPreservingArgumentToMethod(Method method, int arg) {
     method.getName() = "encodeToString" and arg = 0
     or
     method.getName() = "wrap" and arg = 0
+  )
+  or
+  method.getDeclaringType().hasQualifiedName("org.apache.commons.codec.binary", "Base64") and
+  (
+    method.getName() = "decodeBase64" and arg = 0
+    or
+    method.getName().matches("encodeBase64%") and arg = 0
   )
   or
   method.getDeclaringType().hasQualifiedName("org.apache.commons.io", "IOUtils") and
@@ -466,6 +483,10 @@ private predicate taintPreservingArgumentToMethod(Method method, int arg) {
     method.getName() = "toString" and arg = 0
   )
   or
+  method.getDeclaringType().hasQualifiedName("java.net", "URLDecoder") and
+  method.hasName("decode") and
+  arg = 0
+  or
   // A URI created from a tainted string is still tainted.
   method.getDeclaringType().hasQualifiedName("java.net", "URI") and
   method.hasName("create") and
@@ -479,6 +500,11 @@ private predicate taintPreservingArgumentToMethod(Method method, int arg) {
   arg = 0
   or
   exists(ProtobufMessageLite m | method = m.getAParseFromMethod()) and
+  arg = 0
+  or
+  // Jackson serialization methods that return the serialized data
+  method instanceof JacksonWriteValueMethod and
+  method.getNumberOfParameters() = 1 and
   arg = 0
 }
 
@@ -526,6 +552,12 @@ private predicate taintPreservingArgToArg(Method method, int input, int output) 
   method.hasName("arraycopy") and
   input = 0 and
   output = 2
+  or
+  // Jackson serialization methods that write data to the first argument
+  method instanceof JacksonWriteValueMethod and
+  method.getNumberOfParameters() > 1 and
+  input = method.getNumberOfParameters() - 1 and
+  output = 0
 }
 
 /**

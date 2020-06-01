@@ -3,11 +3,10 @@
 Expressions
 ###########
 
-An expression evaluates to a set of values in QL. For example, the expression ``1 + 2`` 
-evaluates to the integer ``3`` and the expression ``"QL"`` evaluates to the string ``"QL"``.
+An expression evaluates to a set of values and has a type.
 
-A valid expression also has a :ref:`type <types>`. 
-In the above examples, ``1 + 2`` has type ``int`` and ``"QL"`` has type ``string``.
+For example, the expression ``1 + 2`` 
+evaluates to the integer ``3`` and the expression ``"QL"`` evaluates to the string ``"QL"``. ``1 + 2`` has :ref:`type <types>` ``int`` and ``"QL"`` has type ``string``.
 
 The following sections describe the expressions that are available in QL.
 
@@ -94,6 +93,23 @@ For example, ``[3 .. 7]`` is a valid range expression. Its values are any intege
 In a valid range, the start and end expression are integers, floats, or dates. If one of them 
 is a date, then both must be dates. If one of them is an integer and the other a float, then
 both are treated as floats.
+
+.. index:: setliteral
+.. _setliteral:
+
+Set literal expressions
+***********************
+
+A set literal expression allows the explicit listing of a choice between several values.
+It consists of a comma-separated collection of expressions that are enclosed in brackets (``[`` and ``]``).
+For example, ``[2, 3, 5, 7, 11, 13, 17, 19, 23, 29]`` is a valid set literal expression.
+Its values are the first ten prime numbers.
+
+The values of the contained expressions need to be of :ref:`compatible types <type-compatibility>` for a valid set literal expression.
+Furthermore, at least one of the set elements has to be of a type that is a supertype of the types of all
+the other contained expressions.
+
+Set literals are supported from release 2.1.0 of the CodeQL CLI, and release 1.24 of LGTM Enterprise.
 
 .. index:: super
 .. _super:
@@ -279,6 +295,22 @@ The following aggregates are available in QL:
   evaluates to the empty set (instead of defaulting to ``0`` or the empty string).
   This is useful if you're only interested in results where the aggregation body is non-trivial.
 
+.. index:: unique
+
+- ``unique``: This aggregate depends on the values of ``<expression>`` over all possible assignments to
+  the aggregation variables. If there is a unique value of ``<expression>`` over the aggregation variables,
+  then the aggregate evaluates to that value.
+  Otherwise, the aggregate has no value.
+
+  For example, the following query returns the positive integers ``1``, ``2``, ``3``, ``4``, ``5``.
+  For negative integers ``x``, the expressions ``x`` and ``x.abs()`` have different values, so the
+  value for ``y`` in the aggregate expression is not uniquely determined. ::
+
+      from int x
+      where x in [-5 .. 5] and x != 0
+      select unique(int y | y = x or y = x.abs() | y)
+
+  The ``unique`` aggregate is supported from release 2.1.0 of the CodeQL CLI, and release 1.24 of LGTM Enterprise.
 
 Evaluation of aggregates
 ========================

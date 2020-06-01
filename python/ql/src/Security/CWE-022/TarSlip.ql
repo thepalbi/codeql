@@ -13,7 +13,7 @@
 
 import python
 import semmle.python.security.Paths
-import semmle.python.security.TaintTracking
+import semmle.python.dataflow.TaintTracking
 import semmle.python.security.strings.Basic
 
 /** A TaintKind to represent open tarfile objects. That is, the result of calling `tarfile.open(...)` */
@@ -121,9 +121,19 @@ class ExtractMembersSink extends TaintSink {
 class TarFileInfoSanitizer extends Sanitizer {
     TarFileInfoSanitizer() { this = "TarInfo sanitizer" }
 
+    /** The test `if <path_sanitizing_test>:` clears taint on its `false` edge. */
     override predicate sanitizingEdge(TaintKind taint, PyEdgeRefinement test) {
-        path_sanitizing_test(test.getTest()) and
-        taint instanceof TarFileInfo
+        taint instanceof TarFileInfo and
+        clears_taint_on_false_edge(test.getTest(), test.getSense())
+    }
+
+    private predicate clears_taint_on_false_edge(ControlFlowNode test, boolean sense) {
+        path_sanitizing_test(test) and
+        sense = false
+        or
+        // handle `not` (also nested)
+        test.(UnaryExprNode).getNode().getOp() instanceof Not and
+        clears_taint_on_false_edge(test.(UnaryExprNode).getOperand(), sense.booleanNot())
     }
 }
 

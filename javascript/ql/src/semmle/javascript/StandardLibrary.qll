@@ -49,7 +49,8 @@ class DirectEval extends CallExpr {
  * Models `Array.prototype.map` and friends as partial invocations that pass their second
  * argument as the receiver to the callback.
  */
-private class ArrayIterationCallbackAsPartialInvoke extends DataFlow::PartialInvokeNode::Range, DataFlow::MethodCallNode {
+private class ArrayIterationCallbackAsPartialInvoke extends DataFlow::PartialInvokeNode::Range,
+  DataFlow::MethodCallNode {
   ArrayIterationCallbackAsPartialInvoke() {
     getNumArgument() = 2 and
     // Filter out library methods named 'forEach' etc
@@ -144,4 +145,38 @@ class StringReplaceCall extends DataFlow::MethodCallNode {
       map.hasPropertyWrite(old, any(DataFlow::Node repl | repl.getStringValue() = new))
     )
   }
+}
+
+/**
+ * A call to `String.prototype.split`.
+ *
+ * We heuristically include any call to a method called `split`, provided it either
+ * has one or two arguments, or local data flow suggests that the receiver may be a string.
+ */
+class StringSplitCall extends DataFlow::MethodCallNode {
+  StringSplitCall() {
+    this.getMethodName() = "split" and
+    (getNumArgument() = [1, 2] or getReceiver().mayHaveStringValue(_))
+  }
+
+  /**
+   * Gets a string that determines where the string is split.
+   */
+  string getSeparator() {
+    getArgument(0).mayHaveStringValue(result)
+    or
+    result =
+      getArgument(0).getALocalSource().(DataFlow::RegExpCreationNode).getRoot().getAMatchedString()
+  }
+
+  /**
+   * Gets the DataFlow::Node for the base string that is split.
+   */
+  DataFlow::Node getBaseString() { result = getReceiver() }
+
+  /**
+   * Gets a read of the `i`th element from the split string.
+   */
+  bindingset[i]
+  DataFlow::Node getASubstringRead(int i) { result = getAPropertyRead(i.toString()) }
 }

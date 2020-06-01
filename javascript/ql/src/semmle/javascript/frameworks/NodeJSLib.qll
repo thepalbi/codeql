@@ -7,18 +7,25 @@ import semmle.javascript.frameworks.HTTP
 import semmle.javascript.security.SensitiveActions
 
 module NodeJSLib {
+  private GlobalVariable processVariable() { variables(result, "process", any(GlobalScope sc)) }
+
+  pragma[nomagic]
+  private GlobalVarAccess processExprInTopLevel(TopLevel tl) {
+    result = processVariable().getAnAccess() and
+    tl = result.getTopLevel()
+  }
+
+  pragma[nomagic]
+  private GlobalVarAccess processExprInNodeModule() {
+    result = processExprInTopLevel(any(NodeModule m))
+  }
+
   /**
    * An access to the global `process` variable in a Node.js module, interpreted as
    * an import of the `process` module.
    */
   private class ImplicitProcessImport extends DataFlow::ModuleImportNode::Range {
-    ImplicitProcessImport() {
-      exists(GlobalVariable process |
-        process.getName() = "process" and
-        this = DataFlow::exprNode(process.getAnAccess())
-      ) and
-      getTopLevel() instanceof NodeModule
-    }
+    ImplicitProcessImport() { this = DataFlow::exprNode(processExprInNodeModule()) }
 
     override string getPath() { result = "process" }
   }
@@ -252,10 +259,11 @@ module NodeJSLib {
   private class WriteHead extends HeaderDefinition {
     WriteHead() {
       astNode.getMethodName() = "writeHead" and
-      astNode.getNumArgument() > 1
+      astNode.getNumArgument() >= 1
     }
 
     override predicate definesExplicitly(string headerName, Expr headerValue) {
+      astNode.getNumArgument() > 1 and
       exists(DataFlow::SourceNode headers, string header |
         headers.flowsToExpr(astNode.getLastArgument()) and
         headers.hasPropertyWrite(header, DataFlow::valueNode(headerValue)) and
@@ -271,7 +279,7 @@ module NodeJSLib {
     DataFlow::Node tainted;
 
     PathFlowTarget() {
-      exists(string methodName | this = DataFlow::moduleMember("path", methodName).getACall() |
+      exists(string methodName | this = NodeJSLib::Path::moduleMember(methodName).getACall() |
         // getters
         methodName = "basename" and tainted = getArgument(0)
         or
@@ -305,7 +313,7 @@ module NodeJSLib {
 
     FsFlowTarget() {
       exists(DataFlow::CallNode call, string methodName |
-        call = DataFlow::moduleMember("fs", methodName).getACall()
+        call = FS::moduleMember(methodName).getACall()
       |
         methodName = "realpathSync" and
         tainted = call.getArgument(0) and
@@ -368,10 +376,8 @@ module NodeJSLib {
   class Credentials extends CredentialsExpr {
     Credentials() {
       exists(string http | http = "http" or http = "https" |
-        this = DataFlow::moduleMember(http, "request")
-              .getACall()
-              .getOptionArgument(0, "auth")
-              .asExpr()
+        this =
+          DataFlow::moduleMember(http, "request").getACall().getOptionArgument(0, "auth").asExpr()
       )
     }
 
@@ -431,16 +437,29 @@ module NodeJSLib {
   }
 
   /**
-   * A member `member` from module `fs` or its drop-in replacements `graceful-fs` or `fs-extra`.
+   * Provides predicates for working with the "fs" module and its variants as a single module.
    */
-  private DataFlow::SourceNode fsModuleMember(string member) {
-    exists(string moduleName |
-      moduleName = "fs" or
-      moduleName = "graceful-fs" or
-      moduleName = "fs-extra"
-    |
-      result = DataFlow::moduleMember(moduleName, member)
-    )
+  module FS {
+    /**
+     * A member `member` from module `fs` or its drop-in replacements `graceful-fs`, `fs-extra`, `original-fs`.
+     */
+    DataFlow::SourceNode moduleMember(string member) {
+      result = fsModule(DataFlow::TypeTracker::end()).getAPropertyRead(member)
+    }
+
+    private DataFlow::SourceNode fsModule(DataFlow::TypeTracker t) {
+      exists(string moduleName |
+        moduleName = ["mz/fs", "original-fs", "fs-extra", "graceful-fs", "fs"]
+      |
+        result = DataFlow::moduleImport(moduleName)
+        or
+        // extra support for flexible names
+        result.asExpr().(Require).getArgument(0).mayHaveStringValue(moduleName)
+      ) and
+      t.start()
+      or
+      exists(DataFlow::TypeTracker t2 | result = fsModule(t2).track(t2, t))
+    }
   }
 
   /**
@@ -449,7 +468,7 @@ module NodeJSLib {
   private class NodeJSFileSystemAccess extends FileSystemAccess, DataFlow::CallNode {
     string methodName;
 
-    NodeJSFileSystemAccess() { this = fsModuleMember(methodName).getACall() }
+    NodeJSFileSystemAccess() { this = maybePromisified(FS::moduleMember(methodName)).getACall() }
 
     /**
      * Gets the name of the called method.
@@ -469,7 +488,9 @@ module NodeJSLib {
       methodName = "write" or
       methodName = "writeFile" or
       methodName = "writeFileSync" or
-      methodName = "writeSync"
+      methodName = "writeSync" or
+      methodName = "link" or
+      methodName = "linkSync"
     }
 
     override DataFlow::Node getADataNode() {
@@ -570,10 +591,23 @@ module NodeJSLib {
         name = "readdir" or
         name = "realpath"
       |
-        this = fsModuleMember(name).getACall().getCallback([1 .. 2]).getParameter(1) or
-        this = fsModuleMember(name + "Sync").getACall()
+        this = FS::moduleMember(name).getACall().getCallback([1 .. 2]).getParameter(1) or
+        this = FS::moduleMember(name + "Sync").getACall()
       )
     }
+  }
+
+  /**
+   * Gets a possibly promisified (using `util.promisify`) version of the input `callback`.
+   */
+  private DataFlow::SourceNode maybePromisified(DataFlow::SourceNode callback) {
+    result = callback
+    or
+    exists(DataFlow::CallNode promisify |
+      promisify = DataFlow::moduleMember("util", "promisify").getACall()
+    |
+      result = promisify and promisify.getArgument(0).getALocalSource() = callback
+    )
   }
 
   /**
@@ -583,7 +617,9 @@ module NodeJSLib {
     string methodName;
 
     ChildProcessMethodCall() {
-      this = DataFlow::moduleMember("child_process", methodName).getACall()
+      this = maybePromisified(DataFlow::moduleMember("child_process", methodName)).getACall()
+      or
+      this = DataFlow::moduleMember("mz/child_process", methodName).getACall()
     }
 
     private DataFlow::Node getACommandArgument(boolean shell) {
@@ -622,6 +658,23 @@ module NodeJSLib {
       ) and
       // all of the above methods take the argument list as their second argument
       result = getArgument(1)
+    }
+
+    override predicate isSync() { "Sync" = methodName.suffix(methodName.length() - 4) }
+
+    override DataFlow::Node getOptionsArg() {
+      not result.getALocalSource() instanceof DataFlow::FunctionNode and // looks like callback
+      not result.getALocalSource() instanceof DataFlow::ArrayCreationNode and // looks like argumentlist
+      not result = getArgument(0) and
+      // fork/spawn and all sync methos always has options as the last argument
+      if
+        methodName.regexpMatch("fork.*") or
+        methodName.regexpMatch("spawn.*") or
+        methodName.regexpMatch(".*Sync")
+      then result = getLastArgument()
+      else
+        // the rest (exec/execFile) has the options argument as their second last.
+        result = getArgument(this.getNumArgument() - 2)
     }
   }
 
@@ -663,23 +716,25 @@ module NodeJSLib {
   }
 
   /**
-   * A call to a method from module `vm`
+   * DEPRECATED Use `VmModuleMemberInvocation` instead.
    */
-  class VmModuleMethodCall extends DataFlow::CallNode {
-    string methodName;
+  deprecated class VmModuleMethodCall = VmModuleMemberInvocation;
 
-    VmModuleMethodCall() { this = DataFlow::moduleMember("vm", methodName).getACall() }
+  /**
+   * An invocation of a member from module `vm`
+   */
+  class VmModuleMemberInvocation extends DataFlow::InvokeNode {
+    string memberName;
+
+    VmModuleMemberInvocation() { this = DataFlow::moduleMember("vm", memberName).getAnInvocation() }
 
     /**
-     * Gets the code to be executed as part of this call.
+     * Gets the code to be executed as part of this invocation.
      */
     DataFlow::Node getACodeArgument() {
-      (
-        methodName = "runInContext" or
-        methodName = "runInNewContext" or
-        methodName = "runInThisContext"
-      ) and
-      // all of the above methods take the command as their first argument
+      memberName in ["Script", "SourceTextModule", "compileFunction", "runInContext",
+            "runInNewContext", "runInThisContext"] and
+      // all of the above methods/constructors take the command as their first argument
       result = getArgument(0)
     }
   }
@@ -922,6 +977,13 @@ module NodeJSLib {
   }
 
   /**
+   * The NodeJS `process` object as an EventEmitter subclass.
+   */
+  private class ProcessAsNodeJSEventEmitter extends NodeJSEventEmitter {
+    ProcessAsNodeJSEventEmitter() { this = process() }
+  }
+
+  /**
    * A class that extends EventEmitter.
    */
   private class EventEmitterSubClass extends DataFlow::ClassNode {
@@ -937,16 +999,17 @@ module NodeJSLib {
    * By extending `NodeJSEventEmitter' we get data-flow on the events passing through this EventEmitter.
    */
   class CustomEventEmitter extends NodeJSEventEmitter {
-  	EventEmitterSubClass clazz;
+    EventEmitterSubClass clazz;
+
     CustomEventEmitter() {
-      if exists(clazz.getAClassReference().getAnInstantiation()) then
-        this = clazz.getAClassReference().getAnInstantiation()
+      if exists(clazz.getAClassReference().getAnInstantiation())
+      then this = clazz.getAClassReference().getAnInstantiation()
       else
-        // In case there are no explicit instantiations of the clazz, then we still want to track data flow between `this` nodes. 
-        // This cannot produce false flow as the `.ref()` method below is always used when creating event-registrations/event-dispatches. 
+        // In case there are no explicit instantiations of the clazz, then we still want to track data flow between `this` nodes.
+        // This cannot produce false flow as the `.ref()` method below is always used when creating event-registrations/event-dispatches.
         this = clazz
     }
-    
+
     override DataFlow::SourceNode ref() {
       result = NodeJSEventEmitter.super.ref() and not this = clazz
       or
@@ -988,25 +1051,25 @@ module NodeJSLib {
 
     /**
      * Gets a reference to this server.
-     */ 
+     */
     DataFlow::SourceNode ref() { result = ref(DataFlow::TypeTracker::end()) }
   }
-  
+
   /**
    * A connection opened on a NodeJS net server.
-   */ 
+   */
   private class NodeJSNetServerConnection extends EventEmitter::Range {
-  	NodeJSNetServer server;
-  	
-  	NodeJSNetServerConnection() {
-  	  exists(DataFlow::MethodCallNode call | 
-  	    call = server.ref().getAMethodCall("on") and 
-  	    call.getArgument(0).mayHaveStringValue("connection") 
-  	  | 
-  	    this = call.getCallback(1).getParameter(0)
-  	  )  	  	
-  	}
-  	
+    NodeJSNetServer server;
+
+    NodeJSNetServerConnection() {
+      exists(DataFlow::MethodCallNode call |
+        call = server.ref().getAMethodCall("on") and
+        call.getArgument(0).mayHaveStringValue("connection")
+      |
+        this = call.getCallback(1).getParameter(0)
+      )
+    }
+
     DataFlow::SourceNode ref() { result = EventEmitter::trackEventEmitter(this) }
   }
 
@@ -1030,32 +1093,25 @@ module NodeJSLib {
 
     override string getSourceType() { result = "NodeJS server" }
   }
-  
+
   /**
    * An instantiation of the `respjs` library, which is an EventEmitter.
    */
   private class RespJS extends NodeJSEventEmitter {
-  	RespJS() {
-  	  this = DataFlow::moduleImport("respjs").getAnInstantiation()	
-  	}
+    RespJS() { this = DataFlow::moduleImport("respjs").getAnInstantiation() }
   }
-  
+
   /**
-   * A event dispatch that serializes the input data and emits the result on the "data" channel. 
+   * A event dispatch that serializes the input data and emits the result on the "data" channel.
    */
-  private class RespWrite extends EventDispatch::DefaultEventDispatch,
-    DataFlow::MethodCallNode {
+  private class RespWrite extends EventDispatch::DefaultEventDispatch, DataFlow::MethodCallNode {
     override RespJS emitter;
 
     RespWrite() { this = emitter.ref().getAMethodCall("write") }
-    
-    override string getChannel() {
-      result = "data"
-    }
 
-    override DataFlow::Node getSentItem(int i) {
-      i = 0 and result = this.getArgument(i)
-    }
+    override string getChannel() { result = "data" }
+
+    override DataFlow::Node getSentItem(int i) { i = 0 and result = this.getArgument(i) }
   }
 
   /**

@@ -66,6 +66,27 @@ private module Cached {
   }
 
   cached
+  predicate hasConflatedMemoryResult(Instruction instruction) {
+    instruction instanceof AliasedDefinitionInstruction
+    or
+    instruction.getOpcode() instanceof Opcode::InitializeNonLocal
+    or
+    // Chi instructions track virtual variables, and therefore a chi instruction is
+    // conflated if it's associated with the aliased virtual variable.
+    exists(OldInstruction oldInstruction | instruction = Chi(oldInstruction) |
+      Alias::getResultMemoryLocation(oldInstruction).getVirtualVariable() instanceof
+        Alias::AliasedVirtualVariable
+    )
+    or
+    // Phi instructions track locations, and therefore a phi instruction is
+    // conflated if it's associated with a conflated location.
+    exists(Alias::MemoryLocation location |
+      instruction = Phi(_, location) and
+      not exists(location.getAllocation())
+    )
+  }
+
+  cached
   Instruction getRegisterOperandDefinition(Instruction instruction, RegisterOperandTag tag) {
     exists(OldInstruction oldInstruction, OldIR::RegisterOperand oldOperand |
       oldInstruction = getOldInstruction(instruction) and
@@ -84,14 +105,15 @@ private module Cached {
     oldOperand instanceof OldIR::NonPhiMemoryOperand and
     exists(
       OldBlock useBlock, int useRank, Alias::MemoryLocation useLocation,
-      Alias::MemoryLocation defLocation, OldBlock defBlock, int defRank, int defOffset
+      Alias::MemoryLocation defLocation, OldBlock defBlock, int defRank, int defOffset,
+      Alias::MemoryLocation actualDefLocation
     |
       useLocation = Alias::getOperandMemoryLocation(oldOperand) and
       hasUseAtRank(useLocation, useBlock, useRank, oldInstruction) and
       definitionReachesUse(useLocation, defBlock, defRank, useBlock, useRank) and
       hasDefinitionAtRank(useLocation, defLocation, defBlock, defRank, defOffset) and
-      instr = getDefinitionOrChiInstruction(defBlock, defOffset, defLocation, _) and
-      overlap = Alias::getOverlap(defLocation, useLocation)
+      instr = getDefinitionOrChiInstruction(defBlock, defOffset, defLocation, actualDefLocation) and
+      overlap = Alias::getOverlap(actualDefLocation, useLocation)
     )
   }
 
@@ -103,39 +125,12 @@ private module Cached {
       oldInstruction = getOldInstruction(instruction) and
       oldOperand = oldInstruction.getAnOperand() and
       tag = oldOperand.getOperandTag() and
-      (
-        (
-          if exists(Alias::getOperandMemoryLocation(oldOperand))
-          then hasMemoryOperandDefinition(oldInstruction, oldOperand, overlap, result)
-          else (
-            result = instruction.getEnclosingIRFunction().getUnmodeledDefinitionInstruction() and
-            overlap instanceof MustTotallyOverlap
-          )
-        )
-        or
-        // Connect any definitions that are not being modeled in SSA to the
-        // `UnmodeledUse` instruction.
-        exists(OldInstruction oldDefinition |
-          instruction instanceof UnmodeledUseInstruction and
-          tag instanceof UnmodeledUseOperandTag and
-          oldDefinition = oldOperand.getAnyDef() and
-          not exists(Alias::getResultMemoryLocation(oldDefinition)) and
-          result = getNewInstruction(oldDefinition) and
-          overlap instanceof MustTotallyOverlap
-        )
-      )
+      hasMemoryOperandDefinition(oldInstruction, oldOperand, overlap, result)
     )
     or
     instruction = Chi(getOldInstruction(result)) and
     tag instanceof ChiPartialOperandTag and
     overlap instanceof MustExactlyOverlap
-    or
-    exists(IRFunction f |
-      tag instanceof UnmodeledUseOperandTag and
-      result = f.getUnmodeledDefinitionInstruction() and
-      instruction = f.getUnmodeledUseInstruction() and
-      overlap instanceof MustTotallyOverlap
-    )
     or
     tag instanceof ChiTotalOperandTag and
     result = getChiInstructionTotalOperand(instruction) and
@@ -665,17 +660,18 @@ module DefUse {
   private predicate definitionReachesRank(
     Alias::MemoryLocation useLocation, OldBlock block, int defRank, int reachesRank
   ) {
+    // The def always reaches the next use, even if there is also a def on the
+    // use instruction.
     hasDefinitionAtRank(useLocation, _, block, defRank, _) and
-    reachesRank <= exitRank(useLocation, block) and // Without this, the predicate would be infinite.
-    (
-      // The def always reaches the next use, even if there is also a def on the
-      // use instruction.
-      reachesRank = defRank + 1
-      or
-      // If the def reached the previous rank, it also reaches the current rank,
-      // unless there was another def at the previous rank.
-      definitionReachesRank(useLocation, block, defRank, reachesRank - 1) and
-      not hasDefinitionAtRank(useLocation, _, block, reachesRank - 1, _)
+    reachesRank = defRank + 1
+    or
+    // If the def reached the previous rank, it also reaches the current rank,
+    // unless there was another def at the previous rank.
+    exists(int prevRank |
+      reachesRank = prevRank + 1 and
+      definitionReachesRank(useLocation, block, defRank, prevRank) and
+      not prevRank = exitRank(useLocation, block) and
+      not hasDefinitionAtRank(useLocation, _, block, prevRank, _)
     )
   }
 
@@ -916,7 +912,10 @@ private module CachedForDebugging {
   }
 }
 
-module SSASanity {
+module SSAConsistency {
+  /**
+   * Holds if a `MemoryOperand` has more than one `MemoryLocation` assigned by alias analysis.
+   */
   query predicate multipleOperandMemoryLocations(
     OldIR::MemoryOperand operand, string message, OldIR::IRFunction func, string funcText
   ) {
@@ -929,6 +928,9 @@ module SSASanity {
     )
   }
 
+  /**
+   * Holds if a `MemoryLocation` does not have an associated `VirtualVariable`.
+   */
   query predicate missingVirtualVariableForMemoryLocation(
     Alias::MemoryLocation location, string message, OldIR::IRFunction func, string funcText
   ) {
@@ -936,5 +938,26 @@ module SSASanity {
     func = location.getIRFunction() and
     funcText = Language::getIdentityString(func.getFunction()) and
     message = "Memory location has no virtual variable in function '$@'."
+  }
+
+  /**
+   * Holds if a `MemoryLocation` is a member of more than one `VirtualVariable`.
+   */
+  query predicate multipleVirtualVariablesForMemoryLocation(
+    Alias::MemoryLocation location, string message, OldIR::IRFunction func, string funcText
+  ) {
+    exists(int vvarCount |
+      vvarCount = strictcount(location.getVirtualVariable()) and
+      vvarCount > 1 and
+      func = location.getIRFunction() and
+      funcText = Language::getIdentityString(func.getFunction()) and
+      message =
+        "Memory location has " + vvarCount.toString() + " virtual variables in function '$@': (" +
+          concat(Alias::VirtualVariable vvar |
+            vvar = location.getVirtualVariable()
+          |
+            vvar.toString(), ", "
+          ) + ")."
+    )
   }
 }

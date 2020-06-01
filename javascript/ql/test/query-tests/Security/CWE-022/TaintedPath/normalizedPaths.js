@@ -250,6 +250,53 @@ app.get('/resolve-path', (req, res) => {
     fs.readFileSync(path); // NOT OK - wrong polarity
 });
 
+app.get('/relative-startswith', (req, res) => {
+  let path = pathModule.resolve(req.query.path);
+
+  fs.readFileSync(path); // NOT OK
+
+  var self = something();
+	
+  var relative = pathModule.relative(self.webroot, path);
+  if(relative.startsWith(".." + pathModule.sep) || relative == "..") {
+    fs.readFileSync(path); // NOT OK! 
+  } else {
+    fs.readFileSync(path); // OK! 
+  }
+
+  let newpath = pathModule.normalize(path);
+  var relativePath = pathModule.relative(pathModule.normalize(workspaceDir), newpath);
+  if (relativePath.indexOf('..' + pathModule.sep) === 0) {
+    fs.readFileSync(newpath); // NOT OK!
+  } else {
+    fs.readFileSync(newpath); // OK!
+  }
+
+  let newpath = pathModule.normalize(path);
+  var relativePath = pathModule.relative(pathModule.normalize(workspaceDir), newpath);
+  if (relativePath.indexOf('../') === 0) {
+    fs.readFileSync(newpath); // NOT OK!
+  } else {
+    fs.readFileSync(newpath); // OK! 
+  }
+
+  let newpath = pathModule.normalize(path);
+  var relativePath = pathModule.relative(pathModule.normalize(workspaceDir), newpath);
+  if (pathModule.normalize(relativePath).indexOf('../') === 0) {
+    fs.readFileSync(newpath); // NOT OK!
+  } else {
+    fs.readFileSync(newpath); // OK! 
+  }
+
+  let newpath = pathModule.normalize(path);
+  var relativePath = pathModule.relative(pathModule.normalize(workspaceDir), newpath);
+  if (pathModule.normalize(relativePath).indexOf('../')) {
+    fs.readFileSync(newpath); // OK!
+  } else {
+    fs.readFileSync(newpath); // NOT OK! 
+  }
+});
+
 var isPathInside = require("is-path-inside"),
     pathIsInside = require("path-is-inside");
 app.get('/pseudo-normalizations', (req, res) => {
@@ -286,4 +333,41 @@ app.get('/pseudo-normalizations', (req, res) => {
 
 	}
 
+});
+
+app.get('/yet-another-prefix', (req, res) => {
+	let path = pathModule.resolve(req.query.path);
+
+	fs.readFileSync(path); // NOT OK
+
+	var abs = pathModule.resolve(path); 
+
+	if (abs.indexOf(root) !== 0) {
+		fs.readFileSync(path); // NOT OK
+		return;
+    }
+	fs.readFileSync(path); // OK
+});
+
+var rootPath = process.cwd();
+app.get('/yet-another-prefix2', (req, res) => {
+  let path = req.query.path;
+
+  fs.readFileSync(path); // NOT OK
+
+  var requestPath = pathModule.join(rootPath, path);
+
+  var targetPath;
+  if (!allowPath(requestPath, rootPath)) {
+    targetPath = rootPath;
+    fs.readFileSync(requestPath); // NOT OK
+  } else {
+    targetPath = requestPath;
+    fs.readFileSync(requestPath); // OK
+  }
+  fs.readFileSync(targetPath); // OK
+
+  function allowPath(requestPath, rootPath) {
+    return requestPath.indexOf(rootPath) === 0;
+  }
 });

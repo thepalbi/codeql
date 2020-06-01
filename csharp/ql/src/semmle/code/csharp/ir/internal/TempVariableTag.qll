@@ -7,7 +7,9 @@ newtype TTempVariableTag =
   LambdaTempVar() or
   ForeachEnumTempVar() or
   LockedVarTemp() or
-  LockWasTakenTemp()
+  LockWasTakenTemp() or
+  EllipsisTempVar() or
+  ThisTempVar()
 
 string getTempVariableTagId(TTempVariableTag tag) {
   tag = ConditionValueTempVar() and result = "CondVal"
@@ -23,4 +25,8 @@ string getTempVariableTagId(TTempVariableTag tag) {
   tag = LockedVarTemp() and result = "LockedVarTemp"
   or
   tag = LockWasTakenTemp() and result = "LockWasTakenTemp"
+  or
+  tag = EllipsisTempVar() and result = "Ellipsis"
+  or
+  tag = ThisTempVar() and result = "This"
 }

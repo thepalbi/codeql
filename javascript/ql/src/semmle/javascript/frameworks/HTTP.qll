@@ -123,8 +123,7 @@ module HTTP {
    *
    * Gets the string `http` or `https`.
    */
-  deprecated
-  string httpOrHttps() { result = "http" or result = "https" }
+  deprecated string httpOrHttps() { result = "http" or result = "https" }
 
   /**
    * An expression whose value is sent as (part of) the body of an HTTP response.
@@ -206,6 +205,20 @@ module HTTP {
     abstract HeaderDefinition getAResponseHeader(string name);
 
     /**
+     * Gets a request object originating from this route handler.
+     *
+     * Use `RequestSource.ref()` to get reference to this request object.
+     */
+    final Servers::RequestSource getARequestSource() { result.getRouteHandler() = this }
+
+    /**
+     * Gets a response object originating from this route handler.
+     *
+     * Use `ResponseSource.ref()` to get reference to this response object.
+     */
+    final Servers::ResponseSource getAResponseSource() { result.getRouteHandler() = this }
+
+    /**
      * Gets an expression that contains a request object handled
      * by this handler.
      */
@@ -272,7 +285,7 @@ module HTTP {
      */
     abstract class StandardRouteHandler extends RouteHandler {
       override HeaderDefinition getAResponseHeader(string name) {
-        result.(StandardHeaderDefinition).getRouteHandler() = this and
+        result.getRouteHandler() = this and
         result.getAHeaderName() = name
       }
 
@@ -297,7 +310,8 @@ module HTTP {
        */
       abstract RouteHandler getRouteHandler();
 
-      predicate flowsTo(DataFlow::Node nd) { ref(DataFlow::TypeTracker::end()).flowsTo(nd) }
+      /** DEPRECATED. Use `ref().flowsTo()` instead. */
+      deprecated predicate flowsTo(DataFlow::Node nd) { ref().flowsTo(nd) }
 
       private DataFlow::SourceNode ref(DataFlow::TypeTracker t) {
         t.start() and
@@ -305,6 +319,9 @@ module HTTP {
         or
         exists(DataFlow::TypeTracker t2 | result = ref(t2).track(t2, t))
       }
+
+      /** Gets a `SourceNode` that refers to this request object. */
+      DataFlow::SourceNode ref() { result = ref(DataFlow::TypeTracker::end()) }
     }
 
     /**
@@ -318,7 +335,8 @@ module HTTP {
        */
       abstract RouteHandler getRouteHandler();
 
-      predicate flowsTo(DataFlow::Node nd) { ref(DataFlow::TypeTracker::end()).flowsTo(nd) }
+      /** DEPRECATED. Use `ref().flowsTo()` instead. */
+      deprecated predicate flowsTo(DataFlow::Node nd) { ref().flowsTo(nd) }
 
       private DataFlow::SourceNode ref(DataFlow::TypeTracker t) {
         t.start() and
@@ -326,6 +344,9 @@ module HTTP {
         or
         exists(DataFlow::TypeTracker t2 | result = ref(t2).track(t2, t))
       }
+
+      /** Gets a `SourceNode` that refers to this response object. */
+      DataFlow::SourceNode ref() { result = ref(DataFlow::TypeTracker::end()) }
     }
 
     /**
@@ -334,7 +355,7 @@ module HTTP {
     class StandardRequestExpr extends RequestExpr {
       RequestSource src;
 
-      StandardRequestExpr() { src.flowsTo(DataFlow::valueNode(this)) }
+      StandardRequestExpr() { src.ref().flowsTo(DataFlow::valueNode(this)) }
 
       override RouteHandler getRouteHandler() { result = src.getRouteHandler() }
     }
@@ -345,7 +366,7 @@ module HTTP {
     class StandardResponseExpr extends ResponseExpr {
       ResponseSource src;
 
-      StandardResponseExpr() { src.flowsTo(DataFlow::valueNode(this)) }
+      StandardResponseExpr() { src.ref().flowsTo(DataFlow::valueNode(this)) }
 
       override RouteHandler getRouteHandler() { result = src.getRouteHandler() }
     }
@@ -371,6 +392,7 @@ module HTTP {
       /**
        * Gets a route handler that is defined by this setup.
        */
+      pragma[nomagic]
       abstract DataFlow::SourceNode getARouteHandler();
 
       /**
@@ -466,10 +488,6 @@ module HTTP {
      * Gets a secret key used for signed cookies.
      */
     abstract DataFlow::Node getASecretKey();
-  }
-
-  private class CookieMiddlewareInstanceAsSourceNode extends DataFlow::SourceNode::Range {
-    CookieMiddlewareInstanceAsSourceNode() { this instanceof CookieMiddlewareInstance }
   }
 
   /**

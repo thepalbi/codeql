@@ -5,8 +5,11 @@ private import AliasAnalysis
 
 private newtype TAllocation =
   TVariableAllocation(IRVariable var) or
-  TIndirectParameterAllocation(IRAutomaticUserVariable var) {
+  TIndirectParameterAllocation(IRAutomaticVariable var) {
     exists(InitializeIndirectionInstruction instr | instr.getIRVariable() = var)
+  } or
+  TDynamicAllocation(CallInstruction call) {
+    exists(InitializeDynamicAllocationInstruction instr | instr.getPrimaryInstruction() = call)
   }
 
 /**
@@ -71,7 +74,7 @@ class VariableAllocation extends Allocation, TVariableAllocation {
 }
 
 class IndirectParameterAllocation extends Allocation, TIndirectParameterAllocation {
-  IRAutomaticUserVariable var;
+  IRAutomaticVariable var;
 
   IndirectParameterAllocation() { this = TIndirectParameterAllocation(var) }
 
@@ -87,7 +90,33 @@ class IndirectParameterAllocation extends Allocation, TIndirectParameterAllocati
 
   final override string getUniqueId() { result = var.getUniqueId() }
 
-  final override IRType getIRType() { result = var.getIRType() }
+  final override IRType getIRType() { result instanceof IRUnknownType }
+
+  final override predicate isReadOnly() { none() }
+
+  final override predicate isAlwaysAllocatedOnStack() { none() }
+
+  final override predicate alwaysEscapes() { none() }
+}
+
+class DynamicAllocation extends Allocation, TDynamicAllocation {
+  CallInstruction call;
+
+  DynamicAllocation() { this = TDynamicAllocation(call) }
+
+  final override string toString() {
+    result = call.toString() + " at " + call.getLocation() // This isn't performant, but it's only used in test/dump code right now.
+  }
+
+  final override CallInstruction getABaseInstruction() { result = call }
+
+  final override IRFunction getEnclosingIRFunction() { result = call.getEnclosingIRFunction() }
+
+  final override Language::Location getLocation() { result = call.getLocation() }
+
+  final override string getUniqueId() { result = call.getUniqueId() }
+
+  final override IRType getIRType() { result instanceof IRUnknownType }
 
   final override predicate isReadOnly() { none() }
 
