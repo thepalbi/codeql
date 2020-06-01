@@ -10,7 +10,7 @@ predicate reachableFromSourceCandidate(PropagationGraph::Node src, PropagationGr
   PropagationGraph::edge(src, nd)
   or
   exists(PropagationGraph::Node mid |
-    reachableFromSourceCandidate(src, mid) and
+    reachableFromSourceCandidate(src, mid) and 
     PropagationGraph::edge(mid, nd)
   )
 }
@@ -36,6 +36,16 @@ query predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, P
   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
 }
 
+query predicate tripleWAtleastOneRep(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk) {
+  reachableFromSourceCandidate(src, san) and
+  san.isSanitizerCandidate() and
+  src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
+  reachableFromSanitizerCandidate(san, snk) and
+  snk.isSinkCandidate()
+  // NB: we do not require `san` and `snk` to be different, since we might have a situation like
+  // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
+}
+
 // prints 1 representation of event
 query predicate eventToRep(PropagationGraph::Node node, string str)
 { 
@@ -43,7 +53,7 @@ query predicate eventToRep(PropagationGraph::Node node, string str)
 }
 
 class NodeWithFewReps extends PropagationGraph::Node {
-  NodeWithFewReps() { strictcount(rep()) <= 10000  }
+  NodeWithFewReps() { strictcount(rep()) <= 10000 and strictcount(rep()) > 0}
   
   string toStr() {
     result = strictconcat(string repr | repr = rep() | repr, ", ") + 
@@ -52,7 +62,7 @@ class NodeWithFewReps extends PropagationGraph::Node {
 }
 
 
-query predicate seldonConstraint1AsString(
+predicate seldonConstraint1AsString(
     NodeWithFewReps src,  
     NodeWithFewReps san, 
     string snkConstraint
@@ -62,7 +72,7 @@ query predicate seldonConstraint1AsString(
                      | repr, " ++  ")
 }
 
-query predicate seldonConstraint1Nolinks(
+predicate seldonConstraint1Nolinks(
     string srcExpr,  
     string sanExpr, 
     string snkConstraint
@@ -76,7 +86,7 @@ query predicate seldonConstraint1Nolinks(
     )
 }
 
-query predicate seldonConstraint2AsString(
+predicate seldonConstraint2AsString(
     NodeWithFewReps src,  
     NodeWithFewReps snk, 
     string sanConstraint
@@ -86,7 +96,7 @@ query predicate seldonConstraint2AsString(
                      | repr, " ++  ")
 }
 
-query predicate seldonConstraint3AsString(
+predicate seldonConstraint3AsString(
     NodeWithFewReps san,  
     NodeWithFewReps snk, 
     string srcConstraint
@@ -116,7 +126,7 @@ query predicate seldonConstraint3(
  }
  */
 
-query predicate countoftypes(string type, int nodecnt, int repcnt) {
+predicate countoftypes(string type, int nodecnt, int repcnt) {
   type = "Source"  
   and nodecnt = count(PropagationGraph::Node nd | nd.isSourceCandidate()) 
   and repcnt = count(string rep | exists(PropagationGraph::Node nd | nd.isSourceCandidate() and rep = nd.rep())) or

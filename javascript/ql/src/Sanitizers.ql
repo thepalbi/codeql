@@ -74,8 +74,8 @@ where
     nd instanceof DomBasedXss::Sanitizer or
     nd instanceof ReflectedXss::Sanitizer or
     nd instanceof StoredXss::Sanitizer or
-    nd instanceof Xxe::Sanitizer or
-    nd instanceof ZipSlip::Sanitizer
+    nd instanceof Xxe::Sanitizer //or
+//    nd instanceof ZipSlip::San
   ) and
   // nd = p.getAnExitNode(_)
   nd = pnd.asDataFlowNode()
