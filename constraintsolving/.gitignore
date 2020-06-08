@@ -2,3 +2,7 @@ databases
 .idea
 __pycache__
 logs
+models
+data
+constraints
+errorinfo

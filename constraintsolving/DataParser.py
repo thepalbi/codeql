@@ -47,6 +47,14 @@ def readKnown(file_loc:str):
     df=pd.read_csv(file_loc)
     return list(df["URL for pnd"])
 
+def readClass(file_loc:str):
+    df=pd.read_csv(file_loc)
+    eventclass=dict()
+    for ind in df.index:
+        d=eventclass.get(df.loc[ind]["URL for pnd"], list())
+        d.append(df.loc[ind]["q"])
+        eventclass[df.loc[ind]["URL for pnd"]] = d
+    return eventclass
 
 if __name__ == '__main__':
     events=readEvents('data/hadoop/hadoop-eventToReps-at1.prop.csv')

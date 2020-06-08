@@ -159,7 +159,7 @@ class GBTaintSpecConstraints:
         #                           [k for k in open("constraints_known.txt").readlines() if len(k) > 0] +
         #                           [k for k in open("constraints_flow.txt").readlines() if len(k) > 0])
         self.constraintsdir = constraintsdir
-        self.lambda_const = 0.1
+        self.lambda_const = 1
         self.cache=dict()
 
     def clear_cache(self):
@@ -257,23 +257,57 @@ class GBTaintSpecConstraints:
 
         print("Computing known constraints...")
 
-        with open("{0}/constraints_known.txt".format(self.constraintsdir)) as constraintsfile:
-            constraints = constraintsfile.readlines()
-            total_constraints = len(constraints)
-            sampled = int(self.known_samples_ratio * (total_constraints / 6))
-            indices = np.random.choice([k for k in range(len(constraints)) if k % 6 == 0], sampled)
-            print("Sampling %g constraints out of %g" % (len(indices), total_constraints))
-            for i in indices:
-                for line in constraints[i:i+6]:
-                    res = self.exprToVal(line)
+        with open("{0}/constraints_known_src.txt".format(self.constraintsdir)) as constraintsfile:
+            allines=constraintsfile.readlines()
+            sampled=int(self.known_samples_ratio*len(allines)) if self.known_samples_ratio <= 1 else self.known_samples_ratio
+            print("Sampling {0} of {1} known src constraints".format(sampled, len(allines)))
+            for line in np.random.choice(allines, sampled):
+                for line_part in line.split(","):
+                    if len(line_part) == 0:
+                        continue
+                    res = self.exprToVal(line_part)
                     self.model.addConstr(res <= 0)
                     # print("{0}-known".format(c), end=',')
                     c += 1
 
+        with open("{0}/constraints_known_san.txt".format(self.constraintsdir)) as constraintsfile:
+            allines = constraintsfile.readlines()
+            sampled = int(self.known_samples_ratio * len(allines)) if self.known_samples_ratio <= 1 else self.known_samples_ratio
+            print("Sampling {0} of {1} known san constraints".format(sampled, len(allines)))
+            for line in np.random.choice(allines, sampled):
+                for line_part in line.split(","):
+                    if len(line_part) == 0:
+                        continue
+                    res = self.exprToVal(line_part)
+                    self.model.addConstr(res <= 0)
+                    # print("{0}-known".format(c), end=',')
+                    c += 1
+
+        with open("{0}/constraints_known_snk.txt".format(self.constraintsdir)) as constraintsfile:
+            allines = constraintsfile.readlines()
+            sampled = int(self.known_samples_ratio * len(allines)) if self.known_samples_ratio <= 1 else self.known_samples_ratio
+            print("Sampling {0} of {1} known sink constraints".format(sampled, len(allines)))
+            for line in np.random.choice(allines, sampled):
+                for line_part in line.split(","):
+                    if len(line_part) == 0:
+                        continue
+                    res = self.exprToVal(line_part)
+                    self.model.addConstr(res <= 0)
+                    c += 1
 
 
-
-
+        # with open("{0}/constraints_known.txt".format(self.constraintsdir)) as constraintsfile:
+        #     constraints = constraintsfile.readlines()
+        #     total_constraints = len(constraints)
+        #     sampled = int(self.known_samples_ratio * (total_constraints / 6))
+        #     indices = np.random.choice([k for k in range(len(constraints)) if k % 6 == 0], sampled)
+        #     print("Sampling %g constraints out of %g" % (len(indices), total_constraints))
+        #     for i in indices:
+        #         for line in constraints[i:i+6]:
+        #             res = self.exprToVal(line)
+        #             self.model.addConstr(res <= 0)
+        #             # print("{0}-known".format(c), end=',')
+        #             c += 1
 
 
     def proxy_constraints(self):
