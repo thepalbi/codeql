@@ -34,7 +34,7 @@ private DataFlow::Node commandArgument(SystemCommandExecution sys, DataFlow::Typ
 }
 
 /**
- * Gets a data-flow node whose value ends up being interpreted as the command argument in `sys`. 
+ * Gets a data-flow node whose value ends up being interpreted as the command argument in `sys`.
  */
 private DataFlow::Node commandArgument(SystemCommandExecution sys) {
   result = commandArgument(sys, DataFlow::TypeBackTracker::end())
@@ -48,18 +48,16 @@ private DataFlow::SourceNode argumentList(SystemCommandExecution sys, DataFlow::
   t.start() and
   result = sys.getArgumentList().getALocalSource()
   or
-  exists(DataFlow::TypeBackTracker t2, DataFlow::SourceNode pred | 
-    pred = argumentList(sys, t2) 
-  |
+  exists(DataFlow::TypeBackTracker t2, DataFlow::SourceNode pred | pred = argumentList(sys, t2) |
     result = pred.backtrack(t2, t)
     or
     t = t2.continue() and
-    TaintTracking::arrayFunctionTaintStep(result, pred, _)
+    TaintTracking::arrayFunctionTaintStep(any(DataFlow::Node n | result.flowsTo(n)), pred, _)
   )
 }
 
 /**
- * Gets a data-flow node whose value ends up being interpreted as the argument list in `sys`. 
+ * Gets a data-flow node whose value ends up being interpreted as the argument list in `sys`.
  */
 private DataFlow::SourceNode argumentList(SystemCommandExecution sys) {
   result = argumentList(sys, DataFlow::TypeBackTracker::end())

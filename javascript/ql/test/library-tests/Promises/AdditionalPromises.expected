@@ -1,4 +1,5 @@
 | additional-promises.js:2:13:2:57 | new Pin ... ct) {}) |
+| flow2.js:4:2:4:31 | Promise ... lean"]) |
 | flow.js:7:11:7:59 | new Pro ... ource)) |
 | flow.js:10:11:10:58 | new Pro ... ource)) |
 | flow.js:13:11:13:58 | new Pro ... ource)) |
@@ -77,3 +78,4 @@
 | promises.js:62:19:62:41 | Promise ... source) |
 | promises.js:71:5:71:27 | Promise ... source) |
 | promises.js:72:5:72:41 | new Pro ... ource)) |
+| promises.js:79:19:79:41 | Promise ... source) |

@@ -36,6 +36,11 @@ private module Cached {
   }
 
   cached
+  predicate hasThisVariable(Function func, CppType type) {
+    type = getTypeForGLValue(getTranslatedFunction(func).getThisType())
+  }
+
+  cached
   predicate hasTempVariable(Function func, Locatable ast, TempVariableTag tag, CppType type) {
     exists(TranslatedElement element |
       element.getAST() = ast and
@@ -52,7 +57,21 @@ private module Cached {
   }
 
   cached
+  predicate hasDynamicInitializationFlag(Function func, StaticLocalVariable var, CppType type) {
+    var.getFunction() = func and
+    var.hasDynamicInitialization() and
+    type = getBoolType()
+  }
+
+  cached
   predicate hasModeledMemoryResult(Instruction instruction) { none() }
+
+  cached
+  predicate hasConflatedMemoryResult(Instruction instruction) {
+    instruction instanceof AliasedDefinitionInstruction
+    or
+    instruction.getOpcode() instanceof Opcode::InitializeNonLocal
+  }
 
   cached
   Expr getInstructionConvertedResultExpression(Instruction instruction) {
@@ -68,31 +87,21 @@ private module Cached {
 
   cached
   Expr getInstructionUnconvertedResultExpression(Instruction instruction) {
-    exists(Expr converted |
-      result = converted.(Conversion).getExpr+()
-      or
-      result = converted
-    |
-      not result instanceof Conversion and
-      converted = getInstructionConvertedResultExpression(instruction)
-    )
+    result = getInstructionConvertedResultExpression(instruction).getUnconverted()
   }
 
   cached
   Instruction getRegisterOperandDefinition(Instruction instruction, RegisterOperandTag tag) {
     result =
       getInstructionTranslatedElement(instruction)
-          .getInstructionOperand(getInstructionTag(instruction), tag)
+          .getInstructionRegisterOperand(getInstructionTag(instruction), tag)
   }
 
   cached
   Instruction getMemoryOperandDefinition(
     Instruction instruction, MemoryOperandTag tag, Overlap overlap
   ) {
-    result =
-      getInstructionTranslatedElement(instruction)
-          .getInstructionOperand(getInstructionTag(instruction), tag) and
-    overlap instanceof MustTotallyOverlap
+    none()
   }
 
   /** Gets a non-phi instruction that defines an operand of `instr`. */
@@ -135,12 +144,13 @@ private module Cached {
   CppType getInstructionOperandType(Instruction instruction, TypedOperandTag tag) {
     // For all `LoadInstruction`s, the operand type of the `LoadOperand` is the same as
     // the result type of the load.
+    tag instanceof LoadOperandTag and
     result = instruction.(LoadInstruction).getResultLanguageType()
     or
     not instruction instanceof LoadInstruction and
     result =
       getInstructionTranslatedElement(instruction)
-          .getInstructionOperandType(getInstructionTag(instruction), tag)
+          .getInstructionMemoryOperandType(getInstructionTag(instruction), tag)
   }
 
   cached

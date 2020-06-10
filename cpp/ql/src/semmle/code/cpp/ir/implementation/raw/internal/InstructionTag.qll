@@ -2,12 +2,16 @@ private import cpp
 
 newtype TInstructionTag =
   OnlyInstructionTag() or // Single instruction (not including implicit Load)
-  InitializeThisTag() or
   InitializerVariableAddressTag() or
   InitializerLoadStringTag() or
   InitializerStoreTag() or
   InitializerIndirectAddressTag() or
   InitializerIndirectStoreTag() or
+  DynamicInitializationFlagAddressTag() or
+  DynamicInitializationFlagLoadTag() or
+  DynamicInitializationConditionalBranchTag() or
+  DynamicInitializationFlagConstantTag() or
+  DynamicInitializationFlagStoreTag() or
   ZeroPadStringConstantTag() or
   ZeroPadStringElementIndexTag() or
   ZeroPadStringElementAddressTag() or
@@ -23,8 +27,6 @@ newtype TInstructionTag =
   ReturnValueAddressTag() or
   ReturnTag() or
   ExitFunctionTag() or
-  UnmodeledDefinitionTag() or
-  UnmodeledUseTag() or
   AliasedDefinitionTag() or
   InitializeNonLocalTag() or
   AliasedUseTag() or
@@ -59,8 +61,17 @@ newtype TInstructionTag =
   InitializerElementAddressTag() or
   InitializerElementDefaultValueTag() or
   InitializerElementDefaultValueStoreTag() or
+  VarArgsStartEllipsisAddressTag() or
+  VarArgsStartTag() or
+  VarArgsVAListLoadTag() or
+  VarArgsArgAddressTag() or
+  VarArgsArgLoadTag() or
+  VarArgsMoveNextTag() or
+  VarArgsVAListStoreTag() or
   AsmTag() or
-  AsmInputTag(int elementIndex) { exists(AsmStmt asm | exists(asm.getChild(elementIndex))) }
+  AsmInputTag(int elementIndex) { exists(AsmStmt asm | exists(asm.getChild(elementIndex))) } or
+  ThisAddressTag() or
+  ThisLoadTag()
 
 class InstructionTag extends TInstructionTag {
   final string toString() { result = "Tag" }
@@ -114,10 +125,6 @@ string getInstructionTagId(TInstructionTag tag) {
   tag = ReturnTag() and result = "Ret"
   or
   tag = ExitFunctionTag() and result = "ExitFunc"
-  or
-  tag = UnmodeledDefinitionTag() and result = "UnmodeledDef"
-  or
-  tag = UnmodeledUseTag() and result = "UnmodeledUse"
   or
   tag = AliasedDefinitionTag() and result = "AliasedDef"
   or
@@ -183,7 +190,31 @@ string getInstructionTagId(TInstructionTag tag) {
   or
   tag = InitializerElementDefaultValueStoreTag() and result = "InitElemDefValStore"
   or
+  tag = VarArgsStartEllipsisAddressTag() and result = "VarArgsStartEllipsisAddr"
+  or
+  tag = VarArgsStartTag() and result = "VarArgsStart"
+  or
+  tag = VarArgsVAListLoadTag() and result = "VarArgsVAListLoad"
+  or
+  tag = VarArgsArgAddressTag() and result = "VarArgsArgAddr"
+  or
+  tag = VarArgsArgLoadTag() and result = "VaArgsArgLoad"
+  or
+  tag = VarArgsMoveNextTag() and result = "VarArgsMoveNext"
+  or
+  tag = VarArgsVAListStoreTag() and result = "VarArgsVAListStore"
+  or
   tag = AsmTag() and result = "Asm"
   or
   exists(int index | tag = AsmInputTag(index) and result = "AsmInputTag(" + index + ")")
+  or
+  tag = DynamicInitializationFlagAddressTag() and result = "DynInitFlagAddr"
+  or
+  tag = DynamicInitializationFlagLoadTag() and result = "DynInitFlagLoad"
+  or
+  tag = DynamicInitializationConditionalBranchTag() and result = "DynInitCondBranch"
+  or
+  tag = DynamicInitializationFlagConstantTag() and result = "DynInitFlagConst"
+  or
+  tag = DynamicInitializationFlagStoreTag() and result = "DynInitFlagStore"
 }

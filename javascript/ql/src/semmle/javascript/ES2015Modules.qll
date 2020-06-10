@@ -53,7 +53,7 @@ class ES2015Module extends Module {
 class ImportDeclaration extends Stmt, Import, @importdeclaration {
   override ES2015Module getEnclosingModule() { result = getTopLevel() }
 
-  override PathExprInModule getImportedPath() { result = getChildExpr(-1) }
+  override PathExpr getImportedPath() { result = getChildExpr(-1) }
 
   /** Gets the `i`th import specifier of this import declaration. */
   ImportSpecifier getSpecifier(int i) { result = getChildExpr(i) }
@@ -78,18 +78,11 @@ class ImportDeclaration extends Stmt, Import, @importdeclaration {
   }
 
   /** Holds if this is declared with the `type` keyword, so it only imports types. */
-  predicate isTypeOnly() {
-    hasTypeKeyword(this)
-  }
-
-  override predicate isAmbient() {
-    Stmt.super.isAmbient() or
-    isTypeOnly()
-  }
+  predicate isTypeOnly() { hasTypeKeyword(this) }
 }
 
 /** A literal path expression appearing in an `import` declaration. */
-private class LiteralImportPath extends PathExprInModule, ConstantString {
+private class LiteralImportPath extends PathExpr, ConstantString {
   LiteralImportPath() { exists(ImportDeclaration req | this = req.getChildExpr(-1)) }
 
   override string getValue() { result = getStringValue() }
@@ -268,14 +261,7 @@ abstract class ExportDeclaration extends Stmt, @exportdeclaration {
   abstract DataFlow::Node getSourceNode(string name);
 
   /** Holds if is declared with the `type` keyword, so only types are exported. */
-  predicate isTypeOnly() {
-    hasTypeKeyword(this)
-  }
-
-  override predicate isAmbient() {
-    Stmt.super.isAmbient() or
-    isTypeOnly()
-  }
+  predicate isTypeOnly() { hasTypeKeyword(this) }
 }
 
 /**
@@ -426,11 +412,6 @@ class ExportNamedDeclaration extends ExportDeclaration, @exportnameddeclaration 
 
   /** Gets an export specifier of this declaration. */
   ExportSpecifier getASpecifier() { result = getSpecifier(_) }
-
-  override predicate isAmbient() {
-    // An export such as `export declare function f()` should be seen as ambient.
-    hasDeclareKeyword(getOperand()) or getParent().isAmbient()
-  }
 }
 
 /**
@@ -614,15 +595,10 @@ abstract class ReExportDeclaration extends ExportDeclaration {
    *
    * Gets the module from which this declaration re-exports.
    */
-  deprecated
-  ES2015Module getImportedModule() {
-    result = getReExportedModule()
-  }
+  deprecated ES2015Module getImportedModule() { result = getReExportedModule() }
 
   /** Gets the module from which this declaration re-exports, if it is an ES2015 module. */
-  ES2015Module getReExportedES2015Module() {
-    result = getReExportedModule()
-  }
+  ES2015Module getReExportedES2015Module() { result = getReExportedModule() }
 
   /** Gets the module from which this declaration re-exports. */
   Module getReExportedModule() {
@@ -635,7 +611,8 @@ abstract class ReExportDeclaration extends ExportDeclaration {
    * Gets a module in a `node_modules/@types/` folder that matches the imported module name.
    */
   private Module resolveFromTypeRoot() {
-    result.getFile() = min(TypeRootFolder typeRoot |
+    result.getFile() =
+      min(TypeRootFolder typeRoot |
         |
         typeRoot.getModuleFile(getImportedPath().getStringValue())
         order by
@@ -645,7 +622,7 @@ abstract class ReExportDeclaration extends ExportDeclaration {
 }
 
 /** A literal path expression appearing in a re-export declaration. */
-private class LiteralReExportPath extends PathExprInModule, ConstantString {
+private class LiteralReExportPath extends PathExpr, ConstantString {
   LiteralReExportPath() { exists(ReExportDeclaration bred | this = bred.getImportedPath()) }
 
   override string getValue() { result = getStringValue() }

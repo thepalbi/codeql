@@ -1,3 +1,8 @@
+/**
+ * Provides classes for working with functions, including C++ constructors, destructors,
+ * user-defined operators, and template functions.
+ */
+
 import semmle.code.cpp.Location
 import semmle.code.cpp.Member
 import semmle.code.cpp.Class
@@ -103,6 +108,9 @@ class Function extends Declaration, ControlFlowNode, AccessHolder, @function {
 
   /**
    * Holds if this function is declared to be `constexpr`.
+   *
+   * Note that this does not hold if the function has been declared
+   * `consteval`.
    */
   predicate isDeclaredConstexpr() { this.hasSpecifier("declared_constexpr") }
 
@@ -115,8 +123,15 @@ class Function extends Declaration, ControlFlowNode, AccessHolder, @function {
    * template <typename T> constexpr int g(T x) { return f(x); }
    * ```
    * `g<int>` is declared constexpr, but is not constexpr.
+   *
+   * Will also hold if this function is `consteval`.
    */
   predicate isConstexpr() { this.hasSpecifier("is_constexpr") }
+
+  /**
+   * Holds if this function is declared to be `consteval`.
+   */
+  predicate isConsteval() { this.hasSpecifier("is_consteval") }
 
   /**
    * Holds if this function is declared with `__attribute__((naked))` or
@@ -133,10 +148,16 @@ class Function extends Declaration, ControlFlowNode, AccessHolder, @function {
    */
   Type getUnspecifiedType() { result = getType().getUnspecifiedType() }
 
-  /** Gets the nth parameter of this function. */
+  /**
+   * Gets the nth parameter of this function. There is no result for the
+   * implicit `this` parameter, and there is no `...` varargs pseudo-parameter.
+   */
   Parameter getParameter(int n) { params(unresolveElement(result), underlyingElement(this), n, _) }
 
-  /** Gets a parameter of this function. */
+  /**
+   * Gets a parameter of this function. There is no result for the implicit
+   * `this` parameter, and there is no `...` varargs pseudo-parameter.
+   */
   Parameter getAParameter() { params(unresolveElement(result), underlyingElement(this), _, _) }
 
   /**
@@ -168,17 +189,8 @@ class Function extends Declaration, ControlFlowNode, AccessHolder, @function {
    * For example: for a function `int Foo(int p1, int p2)` this would
    * return `int p1, int p2`.
    */
-  string getParameterString() { result = getParameterStringFrom(0) }
-
-  private string getParameterStringFrom(int index) {
-    index = getNumberOfParameters() and
-    result = ""
-    or
-    index = getNumberOfParameters() - 1 and
-    result = getParameter(index).getTypedName()
-    or
-    index < getNumberOfParameters() - 1 and
-    result = getParameter(index).getTypedName() + ", " + getParameterStringFrom(index + 1)
+  string getParameterString() {
+    result = concat(int i | | min(getParameter(i).getTypedName()), ", " order by i)
   }
 
   /** Gets a call to this function. */
@@ -600,18 +612,8 @@ class FunctionDeclarationEntry extends DeclarationEntry, @fun_decl {
    * For example: for a function 'int Foo(int p1, int p2)' this would
    * return 'int p1, int p2'.
    */
-  string getParameterString() { result = getParameterStringFrom(0) }
-
-  private string getParameterStringFrom(int index) {
-    index = getNumberOfParameters() and
-    result = ""
-    or
-    index = getNumberOfParameters() - 1 and
-    result = getParameterDeclarationEntry(index).getTypedName()
-    or
-    index < getNumberOfParameters() - 1 and
-    result =
-      getParameterDeclarationEntry(index).getTypedName() + ", " + getParameterStringFrom(index + 1)
+  string getParameterString() {
+    result = concat(int i | | min(getParameterDeclarationEntry(i).getTypedName()), ", " order by i)
   }
 
   /**
@@ -894,8 +896,10 @@ class Constructor extends MemberFunction {
  * A function that defines an implicit conversion.
  */
 abstract class ImplicitConversionFunction extends MemberFunction {
+  /** Gets the type this `ImplicitConversionFunction` takes as input. */
   abstract Type getSourceType();
 
+  /** Gets the type this `ImplicitConversionFunction` converts to. */
   abstract Type getDestType();
 }
 

@@ -1,5 +1,5 @@
 import python
-import semmle.python.security.TaintTracking
+import semmle.python.dataflow.TaintTracking
 import TaintLib
 
 from Call call, Expr arg, string taint_string
@@ -15,4 +15,5 @@ where
             taint_string = tainted.getTaintKind().toString()
         )
     )
-select arg.getLocation().toString(), call.getScope().(Function).getName(), arg.toString(), taint_string
+select arg.getLocation().toString(), call.getScope().(Function).getName(), arg.toString(),
+    taint_string

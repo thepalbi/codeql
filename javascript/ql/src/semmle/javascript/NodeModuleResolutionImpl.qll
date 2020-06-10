@@ -92,7 +92,7 @@ File resolveMainModule(PackageJSON pkg, int priority) {
       not exists(main.resolve()) and
       not exists(main.getExtension()) and
       exists(int n | n = main.getNumComponent() |
-        result = tryExtensions(main.resolveUpTo(n-1), main.getComponent(n-1), priority)
+        result = tryExtensions(main.resolveUpTo(n - 1), main.getComponent(n - 1), priority)
       )
     )
   else result = tryExtensions(pkg.getFile().getParentContainer(), "index", priority)
@@ -112,7 +112,7 @@ class MainModulePath extends PathExpr, @json_string {
 
   override string getValue() { result = this.(JSONString).getValue() }
 
-  override Folder getSearchRoot(int priority) {
+  override Folder getAdditionalSearchRoot(int priority) {
     priority = 0 and
     result = pkg.getFile().getParentContainer()
   }

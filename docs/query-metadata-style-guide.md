@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document outlines the structure of Semmle query files. You should adopt this structure when contributing custom queries to this repository, in order to ensure that new queries are consistent with the standard Semmle queries.
+This document outlines the structure of CodeQL query files. You should adopt this structure when contributing custom queries to this repository, in order to ensure that new queries are consistent with the standard CodeQL queries.
 
 ## Query files (.ql extension)
 
@@ -13,7 +13,7 @@ Query files have the extension `.ql`. Each file has two distinct areas:
     *   [Learning CodeQL](https://help.semmle.com/QL/learn-ql/index.html)
     *   [QL language handbook](https://help.semmle.com/QL/ql-handbook/index.html)
     *   [QL language specification](https://help.semmle.com/QL/ql-spec/language.html)
-    *   [CodeQL style guide](https://github.com/Semmle/ql/blob/master/docs/ql-style-guide.md) 
+    *   [CodeQL style guide](https://github.com/github/codeql/blob/master/docs/ql-style-guide.md) 
 
 
 For examples of query files for the languages supported by CodeQL, visit the following links: 
@@ -42,7 +42,7 @@ Query file metadata contains important information that defines the identifier a
  */
  ```
 
-To help others use your query, and to ensure that the query works correctly on LGTM, you should include all of the required information outlined below in the metadata, and as much of the optional information as possible. For further information on query metadata see [Query metadata](https://help.semmle.com/QL/learn-ql/ql/writing-queries/query-metadata.html) on help.semmle.com.
+To help others use your query, and to ensure that the query works correctly on LGTM, you should include all of the required information outlined below in the metadata, and as much of the optional information as possible. For further information on query metadata see [Metadata for CodeQL queries](https://help.semmle.com/QL/learn-ql/ql/writing-queries/query-metadata.html) on help.semmle.com.
 
 
 
@@ -67,11 +67,11 @@ You must define an `@description` property for your query. This property defines
 
 ### Query ID `@id`
 
-You must specify an `@id` property for your query. It must be unique in the Semmle namespace and should follow the standard Semmle convention. That is, it should begin with the 'language code' for the language that the query analyzes followed by a forward slash. The following language codes are supported:
+You must specify an `@id` property for your query. It must be unique and should follow the standard CodeQL convention. That is, it should begin with the 'language code' for the language that the query analyzes followed by a forward slash. The following language codes are supported:
 
 *   C and C++: `cpp`
 *   C#: `cs`
-*   COBOL: `cobol`
+*   Go: `go`
 *   Java: `java`
 *   JavaScript and TypeScript: `js`
 *   Python: `py`
@@ -105,7 +105,7 @@ Note, `@id` properties should be consistent for queries that highlight the same 
 *   alerts (`@kind problem`)
 *   alerts containing path information (`@kind path-problem`)
 
-Alert queries (`@kind problem` or `path-problem`) support two further properties. These are added by Semmle after the query has been tested, prior to deployment to LGTM. The following information is for reference:
+Alert queries (`@kind problem` or `path-problem`) support two further properties. These are added by GitHub staff after the query has been tested, prior to deployment to LGTM. The following information is for reference:
 
 
 
