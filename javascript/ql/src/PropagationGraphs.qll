@@ -182,6 +182,18 @@ module PropagationGraph {
     )
   }
 
+  private predicate argumentPassing(DataFlow::CallNode call, DataFlow::Node arg, DataFlow::Node parm) {
+    exists(DataFlow::FunctionNode callee | calls(call, callee) |
+      exists(int i |
+        arg = call.getArgument(i) and
+        parm = callee.getParameter(i)
+      )
+      or
+      arg = call.getReceiver() and
+      parm = callee.getReceiver()
+    )
+  }
+
   /** Gets the allocation sites `nd` may refer to in context `ctxt`. */
   private AllocationSite pointsTo(Context ctxt, DataFlow::Node nd) {
     viableContext(ctxt, nd) and
@@ -193,25 +205,18 @@ module PropagationGraph {
       result = fieldPointsTo(pointsTo(ctxt, pr.getBase()), pr.getPropertyName())
     )
     or
-    exists(DataFlow::CallNode call, DataFlow::FunctionNode callee | calls(call, callee) |
-      // flow from the `i`th argument of a call to the corresponding parameter
-      exists(int i, Context base |
-        nd = callee.getParameter(i) and
-        ctxt = push(call, base) and
-        result = pointsTo(base, call.getArgument(i))
-      )
-      or
-      // flow from the receiver of a method call to the `this` value of the callee
-      exists(Context base |
-        nd = callee.getReceiver() and
-        ctxt = push(call, base) and
-        result = pointsTo(base, call.getReceiver())
-      )
-      or
-      // flow from a returned value to a call to the function
-      nd = call and
+    // flow from the `i`th argument of a call to the corresponding parameter
+    exists(DataFlow::CallNode call, DataFlow::Node arg, Context base |
+      argumentPassing(call, arg, nd) and
+      ctxt = push(call, base) and
+      result = pointsTo(base, arg)
+    )
+    or
+    // flow from a returned value to a call to the function
+    exists(DataFlow::FunctionNode callee |
+      calls(nd, callee) and
       viableContext(ctxt, nd) and
-      result = pointsTo(push(call, ctxt), callee.getAReturn())
+      result = pointsTo(push(nd, ctxt), callee.getAReturn())
     )
   }
 
