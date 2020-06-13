@@ -42,51 +42,137 @@ import semmle.javascript.dataflow.Portals
 import PropagationGraphs
 
 
-from PropagationGraph::Node pnd, DataFlow::Node nd
-where
-  (
-    nd instanceof BrokenCryptoAlgorithm::Source or
-    nd instanceof CleartextLogging::Source or
-    nd instanceof CleartextStorage::Source or
+query predicate remoteSources(PropagationGraph::Node pnd, DataFlow::Node nd){
+    (
     nd instanceof ClientSideUrlRedirect::Source or
     nd instanceof CodeInjection::Source or
     nd instanceof CommandInjection::Source or
     nd instanceof ConditionalBypass::Source or
     nd instanceof CorsMisconfigurationForCredentials::Source or
-    nd instanceof DifferentKindsComparisonBypass::Source or
-    nd instanceof FileAccessToHttp::Source or
-    nd instanceof HardcodedCredentials::Source or
-    nd instanceof HardcodedDataInterpretedAsCode::Source or
-    nd instanceof HttpToFileAccess::Source or
-    nd instanceof IndirectCommandInjection::Source or
-    nd instanceof InsecureRandomness::Source or
-    nd instanceof InsufficientPasswordHash::Source or
-    nd instanceof LoopBoundInjection::Source or
+    //nd instanceof DifferentKindsComparisonBypass::Source or
+    //nd instanceof FileAccessToHttp::Source or
+   // nd instanceof HardcodedCredentials::Source or
+   // nd instanceof HardcodedDataInterpretedAsCode::Source or
+    //nd instanceof HttpToFileAccess::Source or
+   // nd instanceof IndirectCommandInjection::Source or
+   // nd instanceof InsecureRandomness::Source or
+    //nd instanceof InsufficientPasswordHash::Source or
+    //nd instanceof LoopBoundInjection::Source or
     nd instanceof NosqlInjection::Source or
-    nd instanceof PostMessageStar::Source or
-    nd instanceof PrototypePollution::Source or
+    //nd instanceof PostMessageStar::Source or
+    //nd instanceof PrototypePollution::Source or
     nd instanceof RegExpInjection::Source or
     nd instanceof RemotePropertyInjection::Source or
     nd instanceof RequestForgery::Source or
-    nd instanceof ServerSideUrlRedirect::Source or
-    nd instanceof ShellCommandInjectionFromEnvironment::Source or
+   // nd instanceof ServerSideUrlRedirect::Source or
+   // nd instanceof ShellCommandInjectionFromEnvironment::Source or
     nd instanceof SqlInjection::Source or
-    nd instanceof StackTraceExposure::Source or
-    nd instanceof TaintedFormatString::Source or
+   // nd instanceof StackTraceExposure::Source or
+   // nd instanceof TaintedFormatString::Source or
     nd instanceof TaintedPath::Source or
-    nd instanceof TypeConfusionThroughParameterTampering::Source or
+    //nd instanceof TypeConfusionThroughParameterTampering::Source or
     nd instanceof UnsafeDeserialization::Source or
     nd instanceof UnsafeDynamicMethodAccess::Source or
-    nd instanceof UnsafeJQueryPlugin::Source or
+   // nd instanceof UnsafeJQueryPlugin::Source or
     nd instanceof UnvalidatedDynamicMethodCall::Source or
     nd instanceof XmlBomb::Source or
-    nd instanceof XpathInjection::Source or
-    nd instanceof Shared::Source or
+   // nd instanceof XpathInjection::Source or
+   // nd instanceof Shared::Source or
     nd instanceof DomBasedXss::Source or
-    nd instanceof ReflectedXss::Source or
-    nd instanceof StoredXss::Source or
-    nd instanceof Xxe::Source or
-    nd instanceof ZipSlip::Source
+   // nd instanceof ReflectedXss::Source or
+  //  nd instanceof StoredXss::Source or
+    nd instanceof Xxe::Source //or
+  //  nd instanceof ZipSlip::Source
   ) and
   nd = pnd.asDataFlowNode()
-select pnd
+}
+
+query predicate sourceClasses(PropagationGraph::Node pnd, DataFlow::Node nd, string q){
+    (
+        nd instanceof ClientSideUrlRedirect::Source and q="ClientSideUrlRedirect" or
+nd instanceof CodeInjection::Source and q="CodeInjection" or
+nd instanceof CommandInjection::Source and q="CommandInjection" or
+nd instanceof ConditionalBypass::Source and q="ConditionalBypass" or
+nd instanceof CorsMisconfigurationForCredentials::Source and q="CorsMisconfigurationForCredentials" or
+nd instanceof DifferentKindsComparisonBypass::Source and q="DifferentKindsComparisonBypass" or
+nd instanceof FileAccessToHttp::Source and q="FileAccessToHttp" or
+nd instanceof HardcodedCredentials::Source and q="HardcodedCredentials" or
+nd instanceof HardcodedDataInterpretedAsCode::Source and q="HardcodedDataInterpretedAsCode" or
+nd instanceof HttpToFileAccess::Source and q="HttpToFileAccess" or
+nd instanceof IndirectCommandInjection::Source and q="IndirectCommandInjection" or
+nd instanceof InsecureRandomness::Source and q="InsecureRandomness" or
+nd instanceof InsufficientPasswordHash::Source and q="InsufficientPasswordHash" or
+nd instanceof LoopBoundInjection::Source and q="LoopBoundInjection" or
+nd instanceof NosqlInjection::Source and q="NosqlInjection" or
+nd instanceof PrototypePollution::Source and q="PrototypePollution" or
+nd instanceof PostMessageStar::Source and q="PostMessageStar" or
+nd instanceof RegExpInjection::Source and q="RegExpInjection" or
+nd instanceof RemotePropertyInjection::Source and q="RemotePropertyInjection" or
+nd instanceof RequestForgery::Source and q="RequestForgery" or
+nd instanceof ServerSideUrlRedirect::Source and q="ServerSideUrlRedirect" or
+nd instanceof ShellCommandInjectionFromEnvironment::Source and q="ShellCommandInjectionFromEnvironment" or
+nd instanceof SqlInjection::Source and q="SqlInjection" or
+nd instanceof StackTraceExposure::Source and q="StackTraceExposure" or
+nd instanceof TaintedFormatString::Source and q="TaintedFormatString" or
+nd instanceof TaintedPath::Source and q="TaintedPath" or
+nd instanceof TypeConfusionThroughParameterTampering::Source and q="TypeConfusionThroughParameterTampering" or
+nd instanceof UnsafeDeserialization::Source and q="UnsafeDeserialization" or
+nd instanceof UnsafeDynamicMethodAccess::Source and q="UnsafeDynamicMethodAccess" or
+nd instanceof UnsafeJQueryPlugin::Source and q="UnsafeJQueryPlugin" or
+nd instanceof UnvalidatedDynamicMethodCall::Source and q="UnvalidatedDynamicMethodCall" or
+nd instanceof XmlBomb::Source and q="XmlBomb" or
+nd instanceof XpathInjection::Source and q="XpathInjection" or
+nd instanceof Shared::Source and q="Shared" or
+nd instanceof DomBasedXss::Source and q="DomBasedXss" or
+nd instanceof ReflectedXss::Source and q="ReflectedXss" or
+nd instanceof StoredXss::Source and q="StoredXss" or
+nd instanceof Xxe::Source and q="Xxe" or
+nd instanceof ZipSlip::Source and q="ZipSlip"     
+  ) and
+  nd = pnd.asDataFlowNode()
+  }
+
+query predicate allSources(PropagationGraph::Node pnd, DataFlow::Node nd){
+  (
+  nd instanceof ClientSideUrlRedirect::Source or
+  nd instanceof CodeInjection::Source or
+  nd instanceof CommandInjection::Source or
+  nd instanceof ConditionalBypass::Source or
+  nd instanceof CorsMisconfigurationForCredentials::Source or
+  nd instanceof DifferentKindsComparisonBypass::Source or
+  nd instanceof FileAccessToHttp::Source or
+ nd instanceof HardcodedCredentials::Source or
+ nd instanceof HardcodedDataInterpretedAsCode::Source or
+  nd instanceof HttpToFileAccess::Source or
+ nd instanceof IndirectCommandInjection::Source or
+ nd instanceof InsecureRandomness::Source or
+  nd instanceof InsufficientPasswordHash::Source or
+  nd instanceof LoopBoundInjection::Source or
+  nd instanceof NosqlInjection::Source or
+  nd instanceof PostMessageStar::Source or
+  nd instanceof PrototypePollution::Source or
+  nd instanceof RegExpInjection::Source or
+  nd instanceof RemotePropertyInjection::Source or
+  nd instanceof RequestForgery::Source or
+ nd instanceof ServerSideUrlRedirect::Source or
+ nd instanceof ShellCommandInjectionFromEnvironment::Source or
+  nd instanceof SqlInjection::Source or
+ nd instanceof StackTraceExposure::Source or
+ nd instanceof TaintedFormatString::Source or
+  nd instanceof TaintedPath::Source or
+  nd instanceof TypeConfusionThroughParameterTampering::Source or
+  nd instanceof UnsafeDeserialization::Source or
+  nd instanceof UnsafeDynamicMethodAccess::Source or
+ nd instanceof UnsafeJQueryPlugin::Source or
+  nd instanceof UnvalidatedDynamicMethodCall::Source or
+  nd instanceof XmlBomb::Source or
+ nd instanceof XpathInjection::Source or
+ nd instanceof Shared::Source or
+  nd instanceof DomBasedXss::Source or
+ nd instanceof ReflectedXss::Source or
+ nd instanceof StoredXss::Source or
+  nd instanceof Xxe::Source or
+ nd instanceof ZipSlip::Source
+) and
+nd = pnd.asDataFlowNode()
+}

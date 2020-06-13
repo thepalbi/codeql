@@ -79,6 +79,9 @@ module PropagationGraph {
       )
     }
 
+    string rep1(){
+        result = candidateRep()
+    }
     /**
      * Gets an abstract representation of this node, corresponding to the REP function
      * in the Seldon paper.

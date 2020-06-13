@@ -26,7 +26,7 @@ predicate reachableFromSanitizerCandidate(PropagationGraph::Node san, Propagatio
 }
 
 // print the set of connected triples
-query predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk) {
+predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk) {
   reachableFromSourceCandidate(src, san) and
   san.isSanitizerCandidate() and
   src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
@@ -50,6 +50,22 @@ query predicate tripleWAtleastOneRep(NodeWithFewReps src, NodeWithFewReps san, N
 query predicate eventToRep(PropagationGraph::Node node, string str)
 { 
   str = node.rep()
+}
+
+query predicate eventToRepUF(PropagationGraph::Node node, string str){
+  str = node.rep1()
+}
+
+query predicate sourceToRep(PropagationGraph::Node src){
+  src.isSourceCandidate()
+}
+
+query predicate sanitizerToRep(PropagationGraph::Node san){
+  san.isSanitizerCandidate()
+}
+
+query predicate sinkToRep(PropagationGraph::Node snk){
+  snk.isSinkCandidate()
 }
 
 class NodeWithFewReps extends PropagationGraph::Node {
