@@ -1,0 +1,7 @@
+ pyparsing
+ pandas
+ tensorflow
+ tensorflow_constrained_optimization
+ numpy
+ parsimonious
+ lark-parser

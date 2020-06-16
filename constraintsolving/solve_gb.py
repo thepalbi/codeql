@@ -68,7 +68,7 @@ def solve_constraints(projectdir, trials, lambda_const, known_samples_ratio):
 
 
 if __name__ == '__main__':
-    projectdir = 'ampproject_amphtml'
+    projectdir = 'eclipse_orion'
     known_samples_ratio = 1
     lambda_const = 0.1
-    solve_constraints(projectdir, lambda_const, known_samples_ratio)
+    solve_constraints(projectdir, 1, lambda_const, known_samples_ratio)

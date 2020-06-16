@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score
 
+# dirprefix="C:/Users/saika/projects/ql/constraintsolving/databases/eclipse_orion.client_js_srcVersion_9ef167/eclipse_orion.client_9ef1675/src/"
 
 
 
@@ -12,26 +13,18 @@ def getmetrics(actual, predicted, c):
     scores["precision"]=precision_score(actual, predicted)
     scores["recall"]=recall_score(actual, predicted)
     scores["f1"]=f1_score(actual, predicted)
-    #return "{0:.2f}/{1:.2f}/{2:.2f}".format(scores["precision"], scores["recall"], scores["f1"])
-    # print(c)
-    # print("Actual true %d" % sum(actual))
-    # print("Predicted true %d" % sum(predicted))
-    # print("Precision " ,precision_score(actual, predicted))
-    # print("Recall ", recall_score(actual, predicted))
-    # print("F1 ", f1_score(actual, predicted))
     return scores
 
 
-def printmetrics(trainingsize, threshold):
+def printmetrics(projectdir, dirprefix, trainingsize, threshold, lambda_const, trials):
     scores=[]
-    for trial in [1,2,3]:
-        events = open("constraints/eclipse_orion/eventToRepIDs.txt").readlines()
-        results = open("models/eclipse_orion/results_gb_{0}_{1}.txt".format(trainingsize, trial)).readlines()
+    for trial in range(1, trials+1):
+        events = open("constraints/{0}/eventToRepIDs.txt".format(projectdir)).readlines()
+        results = open("models/{0}/results_gb_{1}_{2}_{3}.txt".format(projectdir, trainingsize, lambda_const, trial)).readlines()
+        reprs = open("constraints/{0}/repToID.txt".format(projectdir)).readlines()
         vars = dict()
-
         for r in results:
             vars[r.split(":")[0]]=float(r.split(":")[1])
-
         eventScores=dict()
         allevents=[]
         allevents2=dict()
@@ -57,13 +50,52 @@ def printmetrics(trainingsize, threshold):
         #         scoresfile.write(k+":"+str(eventScores[k]))
         #         scoresfile.write("\n")
 
-        sinks=[k.split(",")[1].strip().replace('"', '') for k in open("data/eclipse_orion/eclipse_orion-sinks.prop.csv").readlines()[1:]]
-        sources=[k.split(",")[1].strip().replace('"', '') for k in open("data/eclipse_orion/eclipse_orion-src.prop.csv").readlines()[1:]]
-        sans=[k.split(",")[1].strip().replace('"', '') for k in open("data/eclipse_orion/eclipse_orion-sanitizers.prop.csv").readlines()[1:]]
+        sinks=[k.split(",")[1].strip().replace('"', '') for k in open("data/{0}/{0}-sinks.prop.csv".format(projectdir)).readlines()[1:]]
+        sources=[k.split(",")[1].strip().replace('"', '') for k in open("data/{0}/{0}-src.prop.csv".format(projectdir)).readlines()[1:]]
+        sans=[k.split(",")[1].strip().replace('"', '') for k in open("data/{0}/{0}-sanitizers.prop.csv".format(projectdir)).readlines()[1:]]
 
         predictedsinks=[k.replace(":snk", "") for k in eventScores.keys() if eventScores[k] >= threshold and ":snk" in k]
         predictedsources=[k.replace(":src", "") for k in eventScores.keys() if eventScores[k] >= threshold and ":src" in k]
         predictedsans=[k.replace(":san", "") for k in eventScores.keys() if eventScores[k] >= threshold and ":san" in k]
+        # print(eventScores)
+        # print(len(predictedsinks))
+        # exit(0)
+        with open("results/{0}/newsinks.txt".format(projectdir), "w") as newsinks:
+            for snk in predictedsinks:
+                if snk not in sinks:
+                    newsinks.write(snk.replace("file:///", "file:///{0}".format(dirprefix)).replace("js:", "js#L"))
+                    newsinks.write("\n")
+
+        with open("results/{0}/newsrcs.txt".format(projectdir), "w") as newsrcs:
+            for src in predictedsources:
+                if src not in sources:
+                    newsrcs.write(src.replace("file:///", "file:///{0}".format(dirprefix)).replace("js:", "js#L"))
+                    newsrcs.write("\n")
+
+        with open("results/{0}/newsans.txt".format(projectdir), "w") as newsans:
+            for san in predictedsans:
+                if san not in sans:
+                    newsans.write(san.replace("file:///", "file:///{0}".format(dirprefix)).replace("js:", "js#L"))
+                    newsans.write("\n")
+
+        with open("results/{0}/reprScores.txt".format(projectdir), "w") as reprscores:
+            for repr in reprs:
+                repid=repr.split(":")[-1].strip()
+                rep=":".join(repr.split(":")[0:-1])
+                if vars[repid+"_src"] > 0.0:
+                    reprscores.write(
+                        "repr = \"{0}\" and t = \"{1}\" and result = {2} or \n".format(rep, "src",
+                                                                                   vars[repid+"_src"]))
+                if vars[repid+"_snk"] > 0.0:
+                    reprscores.write(
+                        "repr = \"{0}\" and t = \"{1}\" and result = {2} or \n".format(rep, "snk",
+                                                                                   vars[repid + "_snk"]))
+
+                if vars[repid+"_san"] > 0.0:
+                    reprscores.write(
+                        "repr = \"{0}\" and t = \"{1}\" and result = {2} or \n".format(rep, "san",
+                                                                                   vars[repid + "_san"]))
+
 
         sourcemetrics = getmetrics([1 if e in sources else 0 for e in allevents],
                                    [1 if e in predictedsources else 0 for e in allevents], "sources")
@@ -78,32 +110,24 @@ def printmetrics(trainingsize, threshold):
             )
 
 
-for trainingsize in [0.1]:
-    srcstr = "src"
-    snkstr = "snk"
-    sanstr = "san"
-    print(trainingsize)
-    for thresh in [0.9]:
-        src,snk,san=printmetrics(trainingsize, thresh)
-        srcstr=srcstr+"&"+src
-        snkstr=snkstr+"&"+snk
-        sanstr=sanstr+"&"+san
-    print(srcstr+"\\\\")
-    print(sanstr+"\\\\")
-    print(snkstr+"\\\\")
-# for k in eventScores.keys():
-#     if eventScores[k] < threshold:
-#         continue
-#     if ":san" in k:
-#         if k.replace(":san", "") in sans:
-#             correctsans+=1
-#     if ":src" in k:
-#         if k.replace(":src", "") in sources:
-#             correctsources+=1
-#     if ":snk" in k:
-#         if k.replace(":snk", "") in sinks:
-#             correctsinks+=1
-# print(correctsources)
-# print(correctsans)
-# print(correctsinks)
-# print("Precision src: {0}, san: {1}, snk: {2}".format(correctsources/(len(totalsources), correctsans/(len(totalsources)+0.0001), correctsinks/len(totalsinks)))
+def getallmetrics(projectdir, dirprefix, trainingsizes, thresholds, lambda_constant, trials):
+    with open("results/{0}/metrics.txt".format(projectdir), "w") as metricsfile:
+        for trainingsize in trainingsizes:
+            srcstr = "src"
+            snkstr = "snk"
+            sanstr = "san"
+            metricsfile.write("{0}\n".format(trainingsize))
+            for thresh in thresholds:
+                src,snk,san=printmetrics(projectdir, dirprefix, trainingsize, thresh, lambda_constant, trials)
+                srcstr=srcstr+"&"+src
+                snkstr=snkstr+"&"+snk
+                sanstr=sanstr+"&"+san
+            metricsfile.write(srcstr+"\\\\\n")
+            metricsfile.write(sanstr+"\\\\\n")
+            metricsfile.write(snkstr+"\\\\\n")
+
+
+if __name__ == '__main__':
+    dirprefix = "C:/Users/saika/projects/ql/constraintsolving/databases/eclipse_orion.client_js_srcVersion_9ef167/eclipse_orion.client_9ef1675/src/"
+    projectdir = 'eclipse_orion'
+    getallmetrics(projectdir, [1], [0.9], 0.1, 1)

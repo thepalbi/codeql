@@ -47,6 +47,14 @@ def readKnown(file_loc:str):
     df=pd.read_csv(file_loc)
     return list(df["URL for pnd"])
 
+
+def readURL(file_loc:str):
+    df=pd.read_csv(file_loc)
+    col=list(filter(lambda x: x.startswith('URL'), list(df)))
+    assert(len(col) == 1)
+    col=col[0]
+    return list(df[col])
+
 def readClass(file_loc:str):
     df=pd.read_csv(file_loc)
     eventclass=dict()

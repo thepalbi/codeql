@@ -149,7 +149,7 @@ class TaintSpecConstraints(tfco.ConstrainedMinimizationProblem):
         return self.numconstraints
 
 class GBTaintSpecConstraints:
-    def __init__(self, variables, model:gp.Model, constraintsdir, known_samples_ratio):
+    def __init__(self, variables, model:gp.Model, constraintsdir, known_samples_ratio, lambda_const=0.1):
         self.vars = variables
         self.model = model
         self.known_samples_ratio = known_samples_ratio
@@ -159,7 +159,7 @@ class GBTaintSpecConstraints:
         #                           [k for k in open("constraints_known.txt").readlines() if len(k) > 0] +
         #                           [k for k in open("constraints_flow.txt").readlines() if len(k) > 0])
         self.constraintsdir = constraintsdir
-        self.lambda_const = 1
+        self.lambda_const = lambda_const
         self.cache=dict()
 
     def clear_cache(self):
@@ -244,7 +244,7 @@ class GBTaintSpecConstraints:
             tb.print_exc()
             print(constraint)
 
-    def constraints(self):
+    def add_constraints(self):
         self.clear_cache()
         c=1
         print("Computing flow constraints...")
@@ -295,6 +295,11 @@ class GBTaintSpecConstraints:
                     self.model.addConstr(res <= 0)
                     c += 1
 
+        # with open("{0}/constraints_candidate.txt".format(self.constraintsdir)) as constraintsfile:
+        #     for line in constraintsfile.readlines():
+        #         res=self.exprToVal(line)
+        #         self.model.addConstr(res<=0)
+        #         c += 1
 
         # with open("{0}/constraints_known.txt".format(self.constraintsdir)) as constraintsfile:
         #     constraints = constraintsfile.readlines()
