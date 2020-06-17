@@ -56,10 +56,14 @@ module PropagationGraph {
 
     predicate isSinkCandidate() {
       exists(candidateRep()) and
-      exists(DataFlow::InvokeNode invk |
-        nd = invk.getAnArgument()
+      (
+        exists(DataFlow::InvokeNode invk |
+          nd = invk.getAnArgument()
+          or
+          nd = invk.(DataFlow::MethodCallNode).getReceiver()
+        )
         or
-        nd = invk.(DataFlow::MethodCallNode).getReceiver()
+        nd = any(DataFlow::PropWrite pw).getRhs()
       )
     }
 
