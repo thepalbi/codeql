@@ -10,20 +10,20 @@ module PropagationGraph {
     MkNode(DataFlow::Node nd) {
       (
         nd instanceof DataFlow::InvokeNode and
-        exists(nd.getASuccessor())
+        TaintTracking::localTaintStep(nd, _)
         or
         nd instanceof DataFlow::PropRead and
-        exists(nd.getASuccessor())
+        TaintTracking::localTaintStep(nd, _)
         or
         nd instanceof DataFlow::ParameterNode and
-        exists(nd.getASuccessor())
+        TaintTracking::localTaintStep(nd, _)
         or
         exists(DataFlow::InvokeNode invk | not calls(invk, _) |
           nd = invk.getAnArgument()
           or
           nd = invk.(DataFlow::MethodCallNode).getReceiver()
         ) and
-        exists(nd.getAPredecessor())
+        TaintTracking::localTaintStep(_, nd)
       ) and
       // exclude externs files (i.e., our manually-written API models) and ambient files (such as
       // TypeScript `.d.ts` files); there is no real data flow going on in those
@@ -115,7 +115,8 @@ module PropagationGraph {
     predicate flowsTo(DataFlow::Node sink) {
       nd = sink
       or
-      nd.(DataFlow::SourceNode).flowsTo(sink)
+      nd instanceof DataFlow::SourceNode and
+      TaintTracking::localTaintStep*(nd, sink)
     }
 
     DataFlow::Node asDataFlowNode() { result = nd }
