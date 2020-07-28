@@ -93,7 +93,11 @@ module PropagationGraph {
     string rep() {
       result = candidateRep() and
       // eliminate rare representations
-      count(Node n | n.candidateRep() = result) >= 5
+      count(Node n | n.candidateRep() = result) >= 1
+    }
+
+    string getconcatrep(){
+        result = strictconcat(string r | r = this.rep() | r, "::")
     }
 
     /**
