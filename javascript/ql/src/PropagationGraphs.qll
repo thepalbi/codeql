@@ -6,24 +6,40 @@ import javascript
 private import semmle.javascript.dataflow.Portals
 
 module PropagationGraph {
+  /**
+   * A taint step for purposes of the propagation graph.
+   *
+   * This includes both standard (local) taint steps and an additional step from
+   * a tainted property to the enclosing object. This step is not included among
+   * the standard taint steps since it would lead to false flow in combination with
+   * the converse step from tainted objects to their properties. For propagation graphs,
+   * on the other hand, we are less worried about false positives than about false
+   * negatives, so we include both steps.
+   */
+  private predicate taintStep(DataFlow::Node pred, DataFlow::Node succ) {
+    TaintTracking::localTaintStep(pred, succ)
+    or
+    succ.(DataFlow::SourceNode).hasPropertyWrite(_, pred)
+  }
+
   private newtype TNode =
     MkNode(DataFlow::Node nd) {
       (
         nd instanceof DataFlow::InvokeNode and
-        TaintTracking::localTaintStep(nd, _)
+        taintStep(nd, _)
         or
         nd instanceof DataFlow::PropRead and
-        TaintTracking::localTaintStep(nd, _)
+        taintStep(nd, _)
         or
         nd instanceof DataFlow::ParameterNode and
-        TaintTracking::localTaintStep(nd, _)
+        taintStep(nd, _)
         or
         exists(DataFlow::InvokeNode invk | not calls(invk, _) |
           nd = invk.getAnArgument()
           or
           nd = invk.(DataFlow::MethodCallNode).getReceiver()
         ) and
-        TaintTracking::localTaintStep(_, nd)
+        taintStep(_, nd)
       ) and
       // exclude externs files (i.e., our manually-written API models) and ambient files (such as
       // TypeScript `.d.ts` files); there is no real data flow going on in those
@@ -112,7 +128,7 @@ module PropagationGraph {
       nd = sink
       or
       nd instanceof DataFlow::SourceNode and
-      TaintTracking::localTaintStep*(nd, sink)
+      taintStep*(nd, sink)
     }
 
     DataFlow::Node asDataFlowNode() { result = nd }
