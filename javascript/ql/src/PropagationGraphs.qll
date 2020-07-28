@@ -289,7 +289,7 @@ module PropagationGraph {
   /**
    * Gets a candidate representation of `nd` as a (suffix of an) access path.
    */
-  private string candidateRep(DataFlow::SourceNode nd, int depth) {
+  private string candidateRep(DataFlow::Node nd, int depth) {
     // the global object
     isRelevant(nd) and
     nd = DataFlow::globalObjectRef() and
@@ -303,7 +303,7 @@ module PropagationGraph {
       // avoid picking up local imports
       pkg.regexpMatch("[^./].*")
       or
-      nd.flowsTo(getAnExport(pkg))
+      nd = getAnExport(pkg).getALocalSource()
     |
       result = "(root https://www.npmjs.com/package/" + pkg + ")" and
       depth = 1
@@ -319,7 +319,7 @@ module PropagationGraph {
         baserep = "*" and
         depth = 1 and
         // avoid creating trivial representations like `(return *)`
-        step.regexpMatch("(member|parameter) \\w.*") and
+        step.regexpMatch("(member|parameter) [^\\d].*") and
         isRelevant(nd)
       ) and
       result = "(" + step + " " + baserep + ")"
@@ -328,7 +328,7 @@ module PropagationGraph {
       exists(string prop |
         nd = base.getAPropertyRead(prop)
         or
-        nd.flowsTo(base.getAPropertyWrite(prop).getRhs())
+        nd = base.getAPropertyWrite(prop).getRhs().getALocalSource()
       |
         step = "member " + prop
       )
@@ -345,7 +345,7 @@ module PropagationGraph {
       exists(string p |
         exists(int i |
           nd = base.(DataFlow::FunctionNode).getParameter(i) or
-          nd.flowsTo(base.(DataFlow::InvokeNode).getArgument(i))
+          nd = base.(DataFlow::InvokeNode).getArgument(i)
         |
           p = i.toString()
         )
@@ -358,7 +358,7 @@ module PropagationGraph {
       or
       // return values
       (
-        nd.flowsTo(base.(DataFlow::FunctionNode).getAReturn())
+        nd = base.(DataFlow::FunctionNode).getAReturn().getALocalSource()
         or
         nd = base.getAnInvocation()
       ) and
@@ -368,7 +368,7 @@ module PropagationGraph {
     // named exports, which are treated as members of packages
     isRelevant(nd) and
     exists(string pkg, string m, string baserep |
-      nd.flowsTo(getAnExport(pkg, m)) and
+      nd = getAnExport(pkg, m).getALocalSource() and
       baserep = "(root https://www.npmjs.com/package/" + pkg + ")" and
       result = "(member " + m + " " + [baserep, "*"] + ")" and
       depth = 2
@@ -381,7 +381,7 @@ module PropagationGraph {
       or
       exists(AssignExpr assgn |
         assgn.getLhs() = DataFlow::globalVarRef(g).asExpr() and
-        nd.flowsToExpr(assgn.getRhs())
+        nd = assgn.getRhs().flow().getALocalSource()
       )
     |
       result = "(member " + g + " (global))" and
