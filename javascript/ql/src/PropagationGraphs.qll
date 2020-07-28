@@ -3,33 +3,52 @@
  */
 
 import javascript
-private import semmle.javascript.dataflow.Portals
 
 module PropagationGraph {
+  /**
+   * A taint step for purposes of the propagation graph.
+   *
+   * This includes both standard (local) taint steps and an additional step from
+   * a tainted property to the enclosing object. This step is not included among
+   * the standard taint steps since it would lead to false flow in combination with
+   * the converse step from tainted objects to their properties. For propagation graphs,
+   * on the other hand, we are less worried about false positives than about false
+   * negatives, so we include both steps.
+   */
+  private predicate taintStep(DataFlow::Node pred, DataFlow::Node succ) {
+    TaintTracking::localTaintStep(pred, succ)
+    or
+    succ.(DataFlow::SourceNode).hasPropertyWrite(_, pred)
+  }
+
+  private predicate isRelevant(DataFlow::Node nd) {
+    // exclude externs files (i.e., our manually-written API models) and ambient files (such as
+    // TypeScript `.d.ts` files); there is no real data flow going on in those
+    not nd.getTopLevel().isExterns() and
+    not nd.getTopLevel().isAmbient() and
+    nd.getBasicBlock() instanceof ReachableBasicBlock
+  }
+
   private newtype TNode =
     MkNode(DataFlow::Node nd) {
       (
         nd instanceof DataFlow::InvokeNode and
-        TaintTracking::localTaintStep(nd, _)
+        taintStep(nd, _)
         or
         nd instanceof DataFlow::PropRead and
-        TaintTracking::localTaintStep(nd, _)
+        taintStep(nd, _)
         or
         nd instanceof DataFlow::ParameterNode and
-        TaintTracking::localTaintStep(nd, _)
+        taintStep(nd, _)
         or
         exists(DataFlow::InvokeNode invk | not calls(invk, _) |
           nd = invk.getAnArgument()
           or
           nd = invk.(DataFlow::MethodCallNode).getReceiver()
         ) and
-        TaintTracking::localTaintStep(_, nd)
+        taintStep(_, nd)
       ) and
-      // exclude externs files (i.e., our manually-written API models) and ambient files (such as
-      // TypeScript `.d.ts` files); there is no real data flow going on in those
-      not nd.getTopLevel().isExterns() and
-      not nd.getTopLevel().isAmbient() and
-      nd.getBasicBlock() instanceof ReachableBasicBlock
+      isRelevant(nd)
     }
 
   /**
@@ -67,21 +86,7 @@ module PropagationGraph {
       )
     }
 
-    /**
-     * Gets a candidate representation of this node as a (suffix of an) access path.
-     */
-    private string candidateRep() {
-      exists(Portal p | nd = p.getAnExitNode(_) or nd = p.getAnEntryNode(_) |
-        exists(int i, string prefix |
-          prefix = p.getBasePortal(i).toString() and
-          result = p.toString().replaceAll(prefix, "*") and
-          // ensure the suffix isn't entirely composed of `parameter` and `return` steps
-          result.regexpMatch(".*\\((global|member|root).*")
-        )
-        or
-        result = p.toString()
-      )
-    }
+    private string candidateRep() { result = candidateRep(nd, _) }
 
     string rep1(){
         result = candidateRep()
@@ -103,7 +108,8 @@ module PropagationGraph {
     /**
      * Holds if there is no candidate representation for this node.
      *
-     * This can happen, for instance, for parameters of purely local functions.
+     * This can happen, for instance, for dynamic property reads where we
+     * cannot tell the name of the property being accessed.
      */
     predicate unrepresentable() { not exists(candidateRep()) }
 
@@ -120,7 +126,7 @@ module PropagationGraph {
       nd = sink
       or
       nd instanceof DataFlow::SourceNode and
-      TaintTracking::localTaintStep*(nd, sink)
+      taintStep*(nd, sink)
     }
 
     DataFlow::Node asDataFlowNode() { result = nd }
@@ -246,5 +252,146 @@ module PropagationGraph {
   ) {
     a = pointsTo(ctxt, pw.getBase()) and
     f = pw.getPropertyName()
+  }
+
+  /** Gets a node that the main module of package `pkgName` exports. */
+  private DataFlow::Node getAnExport(string pkgName) {
+    exists(NPMPackage pkg, Module m | pkg.getPackageName() = pkgName and m = pkg.getMainModule() |
+      exists(AnalyzedPropertyWrite apw |
+        apw.writes(m.(AnalyzedModule).getModuleObject(), "exports", result)
+      )
+      or
+      m.(ES2015Module).exports("default", result.(DataFlow::ValueNode).getAstNode())
+    )
+  }
+
+  /** Gets a node that the main module of `pkgName` exports under the name `prop`. */
+  private DataFlow::Node getAnExport(string pkgName, string prop) {
+    exists(NPMPackage pkg, AnalyzedModule m, AnalyzedPropertyWrite apw |
+      pkg.getPackageName() = pkgName and
+      m = pkg.getMainModule() and
+      apw.writes(m.getAnExportsValue(), prop, result)
+    )
+  }
+
+  /**
+   * Gets the maximum depth of a candidate representation.
+   *
+   * Increasing this bound will generate more candidate representations, but
+   * will generally negatively affect performance. Note that rare candidates are
+   * are filtered out above, so increasing the bound beyond a certain threshold may
+   * not actually yield new candidates.
+   */
+  private int maxdepth() {
+    result = 5
+  }
+
+  /**
+   * Gets a candidate representation of `nd` as a (suffix of an) access path.
+   */
+  private string candidateRep(DataFlow::SourceNode nd, int depth) {
+    // the global object
+    isRelevant(nd) and
+    nd = DataFlow::globalObjectRef() and
+    result = "(global)" and
+    depth = 1
+    or
+    // package imports/exports
+    isRelevant(nd) and
+    exists(string pkg |
+      nd = DataFlow::moduleImport(pkg) and
+      // avoid picking up local imports
+      pkg.regexpMatch("[^./].*")
+      or
+      nd.flowsTo(getAnExport(pkg))
+    |
+      result = "(root https://www.npmjs.com/package/" + pkg + ")" and
+      depth = 1
+    )
+    or
+    // compound representations
+    exists(DataFlow::SourceNode base, string step, string baserep |
+      (
+        baserep = candidateRep(base, depth - 1) and
+        // bound maximum depth of candidate representation
+        depth <= maxdepth()
+        or
+        baserep = "*" and
+        depth = 1 and
+        // avoid creating trivial representations like `(return *)`
+        step.regexpMatch("(member|parameter) \\w.*") and
+        isRelevant(nd)
+      ) and
+      result = "(" + step + " " + baserep + ")"
+    |
+      // members
+      exists(string prop |
+        nd = base.getAPropertyRead(prop)
+        or
+        nd.flowsTo(base.getAPropertyWrite(prop).getRhs())
+      |
+        step = "member " + prop
+      )
+      or
+      // instances
+      (
+        nd = base.getAnInstantiation()
+        or
+        nd = base.(DataFlow::ClassNode).getAnInstanceReference()
+      ) and
+      step = "instance"
+      or
+      // parameters
+      exists(string p |
+        exists(int i |
+          nd = base.(DataFlow::FunctionNode).getParameter(i) or
+          nd.flowsTo(base.(DataFlow::InvokeNode).getArgument(i))
+        |
+          p = i.toString()
+        )
+        or
+        nd = base.(DataFlow::FunctionNode).getAParameter() and
+        p = nd.(DataFlow::ParameterNode).getName()
+      |
+        step = "parameter " + p
+      )
+      or
+      // return values
+      (
+        nd.flowsTo(base.(DataFlow::FunctionNode).getAReturn())
+        or
+        nd = base.getAnInvocation()
+      ) and
+      step = "return"
+    )
+    or
+    // named exports, which are treated as members of packages
+    isRelevant(nd) and
+    exists(string pkg, string m, string baserep |
+      nd.flowsTo(getAnExport(pkg, m)) and
+      baserep = "(root https://www.npmjs.com/package/" + pkg + ")" and
+      result = "(member " + m + " " + [baserep, "*"] + ")" and
+      depth = 2
+    )
+    or
+    // global variables, which are treated as members of the global object
+    isRelevant(nd) and
+    exists(string g |
+      nd = DataFlow::globalVarRef(g)
+      or
+      exists(AssignExpr assgn |
+        assgn.getLhs() = DataFlow::globalVarRef(g).asExpr() and
+        nd.flowsToExpr(assgn.getRhs())
+      )
+    |
+      result = "(member " + g + " (global))" and
+      depth = 2
+    )
+    or
+    // we ignore `await`
+    exists(DataFlow::SourceNode base |
+      base.flowsToExpr(nd.asExpr().(AwaitExpr).getOperand()) and
+      result = candidateRep(base, depth)
+    )
   }
 }
