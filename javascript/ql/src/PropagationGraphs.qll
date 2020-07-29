@@ -101,6 +101,31 @@ module PropagationGraph {
       nd.hasLocationInfo(filepath, startline, startcolumn, endline, endcolumn)
     }
 
+    string getKind() {
+      if nd = DataFlow::reflectiveCallNode(_)
+      then result = "reflective call"
+      else
+        if nd instanceof DataFlow::InvokeNode
+        then result = "explicit call"
+        else
+          if nd instanceof DataFlow::PropRead
+          then result = "read"
+          else
+            if nd instanceof DataFlow::ParameterNode
+            then result = "param"
+            else result = "other"
+    }
+
+    /** Gets a unique ID for this propagation-graph node, consisting of its URL and its kind. */
+    string getId() {
+      exists(string filepath, int startline, int startcolumn, int endline, int endcolumn |
+        hasLocationInfo(filepath, startline, startcolumn, endline, endcolumn) and
+        result =
+          filepath + ":" + startline + ":" + startcolumn + ":" + endline + ":" + endcolumn + ";" +
+            getKind()
+      )
+    }
+
     string toString() { result = nd.toString() }
 
     predicate flowsTo(DataFlow::Node sink) {
