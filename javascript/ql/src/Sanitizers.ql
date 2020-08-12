@@ -22,6 +22,7 @@ import semmle.javascript.security.dataflow.RequestForgeryCustomizations
 import semmle.javascript.security.dataflow.ServerSideUrlRedirectCustomizations
 import semmle.javascript.security.dataflow.ShellCommandInjectionFromEnvironmentCustomizations
 import semmle.javascript.security.dataflow.SqlInjectionCustomizations
+import semmle.javascript.security.dataflow.SqlInjectionCustomizationsWorse
 import semmle.javascript.security.dataflow.TaintedFormatStringCustomizations
 import semmle.javascript.security.dataflow.TaintedPathCustomizations
 import semmle.javascript.security.dataflow.UnsafeDeserializationCustomizations
@@ -31,6 +32,7 @@ import semmle.javascript.security.dataflow.UnvalidatedDynamicMethodCallCustomiza
 import semmle.javascript.security.dataflow.XmlBombCustomizations
 import semmle.javascript.security.dataflow.XpathInjectionCustomizations
 import semmle.javascript.security.dataflow.Xss
+import semmle.javascript.security.dataflow.XssWorse
 import semmle.javascript.security.dataflow.XxeCustomizations
 import semmle.javascript.security.dataflow.ZipSlipCustomizations
 import semmle.javascript.dataflow.Portals
@@ -38,7 +40,7 @@ import PropagationGraphs
 
 
 
-query predicate remoteSanitizers(PropagationGraph::Node pnd, DataFlow::Node nd){
+predicate remoteSanitizers(DataFlow::Node nd){
   (
     //nd instanceof BrokenCryptoAlgorithm::Sanitizer or
     //nd instanceof CleartextStorage::Sanitizer or
@@ -76,12 +78,10 @@ query predicate remoteSanitizers(PropagationGraph::Node pnd, DataFlow::Node nd){
     //nd instanceof StoredXss::Sanitizer or
     nd instanceof Xxe::Sanitizer //or
     //nd instanceof ZipSlip::San
-  ) and
-  // nd = p.getAnExitNode(_)
-  nd = pnd.asDataFlowNode()
-  }
+  ) 
+}
 
-  query predicate sanitizerClasses(PropagationGraph::Node pnd, DataFlow::Node nd, string q){
+predicate sanitizerClasses(DataFlow::Node nd, string q, string repr){
     (
         nd instanceof BrokenCryptoAlgorithm::Sanitizer and q="BrokenCryptoAlgorithm" or
         nd instanceof CleartextStorage::Sanitizer and q="CleartextStorage" or
@@ -120,11 +120,28 @@ query predicate remoteSanitizers(PropagationGraph::Node pnd, DataFlow::Node nd){
         nd instanceof Xxe::Sanitizer and q="Xxe"
       //nd instanceof ZipSlip::S
     ) and
-    // nd = p.getAnExitNode(_)
-    nd = pnd.asDataFlowNode()
-    }
+    repr = PropagationGraph::getconcatrep(nd)
+}
 
-  query predicate allSanitizers(PropagationGraph::Node pnd, DataFlow::Node nd){
+predicate sanitizerSqlClasses(DataFlow::Node nd, string q, string repr){
+    (           
+        nd instanceof SqlInjection::Sanitizer and q="SqlInjection" or
+        nd instanceof SqlInjectionWorse::Sanitizer and q="SqlInjectionWorse"       
+    ) and
+    repr = PropagationGraph::getconcatrep(nd)
+}
+
+query predicate sanitizerXssClasses(DataFlow::Node nd, string q, string repr){
+    (           
+        nd instanceof DomBasedXss::Sanitizer and q="DomBasedXss" or
+        nd instanceof DomBasedXssWorse::Sanitizer and q="DomBasedXssWorse"       
+    ) and
+    repr = PropagationGraph::getconcatrep(nd)
+}
+
+
+
+  predicate allSanitizers(DataFlow::Node nd){
     (
       nd instanceof BrokenCryptoAlgorithm::Sanitizer or
       nd instanceof CleartextStorage::Sanitizer or
@@ -162,8 +179,6 @@ query predicate remoteSanitizers(PropagationGraph::Node pnd, DataFlow::Node nd){
       nd instanceof StoredXss::Sanitizer or
       nd instanceof Xxe::Sanitizer //or
       //nd instanceof ZipSlip::S
-    ) and
-    // nd = p.getAnExitNode(_)
-    nd = pnd.asDataFlowNode()
+    )
     }
   

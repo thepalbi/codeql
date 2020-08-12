@@ -17,6 +17,13 @@ import semmle.javascript.security.dataflow.InsecureRandomnessCustomizations
 import semmle.javascript.security.dataflow.InsufficientPasswordHashCustomizations
 import semmle.javascript.security.dataflow.LoopBoundInjectionCustomizations
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizations
+import semmle.javascript.security.dataflow.NosqlInjectionCustomizations1
+import semmle.javascript.security.dataflow.NosqlInjectionCustomizations2
+import semmle.javascript.security.dataflow.NosqlInjectionCustomizations3
+import semmle.javascript.security.dataflow.NosqlInjectionCustomizations4
+import semmle.javascript.security.dataflow.NosqlInjectionCustomizations5
+import semmle.javascript.security.dataflow.NosqlInjectionCustomizations6
+import semmle.javascript.security.dataflow.NosqlInjectionCustomizationsWorse
 import semmle.javascript.security.dataflow.PostMessageStarCustomizations
 import semmle.javascript.security.dataflow.PrototypePollutionCustomizations
 import semmle.javascript.security.dataflow.RegExpInjectionCustomizations
@@ -25,6 +32,7 @@ import semmle.javascript.security.dataflow.RequestForgeryCustomizations
 import semmle.javascript.security.dataflow.ServerSideUrlRedirectCustomizations
 import semmle.javascript.security.dataflow.ShellCommandInjectionFromEnvironmentCustomizations
 import semmle.javascript.security.dataflow.SqlInjectionCustomizations
+import semmle.javascript.security.dataflow.SqlInjectionCustomizationsWorse
 import semmle.javascript.security.dataflow.StackTraceExposureCustomizations
 import semmle.javascript.security.dataflow.TaintedFormatStringCustomizations
 import semmle.javascript.security.dataflow.TaintedPathCustomizations
@@ -36,12 +44,13 @@ import semmle.javascript.security.dataflow.UnvalidatedDynamicMethodCallCustomiza
 import semmle.javascript.security.dataflow.XmlBombCustomizations
 import semmle.javascript.security.dataflow.XpathInjectionCustomizations
 import semmle.javascript.security.dataflow.Xss
+import semmle.javascript.security.dataflow.XssWorse
 import semmle.javascript.security.dataflow.XxeCustomizations
 import semmle.javascript.security.dataflow.ZipSlipCustomizations
 import semmle.javascript.dataflow.Portals
 import PropagationGraphs
 
-query predicate remoteSinks(PropagationGraph::Node pnd, DataFlow::Node nd){
+predicate remoteSinks(DataFlow::Node nd){
   (
    // nd instanceof BrokenCryptoAlgorithm::Sink or
     //nd instanceof CleartextLogging::Sink or
@@ -84,11 +93,37 @@ query predicate remoteSinks(PropagationGraph::Node pnd, DataFlow::Node nd){
     //nd instanceof StoredXss::Sink or
     nd instanceof Xxe::Sink //or
     //nd instanceof ZipSlip::Sink
-  ) and
-  nd = pnd.asDataFlowNode()
-  }
+  ) 
+}
 
-  query predicate sinkClasses(PropagationGraph::Node pnd, DataFlow::Node nd, string q){
+predicate sinkNoSqlClasses(DataFlow::Node nd, string q, string repr){
+    (nd instanceof NosqlInjection::Sink and q="NosqlInjection" or
+    nd instanceof NosqlInjection1::Sink and q="NosqlInjection1" or
+    nd instanceof NosqlInjection2::Sink and q="NosqlInjection2" or
+    nd instanceof NosqlInjection3::Sink and q="NosqlInjection3" or
+    nd instanceof NosqlInjection4::Sink and q="NosqlInjection4" or
+    nd instanceof NosqlInjection5::Sink and q="NosqlInjection5" or 
+    nd instanceof NosqlInjection6::Sink and q="NosqlInjection6" or
+    nd instanceof NosqlInjectionWorse::Sink and q="NosqlInjectionWorse"
+    ) and   
+    repr = PropagationGraph::getconcatrep(nd)
+}
+
+predicate sinkSqlClasses(DataFlow::Node nd, string q, string repr){
+    (nd instanceof SqlInjection::Sink and q="SqlInjection" or
+    nd instanceof SqlInjectionWorse::Sink and q="SqlInjectionWorse"
+    ) and    
+    repr = PropagationGraph::getconcatrep(nd)
+}
+
+query predicate sinkXssClasses(DataFlow::Node nd, string q, string repr){
+    (nd instanceof DomBasedXss::Sink and q="DomBasedXss" or
+    nd instanceof DomBasedXssWorse::Sink and q="DomBasedXssWorse"
+    ) and    
+    repr = PropagationGraph::getconcatrep(nd)
+}
+
+  predicate sinkClasses(DataFlow::Node nd, string q, string repr){
     (
         nd instanceof BrokenCryptoAlgorithm::Sink and q="BrokenCryptoAlgorithm" or
         nd instanceof CleartextLogging::Sink and q="CleartextLogging" or
@@ -108,6 +143,8 @@ query predicate remoteSinks(PropagationGraph::Node pnd, DataFlow::Node nd){
         nd instanceof InsufficientPasswordHash::Sink and q="InsufficientPasswordHash" or
         nd instanceof LoopBoundInjection::Sink and q="LoopBoundInjection" or
         nd instanceof NosqlInjection::Sink and q="NosqlInjection" or
+        nd instanceof NosqlInjection1::Sink and q="NosqlInjection1" or
+        nd instanceof NosqlInjection2::Sink and q="NosqlInjection2" or
         nd instanceof PostMessageStar::Sink and q="PostMessageStar" or
         nd instanceof RegExpInjection::Sink and q="RegExpInjection" or
         nd instanceof PrototypePollution::Sink and q="PrototypePollution" or
@@ -131,11 +168,11 @@ query predicate remoteSinks(PropagationGraph::Node pnd, DataFlow::Node nd){
         nd instanceof ReflectedXss::Sink and q="ReflectedXss" or
         nd instanceof Xxe::Sink and q="Xxe" or
         nd instanceof ZipSlip::Sink and q="ZipSlip" 
-    ) and
-    nd = pnd.asDataFlowNode()
+    ) and 
+    repr = PropagationGraph::getconcatrep(nd)
     }
 
-  query predicate allSinks(PropagationGraph::Node pnd, DataFlow::Node nd){
+  predicate allSinks(DataFlow::Node nd){
     (
      nd instanceof BrokenCryptoAlgorithm::Sink or
       nd instanceof CleartextLogging::Sink or
@@ -178,6 +215,5 @@ query predicate remoteSinks(PropagationGraph::Node pnd, DataFlow::Node nd){
       nd instanceof StoredXss::Sink or
       nd instanceof Xxe::Sink or
       nd instanceof ZipSlip::Sink
-    ) and
-    nd = pnd.asDataFlowNode()
+    ) 
     }

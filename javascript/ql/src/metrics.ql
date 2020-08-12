@@ -1,68 +1,144 @@
 import javascript
 import PropagationGraphs
 import metrics
+import scores_nosqlinjection
 
-predicate isPredictedSink(PropagationGraph::Node node, float score){
-    node.isSinkCandidate() and 
+query predicate stats(int loc, int functions, int files, int sourceCandidates, int sinkCandidates, int sanitizerCandidates){    
+    loc = sum(File f | | f.getNumberOfLinesOfCode())
+    and 
+    files = count(File f | f.getExtension() = "ts" or f.getExtension() = "js") 
+    and
+    functions = count(Function f) 
+    and
+    sourceCandidates = count(PropagationGraph::Node node| node.isSourceCandidate())
+    and
+    sinkCandidates = count(PropagationGraph::Node node| node.isSinkCandidate()) 
+    and
+    sanitizerCandidates = count(PropagationGraph::Node node | node.isSanitizerCandidate())
+
+}
+
+predicate predictionsSink(DataFlow::Node node, PropagationGraph::Node pnode, 
+    float score, boolean isKnown, boolean isCandidate, string type, string crep){
+    node = pnode.asDataFlowNode() 
+    and 
+    exists(pnode.rep())
+    and
+    score = sum(ReprScores::getReprScore(pnode.rep(), "snk"))/count(pnode.rep())
+    and 
+    ((isKnown = true and isKnownSink(pnode)) or (isKnown = false and not isKnownSink(pnode))) 
+    and
+    ((pnode.isSinkCandidate() and getSinkType(node) = type and isCandidate = true )
+    or ((not pnode.isSinkCandidate())  and type = "unknown" and isCandidate = false))
+    and
+    crep = pnode.getconcatrep()   
+}
+
+
+predicate predictionsSanitizer(DataFlow::Node node, PropagationGraph::Node pnode, 
+    float score, boolean isKnown, boolean isCandidate, string type, string crep){
+    node = pnode.asDataFlowNode() 
+    and 
+    exists(pnode.rep())
+    and
+    score = sum(ReprScores::getReprScore(pnode.rep(), "san"))/count(pnode.rep())
+    and 
+    ((isKnown = true and isKnownSanitizer(pnode)) or (isKnown = false and not isKnownSanitizer(pnode))) 
+    and
+    ((pnode.isSanitizerCandidate() and isCandidate = true )
+    or ((not pnode.isSanitizerCandidate()) and isCandidate = false))
+    and
+    type = "call"
+    and
+    crep = pnode.getconcatrep()   
+}
+
+predicate predictionsSource(DataFlow::Node node, PropagationGraph::Node pnode, 
+    float score, boolean isKnown, boolean isCandidate, string type, string crep){
+    node = pnode.asDataFlowNode() 
+    and 
+    exists(pnode.rep())
+    and
+    score = sum(ReprScores::getReprScore(pnode.rep(), "src"))/count(pnode.rep())
+    and 
+    ((isKnown = true and isKnownSource(pnode)) or (isKnown = false and not isKnownSource(pnode))) 
+    and
+    ((pnode.isSourceCandidate() and getSrcType(node) = type and isCandidate = true )
+    or ((not pnode.isSourceCandidate())  and type = "unknown" and isCandidate = false))
+    and
+    crep = pnode.getconcatrep()
+}
+
+
+string getSinkType(DataFlow::Node node){    
+    (exists(DataFlow::InvokeNode invk |
+        (node = invk.getAnArgument() and  result = "argument")
+        or
+        (node = invk.(DataFlow::MethodCallNode).getReceiver() and result = "call")
+      )
+      or
+      (node = any(DataFlow::PropWrite pw).getRhs()) and result = "propwrite")   
+      
+}
+
+string getSrcType(DataFlow::Node nd){
+    nd instanceof DataFlow::CallNode and result = "call" or
+    nd instanceof DataFlow::PropRead  and result = "propread" or
+    nd instanceof DataFlow::ParameterNode and result = "parameter"
+}
+
+predicate isPredictedSink(PropagationGraph::Node node, float score){    
     exists(node.rep()) and
-    score = sum(ReprScores::getReprScore(node.rep(), "snk"))/count(node.rep()) and 
-    score > 0.9   
+    score = sum(ReprScores::getReprScore(node.rep(), "snk"))/count(node.rep())
 }
 
-predicate isPredictedSource(PropagationGraph::Node node, float score){
-    node.isSourceCandidate() and 
+predicate isPredictedSource(PropagationGraph::Node node, float score){    
     exists(node.rep()) and 
-    score = sum(ReprScores::getReprScore(node.rep(), "src"))/count(node.rep()) and 
-    score > 0.9
+    score = sum(ReprScores::getReprScore(node.rep(), "src"))/count(node.rep())
 }
 
-predicate isPredictedSanitizer(PropagationGraph::Node node, float score){
-    node.isSanitizerCandidate() and 
+predicate isPredictedSanitizer(PropagationGraph::Node node, float score){    
     exists(node.rep()) and 
-    score = sum(ReprScores::getReprScore(node.rep(), "san"))/count(node.rep()) and 
-    score > 0.9
+    score = sum(ReprScores::getReprScore(node.rep(), "san"))/count(node.rep())
 }
 
-predicate isKnownSink(PropagationGraph::Node pnode){
-    pnode.isSinkCandidate() and
-    ReprScores::allSinks(pnode, pnode.asDataFlowNode())
+predicate isNewRepr(string r){
+    exists(PropagationGraph::Node n| n.isSourceCandidate() and 
+    r = n.rep() and 
+    ReprScores::getReprScore(r, "src") > 0 
+    and not isKnownRepr(r)
+    )
 }
 
-predicate isKnownSource(PropagationGraph::Node pnode){
-    pnode.isSourceCandidate() and
-    ReprScores::allSources(pnode, pnode.asDataFlowNode())
+predicate isKnownRepr(string r){
+    exists(PropagationGraph::Node p | isKnownSource(p) and r = p.rep())
+}
+
+predicate isKnownSink(PropagationGraph::Node pnode){    
+    Metrics::allSinks(pnode, pnode.asDataFlowNode())
+}
+
+predicate isKnownSource(PropagationGraph::Node pnode){    
+    Metrics::allSources(pnode, pnode.asDataFlowNode())
 }
 
 predicate isKnownSanitizer(PropagationGraph::Node pnode){
     pnode.isSanitizerCandidate() and
-    ReprScores::allSanitizers(pnode, pnode.asDataFlowNode())
+    Metrics::allSanitizers(pnode, pnode.asDataFlowNode())
 }
 
 predicate isKnownAndPredictedSink(PropagationGraph::Node node){
     isPredictedSink(node,_) and isKnownSink(node)    
 }
 
-// query predicate precision(PropagationGraph::Node node, float precision){
-//     precision = count(isPredictedSink(node, _) and isKnownSink(node))/count(isPredictedSink(node, _))
-// }
-float getPrecisionSink(){
-    result=(count(PropagationGraph::Node n | isKnownSink(n) and isPredictedSink(n, _)| n) + 0.0)/count(PropagationGraph::Node n| isPredictedSink(n, _) | n)
-}
-
-float getPrecisionSource(){
-    result=(count(PropagationGraph::Node n | isKnownSource(n) and isPredictedSource(n, _)| n) + 0.0)/count(PropagationGraph::Node n| isPredictedSource(n, _) | n)
-}
-
-float getPrecisionSanitizer(){
-    result=(count(PropagationGraph::Node n | isKnownSanitizer(n) and isPredictedSanitizer(n, _)| n) + 0.0)/count(PropagationGraph::Node n| isPredictedSanitizer(n, _) | n)
-}
-
-query predicate isKnownNotCandidateSink(PropagationGraph::Node node){
-    ReprScores::allSinks(node, _) and 
+predicate isKnownNotCandidateSink(PropagationGraph::Node node){
+    exists(node.rep()) and
+    Metrics::allSinks(node, _) and 
     not node.isSinkCandidate()
 }
 
-query predicate isKnownNotCandidateSource(PropagationGraph::Node node){
-    ReprScores::allSources(node, _) and 
+predicate isKnownNotCandidateSource(PropagationGraph::Node node){
+    exists(node.rep()) and
+    Metrics::allSources(node, _) and 
     not node.isSourceCandidate()
 }

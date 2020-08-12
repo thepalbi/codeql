@@ -86,6 +86,13 @@ import semmle.javascript.frameworks.LodashUnderscore
 import semmle.javascript.frameworks.Logging
 import semmle.javascript.frameworks.HttpFrameworks
 import semmle.javascript.frameworks.NoSQL
+import semmle.javascript.frameworks.NoSQL1
+import semmle.javascript.frameworks.NoSQL2
+import semmle.javascript.frameworks.NoSQL3
+import semmle.javascript.frameworks.NoSQL4
+import semmle.javascript.frameworks.NoSQL5
+import semmle.javascript.frameworks.NoSQL6
+import semmle.javascript.frameworks.NoSQLWorse
 import semmle.javascript.frameworks.PkgCloud
 import semmle.javascript.frameworks.PropertyProjection
 import semmle.javascript.frameworks.React
@@ -94,6 +101,7 @@ import semmle.javascript.frameworks.Request
 import semmle.javascript.frameworks.ShellJS
 import semmle.javascript.frameworks.SystemCommandExecutors
 import semmle.javascript.frameworks.SQL
+import semmle.javascript.frameworks.SQLWorse
 import semmle.javascript.frameworks.SocketIO
 import semmle.javascript.frameworks.StringFormatters
 import semmle.javascript.frameworks.TorrentLibraries
