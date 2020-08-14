@@ -6,8 +6,12 @@ import re
 import ast
 import functools
 import gurobipy as gp
-from gurobipy import GRB
+
 import numpy as np
+
+from config import SolverConfig
+
+
 class TaintSpecConstraints(tfco.ConstrainedMinimizationProblem):
     def __init__(self, variables):
         self.vars = variables
@@ -149,17 +153,18 @@ class TaintSpecConstraints(tfco.ConstrainedMinimizationProblem):
         return self.numconstraints
 
 class GBTaintSpecConstraints:
-    def __init__(self, variables, model:gp.Model, constraintsdir, known_samples_ratio, lambda_const=0.1):
+    def __init__(self, variables, model:gp.Model, constraintsdir, config:SolverConfig):
         self.vars = variables
         self.model = model
-        self.known_samples_ratio = known_samples_ratio
+        self.known_samples_ratio = config.known_samples_ratio
         self.exprParser = ConstraintParser()
         self.exprParser2 = ParseExpression(self.vars, format='gb')
         # self.numconstraints = len([k for k in open("constraints_var.txt").readlines() if len(k) > 0] +
         #                           [k for k in open("constraints_known.txt").readlines() if len(k) > 0] +
         #                           [k for k in open("constraints_flow.txt").readlines() if len(k) > 0])
         self.constraintsdir = constraintsdir
-        self.lambda_const = lambda_const
+        self.lambda_const = config.lambda_const
+        self.skip_flow_constraints = config.no_flow_constraints
         self.cache=dict()
 
     def clear_cache(self):
@@ -247,53 +252,66 @@ class GBTaintSpecConstraints:
     def add_constraints(self):
         self.clear_cache()
         c=1
-        print("Computing flow constraints...")
-        with open("{0}/constraints_flow.txt".format(self.constraintsdir)) as constraintsfile:
-            for line in constraintsfile.readlines():
-                res = self.exprToVal(line)
-                self.model.addConstr(res <= 0)
-                # print("{0}".format(c), end=',')
-                c += 1
+        if not self.skip_flow_constraints:
+            print("Computing flow constraints...")
+            with open("{0}/constraints_flow.txt".format(self.constraintsdir)) as constraintsfile:
+                for line in constraintsfile.readlines():
+                    res = self.exprToVal(line)
+                    self.model.addConstr(res <= 0)
+                    # print("{0}".format(c), end=',')
+                    c += 1
+        else:
+            print("Skipping flow constraints")
 
         print("Computing known constraints...")
 
-        with open("{0}/constraints_known_src.txt".format(self.constraintsdir)) as constraintsfile:
-            allines=constraintsfile.readlines()
-            sampled=int(self.known_samples_ratio*len(allines)) if self.known_samples_ratio <= 1 else self.known_samples_ratio
-            print("Sampling {0} of {1} known src constraints".format(sampled, len(allines)))
-            for line in np.random.choice(allines, sampled):
-                for line_part in line.split(","):
-                    if len(line_part) == 0:
-                        continue
-                    res = self.exprToVal(line_part)
-                    self.model.addConstr(res <= 0)
-                    # print("{0}-known".format(c), end=',')
-                    c += 1
+        try:
+            with open("{0}/constraints_known_src.txt".format(self.constraintsdir)) as constraintsfile:
+                allines=constraintsfile.readlines()
+                sampled=int(self.known_samples_ratio*len(allines)) if self.known_samples_ratio <= 1 else self.known_samples_ratio
+                print("Sampling {0} of {1} known src constraints".format(sampled, len(allines)))
+                for line in np.random.choice(allines, sampled):
+                    for line_part in line.split(","):
+                        if len(line_part) == 0:
+                            continue
+                        res = self.exprToVal(line_part)
+                        self.model.addConstr(res <= 0)
+                        # print("{0}-known".format(c), end=',')
+                        c += 1
+        except:
+            print("No sources")
 
-        with open("{0}/constraints_known_san.txt".format(self.constraintsdir)) as constraintsfile:
-            allines = constraintsfile.readlines()
-            sampled = int(self.known_samples_ratio * len(allines)) if self.known_samples_ratio <= 1 else self.known_samples_ratio
-            print("Sampling {0} of {1} known san constraints".format(sampled, len(allines)))
-            for line in np.random.choice(allines, sampled):
-                for line_part in line.split(","):
-                    if len(line_part) == 0:
-                        continue
-                    res = self.exprToVal(line_part)
-                    self.model.addConstr(res <= 0)
-                    # print("{0}-known".format(c), end=',')
-                    c += 1
 
-        with open("{0}/constraints_known_snk.txt".format(self.constraintsdir)) as constraintsfile:
-            allines = constraintsfile.readlines()
-            sampled = int(self.known_samples_ratio * len(allines)) if self.known_samples_ratio <= 1 else self.known_samples_ratio
-            print("Sampling {0} of {1} known sink constraints".format(sampled, len(allines)))
-            for line in np.random.choice(allines, sampled):
-                for line_part in line.split(","):
-                    if len(line_part) == 0:
-                        continue
-                    res = self.exprToVal(line_part)
-                    self.model.addConstr(res <= 0)
-                    c += 1
+        try:
+            with open("{0}/constraints_known_san.txt".format(self.constraintsdir)) as constraintsfile:
+                allines = constraintsfile.readlines()
+                sampled = int(self.known_samples_ratio * len(allines)) if self.known_samples_ratio <= 1 else self.known_samples_ratio
+                print("Sampling {0} of {1} known san constraints".format(sampled, len(allines)))
+                for line in np.random.choice(allines, sampled):
+                    for line_part in line.split(","):
+                        if len(line_part) == 0:
+                            continue
+                        res = self.exprToVal(line_part)
+                        self.model.addConstr(res <= 0)
+                        # print("{0}-known".format(c), end=',')
+                        c += 1
+        except:
+            print("No sanitizers")
+
+        try:
+            with open("{0}/constraints_known_snk.txt".format(self.constraintsdir)) as constraintsfile:
+                allines = constraintsfile.readlines()
+                sampled = int(self.known_samples_ratio * len(allines)) if self.known_samples_ratio <= 1 else self.known_samples_ratio
+                print("Sampling {0} of {1} known sink constraints".format(sampled, len(allines)))
+                for line in np.random.choice(allines, sampled):
+                    for line_part in line.split(","):
+                        if len(line_part) == 0:
+                            continue
+                        res = self.exprToVal(line_part)
+                        self.model.addConstr(res <= 0)
+                        c += 1
+        except:
+            print("No sinks")
 
         # with open("{0}/constraints_candidate.txt".format(self.constraintsdir)) as constraintsfile:
         #     for line in constraintsfile.readlines():

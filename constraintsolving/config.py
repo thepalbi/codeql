@@ -1,25 +1,23 @@
 class SolverConfig:
     def __init__(self):
-        #self.projectdir = 'facebook_react'
-        #self.projectdir = 'eclipse_orion'
-        self.projectdir = 'ampproject_amphtml'
+        # TODO: produce ql file with scores directly here
+        self.codeql_output_path = r"C:\Users\saika\projects\ql\javascript\ql\src\tsm_scores"
         # constraint config
-        self.constraints_output_dir = 'constraints/{0}'.format(self.projectdir)
+        self.query = "DomBasedXssWorse"
         self.constraints_constant_C = 0.75
+        self.use_all_sanitizers = False
 
         # solve config
         self.lambda_const = 0.1
         self.trials = 1
-        self.known_samples_ratio = 0.1
-
+        self.known_samples_ratio = 1.0
+        self.no_flow_constraints = False
+        self.min_rep_events = 5
+        # use the large dataset or the small one with atleast 5 reps
+        self.dataset_type = "small"
+        self.constraint_format = "gb"
 
         # metric config
-
-        if self.projectdir == 'ampproject_amphtml':
-            self.dirprefix="C:/Users/saika/projects/ql/constraintsolving/databases/ampproject_amphtml_b5aa393/src/"
-        elif self.projectdir == 'eclipse_orion':
-            self.dirprefix="C:/Users/saika/projects/ql/constraintsolving/databases/eclipse_orion.client_js_srcVersion_9ef167/eclipse_orion.client_9ef1675/src/"
-
         self.trainingsizes=[self.known_samples_ratio]
 
         # only events above this threshold score will be predicted as src/snk/sans

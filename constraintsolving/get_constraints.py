@@ -1,318 +1,485 @@
-from DataParser import readFlows, readEvents, readKnown, readClass, readURL
+from DataParser import readFlows, readEvents, readKnown, readClass, readURL, readFlowsAndReps, readPairs
 from Variable import Variable
 import Constraint
 import os
+import re
 import shutil
 from config import SolverConfig
 
+class ConstraintBuilder:
+    def __init__(self, mode, outputdir, min_rep_events, dataset_type, constraint_format, lambda_const):
+        self.events = dict()
+        self.unique_reps = dict()
+        self.reps_map = dict()
+        self.mode = mode
+        self.outputdir = outputdir
+        os.makedirs(outputdir, exist_ok=True)
+        self.delete_old_constraints()
+        self.variables = dict()
+        self.eps_vars = list()
+        self.known_sources = dict()
+        self.known_sinks = dict()
+        self.known_sanitizers = dict()
+        self.rep_count = dict()
+        self.min_rep_events = min_rep_events
+        self.dataset_type = dataset_type
+        self.constraint_format = constraint_format
+        self.lambda_const = lambda_const
+        self._src = "s"
+        self._san = "a"
+        self._snk = "i"
+        self._eps = "e"
 
-def createBlackList(events, sources, sinks):
-    # ignoring sanitizers for now
-    blacklist=[]
-    for source in sources:
-        if source not in events:
-            continue
+    def set_output_dir(self, newdir):
+        self.outputdir = newdir
+
+
+    def readEventsAndReps(self, projectdir):
+        readEvents('data/{0}/{0}-eventToConcatRep{1}.prop.csv'.format(projectdir,
+                                                                      "-" + self.dataset_type if
+                                                                      self.dataset_type is not None else ""),
+                   self.events,
+                   self.unique_reps,
+                   self.rep_count)
+
+    def createBlackList(self):
+        blacklist = []
+        for k in self.known_sources.keys():
+            for src in self.known_sources[k]:
+                if src not in self.events.keys():
+                    continue
+                src_reps = set(self.events[src].reps)
+
+                for k2 in self.known_sinks.keys():
+                    for snk in self.known_sinks[k2]:
+                        if snk not in self.events.keys():
+                            continue
+                        snk_reps = set(self.events[snk].reps)
+                        if len(src_reps.intersection(snk_reps)) > 0:
+                            blacklist.append(src)
+                            blacklist.append(snk)
+
+                for k3 in self.known_sanitizers.keys():
+                    for san in self.known_sanitizers[k3]:
+                        if san not in self.events.keys():
+                            continue
+                        san_reps = set(self.events[san].reps)
+                        if len(src_reps.intersection(san_reps)) > 0:
+                            blacklist.append(src)
+                            blacklist.append(san)
+
+        for k in self.known_sinks.keys():
+            for snk in self.known_sinks[k]:
+                if snk not in self.events.keys():
+                    continue
+                snk_reps = set(self.events[snk].reps)
+                for k2 in self.known_sanitizers.keys():
+                    for san in self.known_sanitizers[k2]:
+                        if san not in self.events.keys():
+                            continue
+                        san_reps = set(self.events[san].reps)
+                        if len(snk_reps.intersection(san_reps)) > 0:
+                            blacklist.append(snk)
+                            blacklist.append(san)
+        return list(set(blacklist))
+
+    def createBlackList2(self, sources, sinks, sanitizers):
+        # ignoring sanitizers for now
+        blacklist=[]
+        for source in sources:
+            if source not in self.events.keys():
+                continue
+            source_reps = set(self.events[source].reps)
+            for sink in sinks:
+                if sink not in self.events.keys():
+                    continue
+                sink_reps = set(self.events[sink].reps)
+                if len(source_reps.intersection(sink_reps)) > 0:
+                    blacklist.append(source)
+                    blacklist.append(sink)
+            for san in sanitizers:
+                if san not in self.events.keys():
+                    continue
+                san_reps = set(self.events[san].reps)
+                if len(source_reps.intersection(san_reps)) > 0:
+                    blacklist.append(source)
+                    blacklist.append(san)
+
         for sink in sinks:
-            if sink not in events:
+            if sink not in self.events.keys():
                 continue
-            source_reps = set(events[source].reps)
-            sink_reps = set(events[sink].reps)
-            if len(source_reps.intersection(sink_reps)) > 0:
-                blacklist.append(source)
-                blacklist.append(sink)
-    return list(set(blacklist))
+            sink_reps = set(self.events[sink].reps)
+            for san in sanitizers:
+                if san not in self.events.keys():
+                    continue
 
+                san_reps = set(self.events[san].reps)
+                if len(sink_reps.intersection(san_reps)) > 0:
+                    blacklist.append(sink)
+                    blacklist.append(san)
 
-def getVar(unique_reps, rep, suffix=""):
-    return "n{0}_{1}".format(unique_reps.index(rep), suffix)
+        return list(set(blacklist))
 
+    def getVar(self, rep, suffix=""):
+        # if self.rep_count[rep] >= self.min_rep_events:
+        return "n{0}{1}".format(self.unique_reps[rep], suffix)
+        # else:
+        #     assert False, "Invalid rep"
 
-def getBackOffVar(unique_reps, event, suffix):
-    if len(event.reps) > 1:
-        return "({0})/{1}".format("+".join([getVar(unique_reps, r, suffix) for r in event.reps]), len(event.reps))
-    else:
-        return "{0}".format("+".join([getVar(unique_reps, r, suffix) for r in event.reps]))
-
-
-def printKnownConstraints(outputdir, event, map:dict, unique_reps):
-    with open("{0}/constraints_known_{1}.txt".format(outputdir, list(map.keys())[0]), "a+") as constraintsfile:
-        constraintsfile.write(
-            Constraint.print(getBackOffVar(unique_reps, event, "src"), map.get("src", "0"), Constraint.Constraint.LTE))
-        constraintsfile.write(",")
-        constraintsfile.write(
-            Constraint.print(getBackOffVar(unique_reps, event, "src"), map.get("src", "0"), Constraint.Constraint.GTE))
-        constraintsfile.write(",")
-
-    #with open("{0}/constraints_known_san.txt".format(outputdir), "a+") as constraintsfile:
-        constraintsfile.write(
-            Constraint.print(getBackOffVar(unique_reps, event, "san"), map.get("san", "0"), Constraint.Constraint.LTE))
-        constraintsfile.write(",")
-        constraintsfile.write(
-            Constraint.print(getBackOffVar(unique_reps, event, "san"), map.get("san", "0"), Constraint.Constraint.GTE))
-        constraintsfile.write(",")
-
-    #with open("{0}/constraints_known_snk.txt".format(outputdir), "a+") as constraintsfile:
-        constraintsfile.write(
-            Constraint.print(getBackOffVar(unique_reps, event, "snk"), map.get("snk", "0"), Constraint.Constraint.LTE))
-        constraintsfile.write(",")
-        constraintsfile.write(
-            Constraint.print(getBackOffVar(unique_reps, event, "snk"), map.get("snk", "0"), Constraint.Constraint.GTE))
-        constraintsfile.write("\n")
-
-
-def delifexists(f):
-    if os.path.exists(f):
-        os.remove(f)
-
-
-def delete_old_constraints(outputdir):
-    delifexists("{0}/constraints_var.txt".format(outputdir))
-    delifexists("{0}/constraints_flow.txt".format(outputdir))
-    delifexists("{0}/constraints_known.txt".format(outputdir))
-    delifexists("{0}/constraints_known_src.txt".format(outputdir))
-    delifexists("{0}/constraints_known_san.txt".format(outputdir))
-    delifexists("{0}/constraints_known_snk.txt".format(outputdir))
-    delifexists("{0}/var.txt".format(outputdir))
-
-
-def generate_constraints(projectdir, outputdir, global_constant_C):
-    print("Building constraints...")
-    os.makedirs(outputdir, exist_ok=True)
-    delete_old_constraints(outputdir)
-    constraints = []
-    variables = dict()
-    sanit_sink = dict()
-    source_sanit = dict()
-    source_sink = dict()
-
-    events = readEvents('data/{0}/{0}-eventToReps.prop.csv'.format(projectdir))
-    flows = readFlows('data/{0}/{0}-triple.prop.csv'.format(projectdir), events)
-
-    # collecting events for every pair of source/sink/sanitizer
-    for flow in flows:
-        sanit_sink_tuple = (flow.sanitizer, flow.sink)
-        sanit_sink_list = []
-        if sanit_sink_tuple in sanit_sink:
-            sanit_sink_list = sanit_sink.get(sanit_sink_tuple)
+    def getBackOffVar(self, event, suffix, constraint_type="flow"):
+        reps = event.reps
+        #reps = list(filter(lambda x: self.rep_count[x] >= self.min_rep_events, reps))
+        if len(reps) == 0:
+            assert False, "No Reps"
+        elif len(reps) > 1:
+            if self.constraint_format == "gb":
+                if constraint_type == "known":
+                    return " + ".join([self.getVar(r, suffix) for r in reps]), len(reps)
+                else:
+                    factor = "{0:.2f}".format(1.0/len(reps))
+                    return " + ".join([factor + " " + self.getVar(r, suffix) for r in reps])
+            else:
+                return "({0})/{1}".format("+".join([self.getVar(r, suffix) for r in reps]), len(reps))
         else:
-            sanit_sink[sanit_sink_tuple] = sanit_sink_list
-        sanit_sink_list.append(flow.source)
+            if constraint_type == "flow":
+                return "{0}".format(" + ".join([self.getVar(r, suffix) for r in reps]))
+            else:
+                return "{0}".format(" + ".join([self.getVar(r, suffix) for r in reps])), 1
 
-        source_sink_tuple = (flow.source, flow.sink)
-        source_sink_list = []
-        if source_sink_tuple in source_sink:
-            source_sink_list = source_sink.get(source_sink_tuple)
+    def printKnownConstraints(self,  event, map:dict):
+        with open("{0}/constraints_known_{1}.txt".format(self.outputdir, list(map.keys())[0]), "a+") as constraintsfile:
+            src_var, src_rhs = self.getBackOffVar(event, self._src, "known")
+            constraintsfile.write(
+                Constraint.print(src_var,
+                                 src_rhs if "src" in map else "0", Constraint.Constraint.LTE, format='norm'))
+            constraintsfile.write(",")
+            constraintsfile.write(
+                Constraint.print(src_var,
+                                 src_rhs if "src" in map else "0", Constraint.Constraint.GTE, format='norm'))
+            constraintsfile.write(",")
+
+
+            san_var, san_rhs = self.getBackOffVar(event, self._san, "known")
+            constraintsfile.write(
+                Constraint.print(san_var,
+                                 str(san_rhs) if "san" in map else "0", Constraint.Constraint.LTE, format='norm'))
+            constraintsfile.write(",")
+            constraintsfile.write(
+                Constraint.print(san_var,
+                                 str(san_rhs) if "san" in map else "0", Constraint.Constraint.GTE, format='norm'))
+            constraintsfile.write(",")
+
+            snk_var, snk_rhs = self.getBackOffVar(event, self._snk, "known")
+            constraintsfile.write(
+                Constraint.print(snk_var,
+                                 str(snk_rhs) if "snk" in map else "0", Constraint.Constraint.LTE, format='norm'))
+            constraintsfile.write(",")
+            constraintsfile.write(
+                Constraint.print(snk_var,
+                                 str(snk_rhs) if "snk" in map else "0", Constraint.Constraint.GTE, format='norm'))
+            constraintsfile.write("\n")
+
+
+    def delifexists(self, f):
+        if os.path.exists(f):
+            os.remove(f)
+
+    def delete_old_constraints(self):
+        self.delifexists("{0}/constraints_var.txt".format(self.outputdir))
+        self.delifexists("{0}/constraints_flow.txt".format(self.outputdir))
+        self.delifexists("{0}/constraints_known.txt".format(self.outputdir))
+        self.delifexists("{0}/constraints_known_src.txt".format(self.outputdir))
+        self.delifexists("{0}/constraints_known_san.txt".format(self.outputdir))
+        self.delifexists("{0}/constraints_known_snk.txt".format(self.outputdir))
+        self.delifexists("{0}/var.txt".format(self.outputdir))
+
+    def createVariables(self):
+        print("Creating variables")
+
+        with open("{0}/repToID.txt".format(self.outputdir), "w") as repToIDfile:
+            newvars=[["n{0}{1}".format(self.unique_reps[k], self._src),
+                      "n{0}{1}".format(self.unique_reps[k], self._san),
+                      "n{0}{1}".format(self.unique_reps[k], self._snk)]
+                     for k in self.unique_reps.keys()]
+            print("Built vars")
+            for k in newvars:
+                self.variables[k[0]] = Variable(k[0])
+                self.variables[k[1]] = Variable(k[1])
+                self.variables[k[2]] = Variable(k[2])
+            # for _, (rep,i) in enumerate(self.unique_reps.items()):
+            #     self.variables["n{0}_src".format(i)] = Variable("n{0}_src".format(i))
+            #     self.variables["n{0}_san".format(i)] = Variable("n{0}_san".format(i))
+            #     self.variables["n{0}_snk".format(i)] = Variable("n{0}_snk".format(i))
+                #outputstring += "{0}:n{1}\n".format(rep, i)
+            print("Done variables")
+
+            repToIDfile.write("\n".join(["{0}:n{1}".format(k, self.unique_reps[k]) for k in self.unique_reps.keys()]))
+
+            print("Wrote to file")
+        with open("{0}/eventToRepIDs.txt".format(self.outputdir), "w") as eventToRepIDs:
+            for e in self.events.keys():
+                repIDs = ["n{0}".format(self.unique_reps[rep]) for rep in self.events[e].reps]
+                eventToRepIDs.write("{0}:{1}\n".format(e, ",".join(repIDs)))
+
+    def readAllKnown(self, projectdir, query, use_all_sanitizers):
+        # constraints for known sources
+        print("Constraints for known events")
+        known_sources = readKnown("data/{0}/{0}-src-xss.prop.csv".format(projectdir), "src", query)
+        known_sinks = readKnown("data/{0}/{0}-sinks-xss.prop.csv".format(projectdir), "sinks", query)
+        if use_all_sanitizers:
+            print("Using all sanitizers")
+            known_sanitizers = readKnown("data/{0}/{0}-sanitizers-xss.prop.csv".format(projectdir), "sanitizers", None)
         else:
-            source_sink[source_sink_tuple] = source_sink_list
+            known_sanitizers = readKnown("data/{0}/{0}-sanitizers-xss.prop.csv".format(projectdir), "sanitizers", query)
+        self.known_sources[projectdir] = known_sources
+        self.known_sinks[projectdir] = known_sinks
+        self.known_sanitizers[projectdir] = known_sanitizers
 
-        source_sink_list.append(flow.sanitizer)
+    def writeKnownConstraints(self):
+        print("Computing blacklist")
+        blacklist = self.createBlackList()
 
-        source_sanit_tuple = (flow.source, flow.sanitizer)
-        source_sanit_list = []
-        if source_sanit_tuple in source_sanit:
-            source_sanit_list = source_sanit.get(source_sanit_tuple)
-        else:
-            source_sanit[source_sanit_tuple] = source_sanit_list
+        if len(blacklist) > 0:
+            print(blacklist)
+            print("Events in blacklist: {0}".format(len(blacklist)))
 
-        source_sanit_list.append(flow.sink)
+        set_sources = 0
+        for k in self.known_sources:
+            for src in self.known_sources[k]:
+                if src not in self.events.keys() or src in blacklist:
+                    continue
+                self.printKnownConstraints(self.events[src], {"src": "1"})
+                set_sources += 1
+                for rep in self.events[src].reps:
+                    if rep not in self.unique_reps:
+                        continue
+                    srcVar = self.getVar(rep, self._src)
+                    sanVar = self.getVar(rep, self._san)
+                    snkVar = self.getVar(rep, self._snk)
+                    self.variables[srcVar].set_constant(1.0)
+                    self.variables[sanVar].set_constant(0.0)
+                    self.variables[snkVar].set_constant(0.0)
 
-    print("Sanitizer-Sink flows: %d" % len(sanit_sink))
-    print("Source-Sanitizer flows: %d" % len(source_sanit))
-    print("Source-Sink flows: %d" % len(source_sink))
+        set_sinks = 0
+        for k in self.known_sinks:
+            for sink in self.known_sinks[k]:
+                if sink not in self.events.keys() or sink in blacklist:
+                    continue
+                self.printKnownConstraints(self.events[sink], {"snk": "1"})
+                set_sinks += 1
+                for rep in self.events[sink].reps:
+                    if rep not in self.unique_reps:
+                        continue
 
-    # collecting all unique representations
-    unique_reps=[]
-    for e in events.keys():
-        for rep in events[e].reps:
-            unique_reps.append(rep)
+                    srcVar = self.getVar(rep, self._src)
+                    sanVar = self.getVar(rep, self._san)
+                    snkVar = self.getVar(rep, self._snk)
+                    # if variables[snkVar].is_constant:
+                    #     print("{0} already constant".format(snkVar))
+                    self.variables[srcVar].set_constant(0.0)
+                    self.variables[sanVar].set_constant(0.0)
+                    self.variables[snkVar].set_constant(1.0)
 
-    unique_reps=list(set(unique_reps))
-    print("Unique reps: ", len(unique_reps))
+        set_san = 0
+        for k in self.known_sanitizers:
+            for san in self.known_sanitizers[k]:
+                if san not in self.events.keys() or san in blacklist:
+                    continue
+                self.printKnownConstraints(self.events[san], {"san": "1"})
+                set_san += 1
+                for rep in self.events[san].reps:
+                    if rep not in self.unique_reps:
+                        continue
 
-    with open("{0}/repToID.txt".format(outputdir), "w") as repToIDfile:
-        for i, rep in enumerate(unique_reps):
-            variables["n{0}_src".format(i)] = Variable("n{0}_src".format(i))
-            variables["n{0}_san".format(i)] = Variable("n{0}_san".format(i))
-            variables["n{0}_snk".format(i)] = Variable("n{0}_snk".format(i))
-            repToIDfile.write("{0}:n{1}\n".format(rep, i))
+                    srcVar = self.getVar(rep, self._src)
+                    sanVar = self.getVar(rep, self._san)
+                    snkVar = self.getVar(rep, self._snk)
+                    # if variables[sanVar].is_constant:
+                    #     print("{0} already constant".format(sanVar))
+                    self.variables[srcVar].set_constant(0.0)
+                    self.variables[sanVar].set_constant(1.0)
+                    self.variables[snkVar].set_constant(0.0)
 
-    with open("{0}/eventToRepIDs.txt".format(outputdir), "w") as eventToRepIDs:
-        for e in events.keys():
-            repIDs=["n{0}".format(unique_reps.index(rep)) for rep in events[e].reps]
-            eventToRepIDs.write("{0}:{1}\n".format(e, ",".join(repIDs)))
+        print("Known sources: %d" % set_sources, end=',')
+        print("Known sanitizers: %d" % set_san, end=',')
+        print("Known sinks: %d" % set_sinks)
 
-    # constraints for known sources
-    print("Constraints for known events")
-    known_sources=readKnown("data/{0}/{0}-src.prop.csv".format(projectdir))
-    known_sinks=readKnown("data/{0}/{0}-sinks.prop.csv".format(projectdir))
-    known_sanitizers=readKnown("data/{0}/{0}-sanitizers.prop.csv".format(projectdir))
-
-    candidate_sources = readURL("data/{0}/{0}-srcToRep.prop.csv".format(projectdir))
-    candidate_sinks = readURL("data/{0}/{0}-snkToRep.prop.csv".format(projectdir))
-    candidate_sanitizers = readURL("data/{0}/{0}-sanToRep.prop.csv".format(projectdir))
-
-    # classes_sources=readClass("data/{0}/wclass/{0}-src.prop.csv".format(projectdir))
-    # classes_sinks=readClass("data/{0}/wclass/{0}-sinks.prop.csv".format(projectdir))
-    # classes_sanitizers=readClass("data/{0}/wclass/{0}-sanitizers.prop.csv".format(projectdir))
-
-    # known_sources=list(filter(lambda x: 'DomBasedXss' not in classes_sources[x], known_sources))
-    # known_sinks=list(filter(lambda x: 'DomBasedXss' not in classes_sinks[x], known_sinks))
-    # known_sanitizers=list(filter(lambda x: 'DomBasedXss' not in classes_sanitizers[x], known_sanitizers))
-
-    blacklist=createBlackList(events, known_sources, known_sinks)
-    print("Events in blacklist: {0}".format(len(blacklist)))
-
-    set_sources=0
-    for src in known_sources:
-        if src not in events.keys() or src not in candidate_sources or src in blacklist:
-            continue
-        printKnownConstraints(outputdir, events[src], {"src": "1"}, unique_reps)
-        set_sources += 1
-        for rep in events[src].reps:
-            if rep not in unique_reps:
-                continue
-
-            srcVar = getVar(unique_reps, rep, "src")
-            sanVar = getVar(unique_reps, rep, "san")
-            snkVar = getVar(unique_reps, rep, "snk")
-            # if variables[srcVar].is_constant:
-            #     print("{0} already constant".format(srcVar))
-            variables[srcVar].set_constant(1.0)
-            variables[sanVar].set_constant(0.0)
-            variables[snkVar].set_constant(0.0)
-
-
-    set_sinks=0
-    for sink in known_sinks:
-        if sink not in events.keys() or sink not in candidate_sinks or sink in blacklist:
-            continue
-        printKnownConstraints(outputdir, events[sink], {"snk": "1"}, unique_reps)
-        set_sinks += 1
-        for rep in events[sink].reps:
-            if rep not in unique_reps:
-                continue
-
-            srcVar = getVar(unique_reps, rep, "src")
-            sanVar = getVar(unique_reps, rep, "san")
-            snkVar = getVar(unique_reps, rep, "snk")
-            # if variables[snkVar].is_constant:
-            #     print("{0} already constant".format(snkVar))
-            variables[srcVar].set_constant(0.0)
-            variables[sanVar].set_constant(0.0)
-            variables[snkVar].set_constant(1.0)
-
-
-    set_san=0
-    for san in known_sanitizers:
-        if san not in events.keys() or san not in candidate_sanitizers:
-            continue
-        printKnownConstraints(outputdir, events[san], {"san": "1"}, unique_reps)
-        set_san += 1
-        for rep in events[san].reps:
-            if rep not in unique_reps:
-                continue
-
-            srcVar = getVar(unique_reps, rep, "src")
-            sanVar = getVar(unique_reps, rep, "san")
-            snkVar = getVar(unique_reps, rep, "snk")
-            # if variables[sanVar].is_constant:
-            #     print("{0} already constant".format(sanVar))
-            variables[srcVar].set_constant(0.0)
-            variables[sanVar].set_constant(1.0)
-            variables[snkVar].set_constant(0.0)
-
-
-    print(set_sources)
-    print(set_san)
-    print(set_sinks)
-
-    # output var.txt
-    with open("{0}/var.txt".format(outputdir), "w") as varfile:
-        for v in variables.keys():
-            varfile.write(variables[v].print())
+    def writeVarConstrants(self):
+        # output var.txt and constraints_var.txt
+        with open("{0}/var.txt".format(self.outputdir), "w") as varfile:
+            varfile.write("\n".join([self.variables[v].print() for v in self.variables.keys()]))
             varfile.write("\n")
+            # for v in self.variables.keys():
+            #     varfile.write(self.variables[v].print())
+            #     varfile.write("\n")
 
-    # output constraints.txt
-    with open("{0}/constraints_var.txt".format(outputdir), "a+") as constraintsfile:
-        for v in variables.keys():
-            if not variables[v].is_constant:
-                constraintsfile.write(Constraint.print(variables[v].id, "1", Constraint.Constraint.LTE))
-                constraintsfile.write("\n")
-                constraintsfile.write(Constraint.print(variables[v].id, "0", Constraint.Constraint.GTE))
-                constraintsfile.write("\n")
-
-    eps_vars=[]
-    with open("{0}/constraints_flow.txt".format(outputdir), "a+") as constraintsfile:
-        for ss in sanit_sink.keys():
-            newepsvar = "eps_{0}".format(len(eps_vars))
-            eps_vars.append(newepsvar)
-            # get rep for each node
-            constraintsfile.write(Constraint.print("{0} + {1}".format(getBackOffVar(unique_reps, ss[0], "san"), getBackOffVar(unique_reps, ss[1], "snk")),
-                                                   "{0} + {1} + {2}".format(" + ".join([getBackOffVar(unique_reps, k, "src") for k in sanit_sink[ss]]), global_constant_C,
-                                                                            newepsvar),
-                                  Constraint.Constraint.LTE))
-            constraintsfile.write("\n")
-
-        for ss in source_sanit.keys():
-            newepsvar = "eps_{0}".format(len(eps_vars))
-            eps_vars.append(newepsvar)
-            constraintsfile.write(Constraint.print(
-                "{0} + {1}".format(getBackOffVar(unique_reps, ss[0], "src"), getBackOffVar(unique_reps, ss[1], "san")),
-                "{0} + {1} + {2}".format(" + ".join([getBackOffVar(unique_reps, k, "snk") for k in source_sanit[ss]]),
-                                   global_constant_C, newepsvar), Constraint.Constraint.LTE))
-
-            constraintsfile.write("\n")
-
-        for ss in source_sink.keys():
-            newepsvar = "eps_{0}".format(len(eps_vars))
-            eps_vars.append(newepsvar)
-            constraintsfile.write(Constraint.print(
-                "{0} + {1}".format(getBackOffVar(unique_reps, ss[0], "src"), getBackOffVar(unique_reps, ss[1], "snk")),
-                "{0} + {1} + {2}".format(" + ".join([getBackOffVar(unique_reps, k, "san") for k in source_sink[ss]]),
-                                   global_constant_C, newepsvar), Constraint.Constraint.LTE))
-            constraintsfile.write("\n")
-
-    with open("{0}/var.txt".format(outputdir), "a") as varfile:
-        for v in eps_vars:
-            varfile.write(v+":variable")
+        with open("{0}/var.txt".format(self.outputdir), "a") as varfile:
+            varfile.write("\n".join([v+":variable" for v in self.eps_vars]))
             varfile.write("\n")
+            # for v in self.eps_vars:
+            #     varfile.write(v + ":variable")
+            #     varfile.write("\n")
 
-    with open("{0}/constraints_var.txt".format(outputdir), "a") as constraintsfile:
-        for v in eps_vars:
-            constraintsfile.write(Constraint.print(v, "0", Constraint.Constraint.GTE))
+        # output constraints.txt
+        with open("{0}/constraints_var.txt".format(self.outputdir), "a+") as constraintsfile:
+            constraintsfile.write("\n".join([Constraint.print(self.variables[v].id, "1", Constraint.Constraint.LTE, format='norm')
+                                             for v in self.variables.keys() if not self.variables[v].is_constant]))
             constraintsfile.write("\n")
+            constraintsfile.write("\n".join([Constraint.print(self.variables[v].id, "0", Constraint.Constraint.GTE, format='norm')
+                                             for v in self.variables.keys() if not self.variables[v].is_constant]))
+            constraintsfile.write("\n")
+            # for v in self.variables.keys():
+            #     if not self.variables[v].is_constant:
+            #         constraintsfile.write(Constraint.print(self.variables[v].id, "1", Constraint.Constraint.LTE))
+            #         constraintsfile.write("\n")
+            #         constraintsfile.write(Constraint.print(self.variables[v].id, "0", Constraint.Constraint.GTE))
+            #         constraintsfile.write("\n")
 
-    # add constraints for candidate src/sink/san
-    print("Adding constraints for candidates")
-    with open("{0}/constraints_candidate.txt".format(outputdir), "w") as candidatesfile:
-        flowevents = []
-        for f in flows:
-            flowevents.append(f.source)
-            flowevents.append(f.sink)
-            flowevents.append(f.sanitizer)
-        flowevents = set(flowevents)
+        with open("{0}/constraints_var.txt".format(self.outputdir), "a") as constraintsfile:
+            constraintsfile.write("\n".join([Constraint.print(v, "0", Constraint.Constraint.GTE, format='norm') for v in self.eps_vars]))
+            constraintsfile.write("\n")
+            # for v in self.eps_vars:
+            #     constraintsfile.write(Constraint.print(v, "0", Constraint.Constraint.GTE))
+            #     constraintsfile.write("\n")
 
-        for event in flowevents:
-            e=event.id
-            if e in known_sources or e in known_sinks or e in known_sanitizers:
-                continue
-            if e not in candidate_sources:
-                candidatesfile.write(Constraint.print(getBackOffVar(unique_reps, event, "src"), "0", Constraint.Constraint.LTE))
-                candidatesfile.write("\n")
-            if e not in candidate_sinks:
-                candidatesfile.write(
-                    Constraint.print(getBackOffVar(unique_reps, event, "snk"), "0", Constraint.Constraint.LTE))
-                candidatesfile.write("\n")
-            if e not in candidate_sanitizers:
-                candidatesfile.write(
-                    Constraint.print(getBackOffVar(unique_reps, event, "san"), "0", Constraint.Constraint.LTE))
-                candidatesfile.write("\n")
+    def ff(self, row, events, flow_list, other):
+        sinks = list(other[other["ssan"] == row["ssan"]]["ssnk"])
+        pass
+
+    def generate_flow_constraints_join(self, projectdir, global_constant_C):
+        src_san_pairs = readPairs('data/{0}/{0}-pairSrcSan-{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
+                                                                      self.dataset_type is not None else ""), self.events)
+        san_snk_pairs = readPairs('data/{0}/{0}-pairSrcSan-{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
+                                                                      self.dataset_type is not None else ""), self.events)
+
+        #triples = src_san_pairs.join(san_snk_pairs, on="ssan", how='inner')
+        flow_list = []
+        src_san_pairs.apply(lambda x: self.ff(x, self.events, flow_list, san_snk_pairs))
 
 
-if __name__ == '__main__':
-    config = SolverConfig()
-    # projectdir='eclipse_orion'
-    projectdir = config.projectdir
-    outputdir = config.constraints_output_dir
-    global_constant_C = config.constraints_constant_C
-    generate_constraints(projectdir, outputdir, global_constant_C)
+        pass
+
+    def generate_flow_constraints(self, projectdir, global_constant_C, query=None):
+        sanit_sink = dict()
+        source_sanit = dict()
+        source_sink = dict()
+
+        flows = readFlowsAndReps('data/{0}/{0}-triple-id{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
+                                                                      self.dataset_type is not None else ""), self.events)
+
+        print("Unique reps: ", len(self.unique_reps))
+
+        # collecting events for every pair of source/sink/sanitizer
+        for flow in flows:
+            sanit_sink_tuple = (flow.sanitizer, flow.sink)
+            sanit_sink_list = []
+            if sanit_sink_tuple in sanit_sink:
+                sanit_sink_list = sanit_sink.get(sanit_sink_tuple)
+            else:
+                sanit_sink[sanit_sink_tuple] = sanit_sink_list
+            sanit_sink_list.append(flow.source)
+
+            source_sink_tuple = (flow.source, flow.sink)
+            source_sink_list = []
+            if source_sink_tuple in source_sink:
+                source_sink_list = source_sink.get(source_sink_tuple)
+            else:
+                source_sink[source_sink_tuple] = source_sink_list
+
+            source_sink_list.append(flow.sanitizer)
+
+            source_sanit_tuple = (flow.source, flow.sanitizer)
+            source_sanit_list = []
+            if source_sanit_tuple in source_sanit:
+                source_sanit_list = source_sanit.get(source_sanit_tuple)
+            else:
+                source_sanit[source_sanit_tuple] = source_sanit_list
+
+            source_sanit_list.append(flow.sink)
+
+        print("Flows: San-Snk {0}, Src-San {1}, Src-Snk {2}".format(len(sanit_sink), len(source_sanit), len(source_sink)))
+
+        with open("{0}/constraints_flow.txt".format(self.outputdir), "a+") as constraintsfile:
+            # constraintsfile.write("\n".join(
+            #     Constraint.print("{0} + {1}".format(self.getBackOffVar(k[0], "san"),
+            #                                         self.getBackOffVar(k[1], "snk")),
+            #                      "{0} + {1} + {2}".format(" + ".join([self.getBackOffVar(k, "src")
+            #                                                           for k in sanit_sink[k]]),
+            #                                               global_constant_C,
+            #                                               "eps_{0}".format(len(self.eps_vars)+i)),
+            #                      Constraint.Constraint.LTE) for i,k in enumerate(sanit_sink.keys())
+            # ))
+
+            for ss in sanit_sink.keys():
+                newepsvar = "{0}{1}".format(self._eps, len(self.eps_vars))
+                self.eps_vars.append(newepsvar)
+                # get rep for each node
+                # constraintsfile.write(Constraint.print("{0} + {1}".format(self.getBackOffVar(ss[0], "san"),
+                #                                                           self.getBackOffVar(ss[1], "snk")),
+                #                                        "{0} + {1} + {2}".format(" + ".join([self.getBackOffVar(k, "src")
+                #                                                                             for k in sanit_sink[ss]]),
+                #                                                                 global_constant_C,
+                #                                                                 newepsvar),
+                #                                        Constraint.Constraint.LTE))
+                constraintsfile.write(Constraint.print("{0} + {1} - {2} - {3}".format(self.getBackOffVar(ss[0], self._san),
+                                                                          self.getBackOffVar(ss[1], self._snk),
+                                                                                      " + ".join(
+                                                                                          [self.getBackOffVar(k, self._src)
+                                                                                           for k in sanit_sink[ss]]).replace(" + ", " - "),
+                                                                                      newepsvar
+                                                                                      ),
+                                                       "{0}".format(global_constant_C),
+                                                       Constraint.Constraint.LTE, format='norm'))
+                constraintsfile.write("\n")
+
+            for ss in source_sanit.keys():
+                newepsvar = "{0}{1}".format(self._eps, len(self.eps_vars))
+                self.eps_vars.append(newepsvar)
+                # constraintsfile.write(Constraint.print(
+                #     "{0} + {1}".format(self.getBackOffVar(ss[0], "src"), self.getBackOffVar(ss[1], "san")),
+                #     "{0} + {1} + {2}".format(" + ".join([self.getBackOffVar(k, "snk") for k in source_sanit[ss]]),
+                #                              global_constant_C, newepsvar), Constraint.Constraint.LTE))
+                constraintsfile.write(Constraint.print(
+                    "{0} + {1} - {2} - {3}".format(self.getBackOffVar(ss[0], self._src), self.getBackOffVar(ss[1], self._san)
+                                                   , " + ".join([self.getBackOffVar(k, self._snk) for k in source_sanit[ss]]).replace(" + ", " - "),
+                                                   newepsvar
+                                                   ),
+                    "{0}".format(global_constant_C), Constraint.Constraint.LTE, format='norm'))
+
+                constraintsfile.write("\n")
+
+            for ss in source_sink.keys():
+                newepsvar = "{0}{1}".format(self._eps, len(self.eps_vars))
+                self.eps_vars.append(newepsvar)
+                # constraintsfile.write(Constraint.print(
+                #     "{0} + {1}".format(self.getBackOffVar(ss[0], "src"), self.getBackOffVar(ss[1], "snk")),
+                #     "{0} + {1} + {2}".format(" + ".join([self.getBackOffVar(k, "san") for k in source_sink[ss]]),
+                #                              global_constant_C, newepsvar), Constraint.Constraint.LTE))
+                constraintsfile.write(Constraint.print(
+                    "{0} + {1} - {2} - {3}".format(self.getBackOffVar(ss[0], self._src),
+                                                   self.getBackOffVar(ss[1], self._snk),
+                                                   " + ".join([self.getBackOffVar(k, self._san) for k in source_sink[ss]]).replace(" + ", " - "),
+                                                   newepsvar
+                                                   ),
+                    "{0}".format(global_constant_C), Constraint.Constraint.LTE, format='norm'))
+                constraintsfile.write("\n")
+
+    def removeRareEvents(self):
+        keys=list(self.events.keys())
+        dropped=0
+        for k in keys:
+            reps = list(filter(lambda x: self.rep_count[x] >= self.min_rep_events, self.events[k].reps))
+            if len(reps) == 0:
+                self.events.pop(k)
+                dropped+=1
+
+        print("Dropped: %d" % dropped)
+
+    def writeObjective(self):
+        with open("{0}/objective.txt".format(self.outputdir), "w") as objectivefile:
+            obj = " + ".join(["{0} ".format(self.lambda_const) + k for k in self.variables.keys()])
+            obj = obj + " + " + " + ".join(self.eps_vars)
+            objectivefile.write(obj)
+            objectivefile.write("\n")
+
+

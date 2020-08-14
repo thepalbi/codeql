@@ -1,7 +1,14 @@
- pyparsing
- pandas
- tensorflow
- tensorflow_constrained_optimization
- numpy
- parsimonious
- lark-parser
+pyparsing
+pandas
+tensorflow
+tensorflow_constrained_optimization
+numpy
+parsimonious
+lark-parser
+sklearn
+gurobipy
+shutil
+functools
+bs4
+slugify
+
