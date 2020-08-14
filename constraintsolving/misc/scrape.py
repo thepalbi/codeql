@@ -26,9 +26,11 @@ def download_project(slug, dbdir):
         project_id = project_response["id"]
         snapshot_response = lgtm_session.get('https://lgtm.com/api/v1.0/snapshots/{0}/javascript'.format(project_id), stream=True)
         if snapshot_response.status_code == 200:
+            print("Downloading project from lgtm: {0}".format(slug))
             with open(dbpath, 'wb') as f:
                 snapshot_response.raw.decode_content = True
                 shutil.copyfileobj(snapshot_response.raw, f)
+            print("Downloaded to path: {0}".format(dbpath))
         else:
             print("Not Found! ", slug)
             return False
@@ -227,3 +229,5 @@ elif args.search is not None:
     keywordSearch("exec", args.search, args.output)
 elif args.dep_search is not None:
     keywordSearchInDeps(args.dep_search)
+elif args.download is not None:
+    download_project(args.download, args.output)

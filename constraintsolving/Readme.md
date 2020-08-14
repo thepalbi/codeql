@@ -2,6 +2,14 @@
 
 `python3 -m pip install -r requirements.txt`
 
+
+### Downloading databases from LGTM
+
+The list of databases is present in `nosqlinjection_projects.txt`, `sqlinjection_projects.txt`, and `xss_projects.txt`
+
+Run `python3 -m misc.scrape -dld [project-slug] -o [outputdirectory]`
+
+
 ### Generating propagation graph info and known sources/sinks/sanitizers
 
 Change project name, codeql cli path, and database name accordingly
