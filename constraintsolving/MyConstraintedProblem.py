@@ -1,7 +1,3 @@
-import tensorflow_constrained_optimization as tfco
-import tensorflow as tf
-from ConstraintParser import ConstraintParser
-from ParseExpression import ParseExpression
 import re
 import ast
 import functools
@@ -10,10 +6,14 @@ import gurobipy as gp
 import numpy as np
 
 from config import SolverConfig
+import tensorflow_constrained_optimization as tfco
+import tensorflow as tf
 
 
 class TaintSpecConstraints(tfco.ConstrainedMinimizationProblem):
     def __init__(self, variables):
+        from ConstraintParser import ConstraintParser
+        from ParseExpression import ParseExpression
         self.vars = variables
         self.exprParser = ConstraintParser()
         self.exprParser2 = ParseExpression(self.vars)
