@@ -16,7 +16,7 @@ predicate reachableFromSourceCandidate(PropagationGraph::Node src, PropagationGr
 }
 
 predicate reachableFromSanitizerCandidate(PropagationGraph::Node san, PropagationGraph::Node nd) {
-  san.isSanitizerCandidate() and
+    san.isSanitizerCandidate() and
   PropagationGraph::edge(san, nd)
   or
   exists(PropagationGraph::Node mid |
@@ -31,12 +31,12 @@ predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, Propaga
   san.isSanitizerCandidate() and
   src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
   reachableFromSanitizerCandidate(san, snk) and
-  snk.isSinkCandidate()
+  snk.isSinkCandidate()  
   // NB: we do not require `san` and `snk` to be different, since we might have a situation like
   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
 }
 
-query predicate tripleWAtleastOneRep(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk) {
+predicate tripleWAtleastOneRep(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk) {
   reachableFromSourceCandidate(src, san) and
   san.isSanitizerCandidate() and
   src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
@@ -46,30 +46,95 @@ query predicate tripleWAtleastOneRep(NodeWithFewReps src, NodeWithFewReps san, N
   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
 }
 
+query predicate tripleWRepID(string ssrc, string ssan, string ssnk) {
+    exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
+    reachableFromSourceCandidate(src, san) and
+    san.isSanitizerCandidate() and
+    src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
+    reachableFromSanitizerCandidate(san, snk) and
+    snk.isSinkCandidate() and     
+    ssrc = src.getconcatrep() and 
+    ssan = san.getconcatrep() and 
+    ssnk = snk.getconcatrep()
+    )
+    // NB: we do not require `san` and `snk` to be different, since we might have a situation like
+    // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
+}
+
+predicate pairSrcSan(string ssrc, string ssan){
+    exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
+        reachableFromSourceCandidate(src, san) and
+        san.isSanitizerCandidate() and
+        src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
+        reachableFromSanitizerCandidate(san, snk) and
+        snk.isSinkCandidate() and 
+        ssrc = getconcatrep(src) and 
+        ssan = getconcatrep(san) 
+        )
+}
+
+predicate pairSanSnk(string ssan, string ssnk){
+    exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
+        reachableFromSourceCandidate(src, san) and
+        san.isSanitizerCandidate() and
+        src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
+        reachableFromSanitizerCandidate(san, snk) and
+        snk.isSinkCandidate() and         
+        ssan = getconcatrep(san) and
+        ssnk = getconcatrep(snk)
+        )
+}
+
+predicate tripleWEventType(string ssrc, string ssan, string ssnk) {
+    exists(PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk |
+    triple(src, san, snk) and
+    ssrc = src.getId() and
+    ssan = san.getId() and
+    ssnk = snk.getId()
+    )
+}
+
+
+query predicate eventToConcatRep(PropagationGraph::Node n, string repr){
+    repr = n.getconcatrep()
+}
+
+predicate dfnodeToRep(string r){
+    exists(PropagationGraph::Node n | r = n.rep())
+}
+
 // prints 1 representation of event
-query predicate eventToRep(PropagationGraph::Node node, string str)
+ predicate eventToRep(PropagationGraph::Node node, string str)
 { 
   str = node.rep()
 }
 
-query predicate eventToRepUF(PropagationGraph::Node node, string str){
+ predicate eventToRepUF(PropagationGraph::Node node, string str){
   str = node.rep1()
 }
 
-query predicate sourceToRep(PropagationGraph::Node src){
-  src.isSourceCandidate()
+string getString(DataFlow::Node node){
+    result = node.getFile().getAbsolutePath() + ":" + node.getStartLine() + ":" + node.getStartColumn() + ":"+ node.getEndLine() + ":" + node.getEndColumn()
+
 }
 
-query predicate sanitizerToRep(PropagationGraph::Node san){
-  san.isSanitizerCandidate()
+string getconcatrep(PropagationGraph::Node node){
+    result = strictconcat(string r | r = node.rep() | r, "::")
 }
 
-query predicate sinkToRep(PropagationGraph::Node snk){
-  snk.isSinkCandidate()
+predicate commonDataFlowNode(PropagationGraph::Node node1, PropagationGraph::Node node2, DataFlow::Node dfnode1,
+    DataFlow::Node dfnode2, string loc1, string loc2, string rep1, string rep2)
+{
+    dfnode1 = node1.asDataFlowNode() and dfnode2 = node2.asDataFlowNode() and
+    dfnode1 != dfnode2 and     
+    loc1 = getString(dfnode1) and loc2 = getString(dfnode2) and
+    loc1 =  loc2 and 
+    rep1 = getconcatrep(node1) and
+    rep2 = getconcatrep(node2) 
 }
 
 class NodeWithFewReps extends PropagationGraph::Node {
-  NodeWithFewReps() { strictcount(rep()) <= 10000 and strictcount(rep()) > 0}
+  NodeWithFewReps() { strictcount(rep()) >= 1 }
   
   string toStr() {
     result = strictconcat(string repr | repr = rep() | repr, ", ") + 
@@ -121,26 +186,6 @@ predicate seldonConstraint3AsString(
                      (exists (NodeWithFewReps src | triple(src, san, snk) and repr = src.toStr()))
                      | repr, " ++  ")
 }
-
-/*
-query predicate seldonConstraint1(
-  PropagationGraph::Node src, PropagationGraph::Node san, int snkCount
- ) {
-  snkCount = strictcount(PropagationGraph::Node snk | triple(src, san, snk))
- }
-
-query predicate seldonConstraint2(
-  PropagationGraph::Node san, PropagationGraph::Node snk, int srcCount
- ) {
-  srcCount = strictcount(PropagationGraph::Node src | triple(src, san, snk))
- }
-
-query predicate seldonConstraint3(
-  PropagationGraph::Node src, PropagationGraph::Node snk, int sanCount
- ) {
-  sanCount = strictcount(PropagationGraph::Node san | triple(src, san, snk))
- }
- */
 
 predicate countoftypes(string type, int nodecnt, int repcnt) {
   type = "Source"  

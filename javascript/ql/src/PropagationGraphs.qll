@@ -87,11 +87,11 @@ module PropagationGraph {
     string rep() {
       result = candidateRep() and
       // eliminate rare representations
-      count(Node n | n.candidateRep() = result) >= 1
+      count(Node n | n.candidateRep() = result) >= 5
     }
 
     string getconcatrep(){
-        result = strictconcat(string r | r = this.rep() | r, "::")
+        result = strictconcat(string r | r = this.rep() | r, "::")fsi
     }
 
     /**
@@ -266,5 +266,9 @@ module PropagationGraph {
   ) {
     a = pointsTo(ctxt, pw.getBase()) and
     f = pw.getPropertyName()
+  }
+
+  string getconcatrep(DataFlow::Node n){
+    result = strictconcat(string r | r = candidateRep(n, _) and exists(PropagationGraph::Node nd | nd.rep() = r)  | r, "::")
   }
 }
