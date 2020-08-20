@@ -41,7 +41,9 @@ sanitizersbqps="$db/results/codeql-javascript/Sanitizers.bqrs"
 
 
 function generate() {
+  echo Analyzing database $2	$3
   $1 database analyze $2 $3 --format=csv --output=logs/js-results.csv --logdir=logs
+  echo Executing bqrs decode on $4 and $5
   $1 bqrs decode --entities=string,url $4 --result-set $5 --format=csv --output=$6
 }
 

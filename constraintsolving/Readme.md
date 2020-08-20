@@ -24,7 +24,7 @@ Set the following environment variables:
 
 `CODEQL_SOURCE_ROOT=`  path to the `ql` queries root (e.g.,`/home/dev/microsoft/ql`)
 
-`QUERY=`  query type (e.g.,`Xss.ql`)
+`QUERY=`  query type (e.g.,`Xss`)
 
 
 `./generatedata.sh [input]` 
