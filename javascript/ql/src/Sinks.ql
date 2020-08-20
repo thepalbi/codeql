@@ -1,3 +1,6 @@
+/**
+ * @kind graph
+ */
 import javascript
 import semmle.javascript.security.dataflow.BrokenCryptoAlgorithmCustomizations
 import semmle.javascript.security.dataflow.CleartextLoggingCustomizations
