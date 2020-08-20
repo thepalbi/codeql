@@ -12,16 +12,26 @@ The files `nosqlinjection_projects.txt`, `sqlinjection_projects.txt`, and `xss_p
 a list of datatabases to be fetched from the LGTM site.  
 
 Run `python3 -m misc.scrape -dld [project-slug] -o [outputdirectory]` where 
-`project-slug` is one database listed in the three aforementioned files (e.g. `1046224544/fontend`). The result of the script will be placed in the folder `outputdirectory` that must exist beforehand. 
+`project-slug` is one database listed in the three aforementioned files (e.g. `1046224544/fontend`). The result of the script is a zip file (e.g.,`outputdirectory/1046224544-fontend.zip`) will be placed in the folder `outputdirectory` that must exist beforehand. 
 
 
 ### Generating propagation graph info and known sources/sinks/sanitizers
+Unzip the zip file corresponding to the downloaded database (e.g.,:`outputdirectory/1046224544-fontend.zip`)
 
-Change project name, codeql cli path, and database name accordingly
+Set the following environment variables: 
 
-`./generatedata.sh`
+`CODEQL=` path to `codelql` bynary (e.g., `/home/tools/semmle/codeql-cli-atm-home/codeql/codeql`)
 
-This will generate propagation graph info, sources, sinks, sanitizers in `data/projectdir`
+`CODEQL_SOURCE_ROOT=`  path to the `ql` queries root (e.g.,`/home/dev/microsoft/ql`)
+
+`QUERY=`  query type (e.g.,`Xss.ql`)
+
+
+`./generatedata.sh [input]` 
+
+where `input` is the name of the resulting folder after of the unzipped database (e.g.,`output/1046224544_fontend_19c10c3`)
+
+This will generate propagation graph info, sources, sinks, sanitizers in `data/projectdir` (e.g.,`data/1046224544_fontend_19c10c3/...`)
 
 ### Generating Constraints
 
