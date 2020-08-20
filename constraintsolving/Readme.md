@@ -29,7 +29,7 @@ Set the following environment variables:
 
 `./generatedata.sh [projectdir]` 
 
-where `projectdir` is the name of the resulting folder after of the unzipped database (e.g.,`output/1046224544_fontend_19c10c3`)
+where `projectdir` is the name of the resulting folder after of the unzipped database and the output folder (e.g.,`output/1046224544_fontend_19c10c3`)
 
 This will generate propagation graph info, sources, sinks, sanitizers in `data/projectdir` (e.g.,`data/1046224544_fontend_19c10c3/...`)
 
@@ -39,7 +39,7 @@ Change projectdir
 
 ``python3 main.py --mode [projectdir] -g ``
 
-This will generate all constraints in `constraints/projectdir` folder
+This will generate all constraints in `constraints/projectdir` folder (e.g.,`constraints/1046224544_fontend_19c10c3/...`)
 
 ## Running solver
 
