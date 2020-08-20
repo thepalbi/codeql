@@ -91,7 +91,7 @@ module PropagationGraph {
     }
 
     string getconcatrep(){
-        result = strictconcat(string r | r = this.rep() | r, "::")fsi
+        result = strictconcat(string r | r = this.rep() | r, "::")
     }
 
     /**
