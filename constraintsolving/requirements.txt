@@ -1,14 +1,15 @@
+numpy==1.18.5
 pyparsing
 pandas
 tensorflow
 tensorflow_constrained_optimization
-numpy
 parsimonious
 lark-parser
 sklearn
-gurobipy
-shutil
-functools
-bs4
-slugify
-
+# gurobipy
+# shutil
+# functools
+# bs4
+# slugify
+python-slugify
+pybraries

@@ -2,12 +2,17 @@
 
 `python3 -m pip install -r requirements.txt`
 
+Then try `python3 -m pip gurobipy`.  In OSX you may need to install `girubi` support for python manualy  executing this command: 
+`python3 /Library/gurobiXXX/mac64/setup.py install` where `XXX` is the version installed in your computer.
+
 
 ### Downloading databases from LGTM
 
-The list of databases is present in `nosqlinjection_projects.txt`, `sqlinjection_projects.txt`, and `xss_projects.txt`
+The files `nosqlinjection_projects.txt`, `sqlinjection_projects.txt`, and `xss_projects.txt` contains each one a 
+a list of datatabases to be fetched from the LGTM site.  
 
-Run `python3 -m misc.scrape -dld [project-slug] -o [outputdirectory]`
+Run `python3 -m misc.scrape -dld [project-slug] -o [outputdirectory]` where 
+`project-slug` is one database listed in the three aforementioned files (e.g. `1046224544/fontend`). The result of the script will be placed in the folder `outputdirectory` that must exist beforehand. 
 
 
 ### Generating propagation graph info and known sources/sinks/sanitizers
