@@ -27,9 +27,9 @@ Set the following environment variables:
 `QUERY=`  query type (e.g.,`Xss`)
 
 
-`./generatedata.sh [input]` 
+`./generatedata.sh [projectdir]` 
 
-where `input` is the name of the resulting folder after of the unzipped database (e.g.,`output/1046224544_fontend_19c10c3`)
+where `projectdir` is the name of the resulting folder after of the unzipped database (e.g.,`output/1046224544_fontend_19c10c3`)
 
 This will generate propagation graph info, sources, sinks, sanitizers in `data/projectdir` (e.g.,`data/1046224544_fontend_19c10c3/...`)
 
