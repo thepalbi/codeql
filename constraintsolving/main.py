@@ -14,6 +14,7 @@ parser=argparse.ArgumentParser()
 parser.add_argument('-g', dest='generate_constraints', action='store_true')
 parser.add_argument('-s', dest='solve', action='store_true')
 parser.add_argument('--mode', dest='mode', default='combined')
+parser.add_argument('--projects-folder', dest='projects_folder', default='./data')
 
 args=parser.parse_args()
 config = SolverConfig()
@@ -22,10 +23,13 @@ if args.generate_constraints:
     if args.mode == 'combined':
         # TODO: fix path to look for projects
         print("Combined mode")
-        projects = glob('databases\\projects\\NoSqlInjection\\*')
+        projects = glob(args.projects_folder+'/NoSqlInjection/*')
     else:
-        print("Single project mode")
-        projects = glob('databases\\projects\\*\\'+args.mode)
+        print("Single project mode. Project:",args.mode)
+        projects = glob(args.projects_folder+'/'+args.mode)
+
+
+    print("projects:", projects) 
 
     projectdir = args.mode if config.query is None else args.mode + "/" + config.query
     tstamp = str(int(time.mktime(datetime.datetime.now().timetuple())))

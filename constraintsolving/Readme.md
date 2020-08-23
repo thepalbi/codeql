@@ -2,8 +2,9 @@
 
 `python3 -m pip install -r requirements.txt`
 
-Then try `python3 -m pip gurobipy`.  In OSX you may need to install `girubi` support for python manualy  executing this command: 
-`python3 /Library/gurobiXXX/mac64/setup.py install` where `XXX` is the version installed in your computer.
+Then try `python3 -m pip gurobipy` to install python support for the gurobi solver.  
+
+In OSX you may need to install `girubi` support for python manualy by executing this command: `python3 /Library/gurobiXXX/mac64/setup.py install`, where `XXX` is the version installed in your computer.
 
 
 ### Downloading databases from LGTM
@@ -37,7 +38,7 @@ This will generate propagation graph info, sources, sinks, sanitizers in `data/p
 
 Change projectdir
 
-``python3 main.py --mode [projectdir] -g ``
+``python3 main.py --mode [projectdir] -g `` where project is the folder of the project (or projects) to analyze (e.g.: `1046224544_fontend_19c10c3`)
 
 This will generate all constraints in `constraints/projectdir` folder (e.g.,`constraints/1046224544_fontend_19c10c3/...`)
 
