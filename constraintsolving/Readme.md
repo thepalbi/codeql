@@ -38,9 +38,11 @@ This will generate propagation graph info, sources, sinks, sanitizers in `data/p
 
 Change projectdir
 
-``python3 main.py --mode [projectdir] -g `` where project is the folder of the project (or projects) to analyze (e.g.: `1046224544_fontend_19c10c3`)
+``python3 main.py --mode [projectdir] -g `` where project is the folder of the project to analyze (e.g.: `1046224544_fontend_19c10c3`)
 
 This will generate all constraints in `constraints/projectdir` folder (e.g.,`constraints/1046224544_fontend_19c10c3/...`)
+
+To analyze several projects use the option  `--mode combined` and add the parameter `--project_folders [folder]` to indicate the folder containing all the projects to be analyzed and .
 
 ## Running solver
 
