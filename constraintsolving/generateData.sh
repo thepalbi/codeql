@@ -32,11 +32,11 @@ mkdir -p data/${project_name}
 
 
 ql="${codeql_source_root}/javascript/ql/src/PropagationGraph.ql"
-sourceql="${codeql_source_root}/javascript/ql/src/Sources.ql"
+sourceql="${codeql_source_root}/javascript/ql/src/Sources-${query}.ql"
 sourcebqps="$db/results/codeql-javascript/Sources.bqrs"
-sinksql="${codeql_source_root}/javascript/ql/src/Sinks.ql"
+sinksql="${codeql_source_root}/javascript/ql/src/Sinks-${query}.ql"
 sinksbqps="$db/results/codeql-javascript/Sinks.bqrs"
-sanitizersql="${codeql_source_root}/javascript/ql/src/Sanitizers.ql"
+sanitizersql="${codeql_source_root}/javascript/ql/src/Sanitizers-${query}.ql"
 sanitizersbqps="$db/results/codeql-javascript/Sanitizers.bqrs"
 
 
