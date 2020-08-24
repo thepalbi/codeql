@@ -17,22 +17,36 @@ Run `python3 -m misc.scrape -dld [project-slug] -o [outputdirectory]` where
 
 
 ### Generating propagation graph info and known sources/sinks/sanitizers
-Unzip the zip file corresponding to the downloaded database (e.g.,:`outputdirectory/1046224544-fontend.zip`)
+First, follow the steps below to prepare the environment:
 
-Set the following environment variables: 
+- Unzip the zip file corresponding to the downloaded database (e.g.,:`output/1046224544-fontend.zip`)
+- Let's say the CodeQL database has bees stored in `output/1046224544_fontend_19c10c3`
+- Set the following environment variables: 
+    - `CODEQL=` path to `codelql` bynary (e.g., `/home/tools/semmle/codeql-cli-atm-home/codeql/codeql`)
+    - `CODEQL_SOURCE_ROOT=`  path to the `ql` queries root (e.g.,`/home/dev/microsoft/ql`)
 
-`CODEQL=` path to `codelql` bynary (e.g., `/home/tools/semmle/codeql-cli-atm-home/codeql/codeql`)
+The old `generateData.sh` string has been moved to the `generation` python module. The basic usage is the following.
 
-`CODEQL_SOURCE_ROOT=`  path to the `ql` queries root (e.g.,`/home/dev/microsoft/ql`)
+```python
+from generation import DataGenerator
+import logging
 
-`QUERY=`  query type (e.g.,`Xss`)
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s\t%(asctime)s] %(name)s\t%(message)s")
 
+if __name__ == "__main__":
+    generator = DataGenerator("output/1046224544_fontend_19c10c3", "1046224544_fontend_19c10c3")
+    path_to_sources, path_to_sinks, path_to_sanitizers, path_to_triplets, path_to_repr_mapping =
+        generator.generate("Sql")
+```
 
-`./generatedata.sh [projectdir]` 
-
-where `projectdir` is the name of the resulting folder after of the unzipped database and the output folder (e.g.,`output/1046224544_fontend_19c10c3`)
-
-This will generate propagation graph info, sources, sinks, sanitizers in `data/projectdir` (e.g.,`data/1046224544_fontend_19c10c3/...`)
+- The instantiation of `DataGenerator` contains as arguments first the relative path to the folder containing the CodeQL database (which we extracted above), and the second one is a project slug (it's recommended to use the folder name of the database).
+- The generation should not need to be run with any working directory (it uses inside all absolute paths).
+- The call to `DataGenerator::generate` will orchestrate all the calls to the `CodeQL` toolchain, to generate and extract:
+    - Sources, sinks and sanitizers information
+    - Propagation graph
+    - A seldon-like repr mapping
+- The call above returns the path to each generated CSV file, in that order
+- It's recommended to configure logging as mentioned above, since it might be helpful to debug issues
 
 ### Generating Constraints
 

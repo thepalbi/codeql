@@ -1,5 +1,4 @@
 from generation import DataGenerator
-import argparse
 import logging
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s\t%(asctime)s] %(name)s\t%(message)s")
