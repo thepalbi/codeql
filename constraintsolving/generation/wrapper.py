@@ -5,10 +5,6 @@ import logging
 
 """CodeQLWrapper is a codeql wrapper in Python. It finds the codeql executable through
 the $CODEQL environment variable."""
-
-
-formatter = logging.Formatter(fmt="")
-
 class CodeQLWrapper:
     def __init__(self):
         try:
@@ -39,6 +35,7 @@ class CodeQLWrapper:
             "Running 'database analyze' for project=[%s] and query_file=[%s]", project, query_file)
         self._run_process(command_and_arguments)
 
+    """Runs codeql analyzing the raw results of a BQRS file, formatting them in a file."""
     def bqrs_decode(self,
                     bqrs_file: str,
                     result_set: str,
