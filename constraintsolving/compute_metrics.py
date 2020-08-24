@@ -99,9 +99,13 @@ def printmetrics(outputdir, trainingsize, lambda_const, trials):
         #             newsans.write("\n")
 
         with open("results/{0}/reprScores.txt".format(outputdir), "w") as reprscores:
+            
+            #print("Repr set size: ", len(reprs))
+
             for repr in reprs:
                 repid=repr.split(":")[-1].strip()
                 rep=":".join(repr.split(":")[0:-1])
+                #print(vars[repid+_src],' ', vars[repid+_snk], ' ', vars[repid+_san] )
                 if vars[repid+_src] > 0.0:
                     reprscores.write(
                         "repr = \"{0}\" and t = \"{1}\" and result = {2} or \n".format(rep, "src",

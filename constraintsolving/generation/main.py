@@ -12,6 +12,6 @@ if __name__ == "__main__":
     else:
         projectName = os.path.basename(projectDir)
 
-    queryType = os.environ["QUERY"]
+    queryType = os.environ["QUERY_TYPE"]
     generator = DataGenerator(projectDir, projectName)
     ath_to_sources, path_to_sinks, path_to_sanitizers, path_to_triplets, path_to_repr_mapping = generator.generate(queryType)

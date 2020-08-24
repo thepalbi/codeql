@@ -123,14 +123,6 @@ predicate sanitizerClasses(DataFlow::Node nd, string q, string repr){
     repr = PropagationGraph::getconcatrep(nd)
 }
 
-predicate sanitizerSqlClasses(DataFlow::Node nd, string q, string repr){
-    (           
-        nd instanceof SqlInjection::Sanitizer and q="SqlInjection" or
-        nd instanceof SqlInjectionWorse::Sanitizer and q="SqlInjectionWorse"       
-    ) and
-    repr = PropagationGraph::getconcatrep(nd)
-}
-
   predicate allSanitizers(DataFlow::Node nd){
     (
       nd instanceof BrokenCryptoAlgorithm::Sanitizer or

@@ -3,7 +3,7 @@
  */
 import javascript
 import PropagationGraphs
-import Sinks
+import Sanitizers
 
 query predicate sanitizerSqlClasses(DataFlow::Node nd, string q, string repr){
     (           
