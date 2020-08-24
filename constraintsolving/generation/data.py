@@ -20,36 +20,82 @@ class DataGenerator:
         self.generated_data_dir = self._get_generated_data_dir()
 
     def _get_generated_data_dir(self):
-        generated_data_dir = os.path.join(constaintssolving_dir, f"data/{self.project_name}/")
+        generated_data_dir = os.path.join(
+            constaintssolving_dir, f"data/{self.project_name}/")
         if not os.path.isdir(generated_data_dir):
-            self.logger.warn("Creating directory for generated data at %s", generated_data_dir)
+            self.logger.warn(
+                "Creating directory for generated data at %s", generated_data_dir)
             os.makedirs(generated_data_dir)
         return generated_data_dir
-        
 
-    def _get_query_file(self, queried_entity: str, query_type: str) -> str:
-        # ql_file = "/Users/thepalbi/Facultad/tesis/ql-atm/javascript/ql/src/Sources-{0}.ql".format(query)
-        return os.path.join(ql_sources_root, f"javascript/ql/src/{queried_entity}-{query_type}.ql")
+    def _get_query_file_for_entity(self, queried_entity: str, query_type: str) -> str:
+        return self._get_query_file(f"{queried_entity}-{query_type}.ql")
 
-    def _get_bqrs_file(self, queried_entity: str, query_type: str) -> str:
-        # bqrs_file = "output/1046224544_fontend_19c10c3/results/codeql-javascript/Sources-{0}.bqrs".format(query)
-        return os.path.join(constaintssolving_dir, self.project_dir, f"results/codeql-javascript/{queried_entity}-{query_type}.bqrs")
+    def _get_query_file(self, filename: str) -> str:
+        return os.path.join(ql_sources_root, "javascript/ql/src/", filename)
+
+    def _get_bqrs_file_for_entity(self, queried_entity: str, query_type: str) -> str:
+        return self._get_bqrs_file(f"{queried_entity}-{query_type}.bqrs")
+
+    def _get_bqrs_file(self, filename: str) -> str:
+        return os.path.join(constaintssolving_dir, self.project_dir, "results/codeql-javascript/", filename)
 
     def generate(self, query_type: str):
         """Main data generation method, that orchestrates the process.
 
         Args:
             query_type (str): query type to generate data for (eg. Xss, Sql, NoSql, etc.).
-        """        
+        """
+        sources_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-sources-{query_type}.prop.csv")
+        sinks_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-sinks-{query_type}.prop.csv")
+        sanitizers_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-sanitizers-{query_type}.prop.csv")
         # sources
-        sources_output_file = os.path.join(self.generated_data_dir, f"{self.project_name}-sinks-{query_type}.prop.csv")
-        self.logger.info("Generating Sources data in file=[%s]", sources_output_file)
-        self.codeql.database_analyze(self.project_dir, self._get_query_file(SOURCES, query_type), f"{logs_folder}/js-results.csv")
-        self.codeql.bqrs_decode(
-            self._get_bqrs_file(SOURCES, query_type),
-            f"source{query_type}Classes",
-            sources_output_file)
+        self._generate_for_entity(
+            query_type, SOURCES, f"source{query_type}Classes", sources_output_file)
         # sinks
+        self._generate_for_entity(
+            query_type, SINKS, f"sink{query_type}Classes", sinks_output_file)
         # sanitizers
+        self._generate_for_entity(
+            query_type, SANITIZERS, f"sanitizer{query_type}Classes", sanitizers_output_file)
+
+        # running propagation graph queries
+        self.codeql.database_analyze(
+            self.project_dir,
+            self._get_query_file("PropagationGraph.ql"),
+            f"{logs_folder}/js-results.csv")
+        # extracting results from bqrs files
+        # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-triple-id-small.prop.csv
+        tiplets_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-triple-id-small.prop.csv")
+        # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-eventToConcatRep-small.prop.csv
+        # TODO: Add logging for this part
+        repr_mapping_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-eventToConcatRep-small.prop.csv")
         # propagation graph
+        self.codeql.bqrs_decode(
+            self._get_bqrs_file("PropagationGraph.bqrs"),
+            "tripleWRepID",
+            tiplets_output_file)
         # repr
+        self.codeql.bqrs_decode(
+            self._get_bqrs_file("PropagationGraph.bqrs"),
+            "eventToConcatRep",
+            repr_mapping_output_file)
+
+    def _generate_for_entity(self, query_type: str, entity_type: str, result_set: str, output_file: str):
+        self.logger.info(
+            "Generating %s data in file=[%s]", entity_type, output_file)
+        self.codeql.database_analyze(
+            self.project_dir,
+            self._get_query_file_for_entity(
+                entity_type,
+                query_type),
+            f"{logs_folder}/js-results.csv")
+        self.codeql.bqrs_decode(
+            self._get_bqrs_file_for_entity(entity_type, query_type),
+            result_set,
+            output_file)
