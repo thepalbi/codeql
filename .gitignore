@@ -13,9 +13,13 @@
 # Visual studio temporaries, except a file used by QL4VS
 .vs/*
 !.vs/VSWorkspaceSettings.json
+.vscode/
 
 # Byte-compiled python files
 *.pyc
+
+# Python environment
+.env/
 
 # It's useful (though not required) to be able to unpack codeql in the ql checkout itself
 /codeql/
