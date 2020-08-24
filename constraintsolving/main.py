@@ -23,7 +23,8 @@ if args.generate_constraints:
     if args.mode == 'combined':
         # TODO: fix path to look for projects
         print("Combined mode")
-        projects = glob(args.projects_folder+'/NoSqlInjection/*')
+        query_name = os.environ["QUERY_NAME"]
+        projects = glob(args.projects_folder+'/'+ query_name+'/*')
     else:
         print("Single project mode. Project:",args.mode)
         projects = glob(args.projects_folder+'/'+args.mode)

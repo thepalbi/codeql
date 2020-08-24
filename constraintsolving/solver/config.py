@@ -1,9 +1,12 @@
+import os
+
 class SolverConfig:
-    def __init__(self):
+    def __init__(self, query = os.environ["QUERY_NAME"],\
+         output_path = os.path.join(os.environ["CODEQL_SOURCE_ROOT"],"javascript","ql","src","tsm_scores")):
         # TODO: produce ql file with scores directly here
-        self.codeql_output_path = r"C:\Users\saika\projects\ql\javascript\ql\src\tsm_scores"
+        self.codeql_output_path = output_path
         # constraint config
-        self.query = "DomBasedXssWorse"
+        self.query = query
         self.constraints_constant_C = 0.75
         self.use_all_sanitizers = False
 
