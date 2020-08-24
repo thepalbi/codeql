@@ -11,9 +11,7 @@ SOURCES = "Sources"
 SINKS = "Sinks"
 SANITIZERS = "Sanitizers"
 
-# TODO: NoSql is missing a sanitizer query
-SUPPORTED_QUERY_TYPES = ["Sql", "Xss"]
-
+SUPPORTED_QUERY_TYPES = ["NoSql", "Sql", "Xss"]
 
 class DataGenerator:
     """DataGenerator extracts the events and propagation graph information from the
