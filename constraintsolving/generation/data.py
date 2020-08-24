@@ -1,6 +1,7 @@
 from .wrapper import CodeQLWrapper
 import os
 import logging
+from typing import Tuple
 
 ql_sources_root = os.environ["CODEQL_SOURCE_ROOT"]
 constaintssolving_dir = os.path.join(ql_sources_root, "constraintsolving/")
@@ -10,9 +11,23 @@ SOURCES = "Sources"
 SINKS = "Sinks"
 SANITIZERS = "Sanitizers"
 
+# TODO: NoSql is missing a sanitizer query
+SUPPORTED_QUERY_TYPES = ["Sql", "Xss"]
+
 
 class DataGenerator:
+    """DataGenerator extracts the events and propagation graph information from the
+    provided project. It orchestrates the calls to the CodeQL toolchain, running 
+    a couple of queries (for sources, sinks, sanitizers, and the PG).
+    """
+
     def __init__(self, project_dir: str, project_name: str):
+        """Creates a new DataGenerator for the given project
+
+        Args:
+            project_dir (str): the relative directory to projects CodeQL database
+            project_name (str): the project slug (usually the folder name of the project's database)
+        """
         self.project_dir = project_dir
         self.project_name = project_name
         self.codeql = CodeQLWrapper()
@@ -40,12 +55,15 @@ class DataGenerator:
     def _get_bqrs_file(self, filename: str) -> str:
         return os.path.join(constaintssolving_dir, self.project_dir, "results/codeql-javascript/", filename)
 
-    def generate(self, query_type: str):
+    def generate(self, query_type: str) -> Tuple[str, ...]:
         """Main data generation method, that orchestrates the process.
 
         Args:
             query_type (str): query type to generate data for (eg. Xss, Sql, NoSql, etc.).
         """
+        if not query_type in SUPPORTED_QUERY_TYPES:
+            raise Exception(
+                "{0} is not a supported query type. Currently supports {1}".format(query_type, SUPPORTED_QUERY_TYPES))
         sources_output_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-sources-{query_type}.prop.csv")
         sinks_output_file = os.path.join(
@@ -72,10 +90,11 @@ class DataGenerator:
         tiplets_output_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-triple-id-small.prop.csv")
         # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-eventToConcatRep-small.prop.csv
-        # TODO: Add logging for this part
         repr_mapping_output_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-eventToConcatRep-small.prop.csv")
-        # propagation graph
+
+        self.logger.info("Generating propagation graph data")
+        # propagation graph triplets
         self.codeql.bqrs_decode(
             self._get_bqrs_file("PropagationGraph.bqrs"),
             "tripleWRepID",
@@ -85,6 +104,13 @@ class DataGenerator:
             self._get_bqrs_file("PropagationGraph.bqrs"),
             "eventToConcatRep",
             repr_mapping_output_file)
+        return (
+            sources_output_file,
+            sinks_output_file,
+            sanitizers_output_file,
+            tiplets_output_file,
+            repr_mapping_output_file
+        )
 
     def _generate_for_entity(self, query_type: str, entity_type: str, result_set: str, output_file: str):
         self.logger.info(

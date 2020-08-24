@@ -3,9 +3,11 @@ import subprocess
 import logging
 
 
-"""CodeQLWrapper is a codeql wrapper in Python. It finds the codeql executable through
-the $CODEQL environment variable."""
 class CodeQLWrapper:
+    """CodeQLWrapper is a codeql wrapper in Python. It finds the codeql executable through
+    the $CODEQL environment variable.
+    """
+
     def __init__(self):
         try:
             # TODO: Check that file exists, and it's codeql?
@@ -55,11 +57,13 @@ class CodeQLWrapper:
         self._run_process(command_and_arguments)
 
     def _run_process(self, command_and_arguments):
-        self._logger.debug("command issued: %s", " ".join(command_and_arguments))
+        self._logger.debug("command issued: %s",
+                           " ".join(command_and_arguments))
         try:
             process = subprocess.run(
                 command_and_arguments, capture_output=True, check=True, text=True)
         except subprocess.CalledProcessError as call_error:
-            self._logger.error("Error when executing codeql:\n%s", call_error.stderr)
+            self._logger.error(
+                "Error when executing codeql:\n%s", call_error.stderr)
             raise Exception("error calling codeql", call_error)
         self._logger.debug("Output from codeql:\n%s", process.stdout)
