@@ -1,8 +1,8 @@
 import gurobipy as gp
 from gurobipy import GRB
-from MyConstraintedProblem import GBTaintSpecConstraints
+from .MyConstraintedProblem import GBTaintSpecConstraints
 import shutil
-from config import SolverConfig
+from .config import SolverConfig
 
 def solve_constraints_combine_model(projectdir, config:SolverConfig):
     constraintsdir = 'constraints/{0}'.format(projectdir)

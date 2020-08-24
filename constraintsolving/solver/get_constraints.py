@@ -4,7 +4,7 @@ import Constraint
 import os
 import re
 import shutil
-from config import SolverConfig
+from .config import SolverConfig
 
 class ConstraintBuilder:
     def __init__(self, mode, outputdir, min_rep_events, dataset_type, constraint_format, lambda_const):

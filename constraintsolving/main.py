@@ -1,6 +1,6 @@
-from config import SolverConfig
-from get_constraints import ConstraintBuilder
-from solve_gb import solve_constraints, solve_constraints_combine_model
+from solver.config import SolverConfig
+from solver.get_constraints import ConstraintBuilder
+from solver.solve_gb import solve_constraints, solve_constraints_combine_model
 from compute_metrics import getallmetrics
 import os
 from io import StringIO

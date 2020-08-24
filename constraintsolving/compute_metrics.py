@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score
 from DataParser import readKnown
 # dirprefix="C:/Users/saika/projects/ql/constraintsolving/databases/eclipse_orion.client_js_srcVersion_9ef167/eclipse_orion.client_9ef1675/src/"
-from config import SolverConfig
+from solver.config import SolverConfig
 
 
 def getmetrics(actual, predicted, c):
