@@ -18,12 +18,12 @@ parser.add_argument('--projects-folder', dest='projects_folder', default='./data
 
 args=parser.parse_args()
 config = SolverConfig()
+query_name = os.environ["QUERY_NAME"]
 
 if args.generate_constraints:
     if args.mode == 'combined':
         # TODO: fix path to look for projects
         print("Combined mode")
-        query_name = os.environ["QUERY_NAME"]
         projects = glob(args.projects_folder+'/'+ query_name+'/*')
     else:
         print("Single project mode. Project:",args.mode)
@@ -32,7 +32,7 @@ if args.generate_constraints:
 
     print("projects:", projects) 
 
-    projectdir = args.mode if config.query is None else args.mode + "/" + config.query
+    projectdir = args.mode if config.query_name is None else args.mode + "/" + config.query_name
     tstamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
     projectdir = projectdir + "-" + tstamp
     print("Project dir: %s" % projectdir)
@@ -46,7 +46,7 @@ if args.generate_constraints:
     print("Collected {0} projects".format(len(projects)))
     print("Creating events and reps")
     constraint_builder = ConstraintBuilder(args.mode,
-                                           'constraints/{2}/{0}-{1}'.format(config.query,
+                                           'constraints/{2}/{0}-{1}'.format(config.query_name,
                                                                                  tstamp, args.mode),
                                            config.min_rep_events,
                                            config.dataset_type,
@@ -54,10 +54,12 @@ if args.generate_constraints:
                                            config.lambda_const)
     for proj in projects:
         try:
-            print(proj)
+            print("Analyzing: ", proj)
             constraint_builder.readEventsAndReps(proj)
-            constraint_builder.readAllKnown(proj, config.query, config.use_all_sanitizers)
-        except:
+            constraint_builder.readAllKnown(proj, config.query_name, config.query_type, config.use_all_sanitizers)
+        except Exception as e:
+            print("There was a problem reading events!")
+            traceback.print_exc(file=sys.stdout)
             pass
     #exit(1)
     # remove events with no min reps
@@ -69,7 +71,7 @@ if args.generate_constraints:
     for proj in projects:
         print(">>>>>>>>>>>>>Executing project %s" % proj)
         try:
-            constraint_builder.generate_flow_constraints(proj, config.constraints_constant_C, config.query)
+            constraint_builder.generate_flow_constraints(proj, config.constraints_constant_C, config.query_name)
             pass
         except:
             import traceback as tb
@@ -81,7 +83,7 @@ if args.generate_constraints:
 
 
 if args.solve:
-    projectdir = args.mode if config.query is None else args.mode + "/" + config.query
+    projectdir = args.mode if config.query_name is None else args.mode + "/" + config.query_name
 
     candidates=glob("constraints/{0}".format(projectdir+"*"))
     candidates.sort(key=os.path.getmtime)

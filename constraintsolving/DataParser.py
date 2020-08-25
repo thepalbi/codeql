@@ -24,6 +24,7 @@ def remapRepsToClusters(reps):
 
 
 def readEvents(file_loc, events=None, unique_reps=None, rep_count=None):
+    print("Readinf events from: ", file_loc)
     df=pd.read_csv(file_loc)
 
     # create events
@@ -137,6 +138,9 @@ def readPairs(file_loc:str, events):
 
 
 def readKnown(file_loc:str, suffix:str, query):
+    print("Readinf known from: ", file_loc)
+    print("Query: ", query)
+
     df=pd.read_csv(file_loc)
     print("Unique {0} locations: {1}, reps: {2} ".format(suffix,len(list(set(df["URL for nd"]))), len(list(set(df["repr"])))))
 

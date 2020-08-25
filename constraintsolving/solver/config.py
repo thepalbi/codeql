@@ -1,12 +1,14 @@
 import os
 
 class SolverConfig:
-    def __init__(self, query = os.environ["QUERY_NAME"],\
+    def __init__(self, query_name = os.environ["QUERY_NAME"],\
+         query_type = os.environ["QUERY_TYPE"],\
          output_path = os.path.join(os.environ["CODEQL_SOURCE_ROOT"],"javascript","ql","src","tsm_scores")):
         # TODO: produce ql file with scores directly here
         self.codeql_output_path = output_path
         # constraint config
-        self.query = query
+        self.query_name = query_name
+        self.query_type = query_type
         self.constraints_constant_C = 0.75
         self.use_all_sanitizers = False
 

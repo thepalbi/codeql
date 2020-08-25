@@ -221,16 +221,17 @@ class ConstraintBuilder:
                 repIDs = ["n{0}".format(self.unique_reps[rep]) for rep in self.events[e].reps]
                 eventToRepIDs.write("{0}:{1}\n".format(e, ",".join(repIDs)))
 
-    def readAllKnown(self, projectdir, query, use_all_sanitizers):
+    def readAllKnown(self, projectdir, query, query_type, use_all_sanitizers):
         # constraints for known sources
         print("Constraints for known events")
-        known_sources = readKnown("data/{0}/{0}-src-xss.prop.csv".format(projectdir), "src", query)
-        known_sinks = readKnown("data/{0}/{0}-sinks-xss.prop.csv".format(projectdir), "sinks", query)
+        known_sources = readKnown("data/{0}/{0}-{1}-{2}.prop.csv".format(projectdir, "sources", query_type), "sources", query)
+        known_sinks = readKnown("data/{0}/{0}-{1}-{2}.prop.csv".format(projectdir,"sinks",query_type), "sinks", query)
         if use_all_sanitizers:
             print("Using all sanitizers")
-            known_sanitizers = readKnown("data/{0}/{0}-sanitizers-xss.prop.csv".format(projectdir), "sanitizers", None)
+            # TO-DO: Check last parameter: Is None or should be removed?
+            known_sanitizers = readKnown("data/{0}/{0}-{1}-{2}.prop.csv".format(projectdir, "sanitizers", query_type), "sanitizers", None)
         else:
-            known_sanitizers = readKnown("data/{0}/{0}-sanitizers-xss.prop.csv".format(projectdir), "sanitizers", query)
+            known_sanitizers = readKnown("data/{0}/{0}-{1}-{2}.prop.csv".format(projectdir, "sanitizers", query_type), "sanitizers", query)
         self.known_sources[projectdir] = known_sources
         self.known_sinks[projectdir] = known_sinks
         self.known_sanitizers[projectdir] = known_sanitizers
