@@ -3,7 +3,9 @@ import os
 import re
 import numpy as np
 import pandas as pd
-query="SqlInjectionWorse"
+
+query = os.environ["QUERY_NAME"]
+
 files=glob.glob("../results/*/{0}-*/reprScores.txt".format(query))
 
 

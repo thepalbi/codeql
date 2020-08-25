@@ -70,16 +70,13 @@ To run the solver perform:  ``python3 main.py --mode [projectdir] -s``
 
 This will generate results in `results/projectdir/[query-name+timestamp]`and the gurobi model in `models/projectdir/[query-name+timestamp]` folder. 
 
-`results/projectdir/[query-name=timestamp]` will contain `reprScores.txt` which needs to be added to `codeql/javascript/ql/src/tsm_[query-type]_worse.qll` file or use the next steps to combine scores
+`results/projectdir/[query-name=timestamp]` will contain `reprScores.txt` which needs to be added to `ql/javascript/ql/src/tsm_[query-type]_worse.qll` file or use the next steps to combine scores
 
 ## Combine the scores from each database
 
 Use `cd misc; python3 combinescores.py` to combine the scores from each database.
 
 Copy the scores to the target `query-type`:   `codeql/javascript/ql/src/tsm_[query-type]_worse.qll`
-
-[//]: # (Change the `query` to target query-type: [`NosqlInjectionWorse`, `SqlInjectionWorse`,`DomBasedXssWorse`])
-
 
 ## Using the scored reps to compute event scores for each database
 

@@ -1,16 +1,17 @@
 import javascript
 import PropagationGraphs
 import metrics
-import scores_nosqlinjection_045
+//import scores_nosqlinjection_045
 import CommandInjection
 import tsm_nosql1
 import tsm_nosql2
 import tsm_nosql3
-import tsm_nosql4
-import tsm_nosql5
+//import tsm_nosql4
+//import tsm_nosql5
 import tsm_nosql6
 import tsm_nosql_worse
 import tsm_sql_worse
+import tsm_xss_worse
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizations
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizations1
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizations2
@@ -20,6 +21,9 @@ import semmle.javascript.security.dataflow.NosqlInjectionCustomizations5
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizations6
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizationsWorse
 import semmle.javascript.security.dataflow.SqlInjectionCustomizationsWorse
+import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
+//import semmle.javascript.security.dataflow.DomBasedXss
+//import semmle.javascript.security.dataflow.DomBasedXssWorse
 import NodeRepresentation
 
 
@@ -45,6 +49,11 @@ predicate getEdgeStats(int maxPathLength, float avgPathLength){
     avgPathLength = avg(int l | exists(PropagationGraph::Node n1, PropagationGraph::Node n2 | getEdgeLength(n1, n2, l)) and l > 0) 
 }
 
+predicate xssKnownSink(DataFlow::Node node){
+    node instanceof DomBasedXssWorse::Sink or
+    (not node instanceof DomBasedXss::Sink and Metrics::isKnownSink(node))
+}
+
 predicate sqlKnownSink(DataFlow::Node node){
     node instanceof SqlInjectionWorse::Sink or
     (not node instanceof SqlInjection::Sink and Metrics::isKnownSink(node))
@@ -61,6 +70,25 @@ predicate noReps(DataFlow::Node node){
     //not exists (PropagationGraph::Node n | n.asDataFlowNode() = node) and
     not exists(candidateRep(node, _))
 }
+
+query predicate getTSMWorseScoresXss(DataFlow::Node node, float score){
+    node instanceof DomBasedXss::Sink and
+    not node instanceof DomBasedXssWorse::Sink  and
+    TSMXssWorse::isSink(node, score)
+}
+
+
+query predicate getTSMWorseFilteredXss(DataFlow::Node node, float score, boolean isKnown, boolean filtered, string rep){
+    Metrics::isSinkCandidate(node) and
+    TSMXssWorse::isSink(node, score)  and
+    (Metrics::isEffectiveSink(node) and filtered = true or
+    not  Metrics::isEffectiveSink(node) and filtered = false) and
+    (xssKnownSink(node) and isKnown = true or
+    not xssKnownSink(node) and isKnown = false )
+    and rep = PropagationGraph::getconcatrep(node) and
+    score > 0
+}
+
 
 predicate getTSMWorseScoresSql(DataFlow::Node node, float score){
     node instanceof SqlInjection::Sink and
@@ -79,7 +107,7 @@ predicate getTSMWorseFilteredSql(DataFlow::Node node, float score, boolean isKno
     // not node.asDataFlowNode() instanceof NosqlInjectionWorse::Sink and isKnown = false    ) 
     //and rep = node.getconcatrep() //and
     //score > 0
-    and rep = PropagationGraph::getconcatrep(node)
+    and rep = PropagationGraph::getconcatrep(node) 
 }
 
  predicate getTSMWorseScoresNoSql(DataFlow::Node node, float score){
@@ -100,7 +128,7 @@ predicate getTSMWorseFilteredSql(DataFlow::Node node, float score, boolean isKno
     and rep =  PropagationGraph::getconcatrep(node)
 }
 
-query predicate getTSMWorseFilteredNoSql2(DataFlow::Node node, float score, boolean isKnown, boolean isNoSqlWorse, string rep){
+predicate getTSMWorseFilteredNoSql2(DataFlow::Node node, float score, boolean isKnown, boolean isNoSqlWorse, string rep){
     Metrics::isSinkCandidate(node) and
     TSMNoSqlWorse::isSink(node, score)  and
     ( node instanceof NosqlInjection::Sink and not node instanceof NosqlInjectionWorse::Sink and isNoSqlWorse = true or
