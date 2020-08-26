@@ -2,6 +2,17 @@ import glob
 import os
 import pandas as pd
 import csv
+import sys
+
+def getProjectNameFromFile(f):
+    f=f.replace("\\","/")
+    # e.g.  LondonMaeCompany_ldpproto_fe04304 -> LondonMaeCompany/ldpproto 
+    projectName = '/'.join(f.split("/")[1].replace("_","/").split("/")[:-1])  
+    #print(projectName)
+    return projectName
+
+projectListFile = sys.argv[1]
+projectList = open(projectListFile).read()
 
 csv.field_size_limit(999999)
 d=dict()
@@ -10,13 +21,17 @@ for threshold in [0.26, 0.27,0.28]:
     for version in ['worse']:
         true_predicted=0
         total=0
-        for f in glob.glob("data/*/*tsm{0}-ind-avg-test.prop.csv".format(version), recursive=True):
-            f=f.replace("\\","/")
-            if f.split("/")[1] not in open("nosqlinjection.txt").read():
+        csvFiles = glob.glob("data/*/*tsm{0}-ind-avg.prop.csv".format(version), recursive=True)
+        for f in csvFiles:
+            projectName = getProjectNameFromFile(f)
+            if projectName not in projectList:
                 continue
             try:
+                #print("trying to read\n")
                 data=pd.read_csv(f)
+                #print("Data: ", data)
             except:
+                #print("Failed to read: ", f)
                 continue
             if len(data.index) > 0:
                 p = len(data[data["score"] > threshold])
@@ -38,14 +53,19 @@ for threshold in [0.26, 0.27,0.28]:
         total_predicted = 0
         unknown = 0
         predicted_known = 0
-        for f in glob.glob("data/*/*tsm{0}-filtered-avg-test.prop.csv".format(version), recursive=True):
+
+        csvFiles = glob.glob("data/*/*tsm{0}-filtered-avg.prop.csv".format(version), recursive=True)
+        #print("CSV Files:", csvFiles)
+        for f in csvFiles:
             f = f.replace("\\", "/")
-            if f.split("/")[1] not in open("nosqlinjection.txt").read():
+            projectName = getProjectNameFromFile(f)
+            if projectName not in projectList:
                 continue
-            #print(f)
             try:
                 data=pd.read_csv(f, engine='python')
+                print(data)
             except:
+                print("Failed to read: ", f)
                 continue
             #if len(data.index) > 0:
             #    filtered += len(data[(data["score"] > threshold) & (data["filtered"] == True) & (data["isKnown"] == False)])
