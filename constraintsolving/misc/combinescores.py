@@ -7,7 +7,7 @@ import pandas as pd
 query = os.environ["QUERY_NAME"]
 
 files=glob.glob("../results/*/{0}-*/reprScores.txt".format(query))
-
+print(files)
 
 files.sort(key=os.path.getmtime)
 n=0

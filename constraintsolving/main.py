@@ -1,7 +1,7 @@
 from solver.config import SolverConfig
 from solver.get_constraints import ConstraintBuilder
 from solver.solve_gb import solve_constraints, solve_constraints_combine_model
-from compute_metrics import getallmetrics
+from compute_metrics import getallmetrics, createReprPredicate
 import os
 from io import StringIO
 import sys
@@ -19,6 +19,7 @@ parser.add_argument('--projects-folder', dest='projects_folder', default='./data
 args=parser.parse_args()
 config = SolverConfig()
 query_name = os.environ["QUERY_NAME"]
+query_type = os.environ["QUERY_TYPE"]
 
 if args.generate_constraints:
     if args.mode == 'combined':
@@ -89,13 +90,14 @@ if args.solve:
     candidates.sort(key=os.path.getmtime)
     projectdir=candidates[-1].replace("constraints/", "")
     print("Choosing latest project directory: %s" % projectdir)
-
+    "results/{0}".format(projectdir)
     # run solver
     solve_constraints_combine_model(projectdir, config)
     #solve_constraints(newdir, config)
 
     # compute metrics
     getallmetrics(projectdir, config)
+    createReprPredicate(projectdir, query_type, query_name)
 
 
 # with open("logs/{0}/log{1}.txt".format(config.projectdir, int(datetime.datetime.now().timestamp())), "w") as w:
