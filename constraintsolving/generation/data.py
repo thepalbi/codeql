@@ -63,7 +63,7 @@ class CodeQlOrchestrator:
         self.logger.info("Generating events scores")
         self.codeql.database_analyze(
             self.project_dir,
-            self._get_query_file("metrics-snk.ql"),
+            self._get_query_file("metrics-snk-xss.ql"),
             f"{logs_folder}/js-results.csv")
 
         # Get results BQRS file

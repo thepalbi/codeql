@@ -18,6 +18,15 @@ query predicate stats(int loc, int functions, int files, int sourceCandidates, i
 
 }
 
+class Sink {
+    predicate predictions(DataFlow::Node node, PropagationGraph::Node pnode, 
+        float score, boolean isKnown, boolean isCandidate, string type, string crep){
+            doPredictions(node,...)
+    }
+
+    abstract predicate doPredictions(...) {}
+}
+
 predicate predictionsSink(DataFlow::Node node, PropagationGraph::Node pnode, 
     float score, boolean isKnown, boolean isCandidate, string type, string crep){
     node = pnode.asDataFlowNode() 

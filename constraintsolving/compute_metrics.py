@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score
 from DataParser import readKnown
-# dirprefix="C:/Users/saika/projects/ql/constraintsolving/databases/eclipse_orion.client_js_srcVersion_9ef167/eclipse_orion.client_9ef1675/src/"
 from solver.config import SolverConfig
 import os
 
@@ -48,57 +47,6 @@ def printmetrics(outputdir, trainingsize, lambda_const, trials):
             allevents.append(name)
             allevents2[name]=reps
 
-        # with open("models/eclipse_orion/eventscores.txt", "w") as scoresfile:
-        #     for k in eventScores.keys():
-        #         scoresfile.write(k+":"+str(eventScores[k]))
-        #         scoresfile.write("\n")
-
-        # sinks=[k.split(",")[1].strip().replace('"', '') for k in open("data/{0}/{0}-sinks.prop.csv".format(projectdir)).readlines()[1:]]
-        # sources=[k.split(",")[1].strip().replace('"', '') for k in open("data/{0}/{0}-src.prop.csv".format(projectdir)).readlines()[1:]]
-        # sans=[k.split(",")[1].strip().replace('"', '') for k in open("data/{0}/{0}-sanitizers.prop.csv".format(projectdir)).readlines()[1:]]
-        #
-        # sinks = readKnown("data/{0}/{0}-sinks-cls.prop.csv".format(projectdir), "sinks", query)
-        # sources = readKnown("data/{0}/{0}-src-cls.prop.csv".format(projectdir), "src", query)
-        # sans = readKnown("data/{0}/{0}-sanitizers-cls.prop.csv".format(projectdir), "san", query)
-
-        # sinks = []
-        # sources = []
-        # sans = []
-        # for k in constraints_builder.known_sinks:
-        #     sinks = sinks + constraints_builder.known_sinks[k]
-        # for k in constraints_builder.known_sanitizers:
-        #     sans = sans + constraints_builder.known_sanitizers[k]
-        # for k in constraints_builder.known_sources:
-        #     sources = sources + constraints_builder.known_sources[k]
-
-        #predictedsinks=[k.replace(":snk", "") for k in eventScores.keys() if eventScores[k] >= threshold and ":snk" in k]
-        #predictedsources=[k.replace(":src", "") for k in eventScores.keys() if eventScores[k] >= threshold and ":src" in k]
-        #predictedsans=[k.replace(":san", "") for k in eventScores.keys() if eventScores[k] >= threshold and ":san" in k]
-        # print(eventScores)
-        # print(len(predictedsinks))
-        # exit(0)
-        # with open("results/{0}/newsinks.txt".format(outputdir), "w") as newsinks:
-        #     for snk in predictedsinks:
-        #         if snk not in sinks:
-        #             #newsinks.write(snk.replace("file:///", "file:///{0}".format(dirprefix)).replace("js:", "js#L"))
-        #             newsinks.write(snk)
-        #             newsinks.write("\n")
-        #
-        # with open("results/{0}/newsrcs.txt".format(outputdir), "w") as newsrcs:
-        #     for src in predictedsources:
-        #         if src not in sources:
-        #             #newsrcs.write(src.replace("file:///", "file:///{0}".format(dirprefix)).replace("js:", "js#L"))
-        #             newsrcs.write(src)
-        #             newsrcs.write("\n")
-        #
-        # with open("results/{0}/newsans.txt".format(outputdir), "w") as newsans:
-        #     for san in predictedsans:
-        #         if san not in sans:
-        #             #newsans.write(san.replace("file:///", "file:///{0}".format(dirprefix)).replace("js:", "js#L"))
-        #             newsans.write(san)
-        #             newsans.write("\n")
-
-            #print("Repr set size: ", len(reprs))
         repConstraints = []    
         for repr in reprs:
             repid=repr.split(":")[-1].strip()

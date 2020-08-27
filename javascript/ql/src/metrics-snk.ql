@@ -28,6 +28,7 @@ import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 //import semmle.javascript.security.dataflow.DomBasedXss
 //import semmle.javascript.security.dataflow.DomBasedXssWorse
 import NodeRepresentation
+import WorseMetrics
 
 
 
@@ -74,22 +75,12 @@ predicate noReps(DataFlow::Node node){
     not exists(candidateRep(node, _))
 }
 
-query predicate getTSMWorseScoresXss(DataFlow::Node node, float score){
-    node instanceof DomBasedXss::Sink and
-    not node instanceof DomBasedXssWorse::Sink  and
-    TSMXssWorse::isSink(node, score)
+query predicate getTSMWorseScores(DataFlow::Node node, float score){
+    WorseMetrics::TSMWorseXss::getScores(node, score)
 }
 
-
 query predicate getTSMWorseFilteredXss(DataFlow::Node node, float score, boolean isKnown, boolean filtered, string rep){
-    Metrics::isSinkCandidate(node) and
-    TSMXssWorse::isSink(node, score)  and
-    (Metrics::isEffectiveSink(node) and filtered = true or
-    not  Metrics::isEffectiveSink(node) and filtered = false) and
-    (xssKnownSink(node) and isKnown = true or
-    not xssKnownSink(node) and isKnown = false )
-    and rep = PropagationGraph::getconcatrep(node) and
-    score > 0
+    WorseMetrics::TSMWorseXss::getFiltered(node, score, isKnown, filtered, rep)
 }
 
 
