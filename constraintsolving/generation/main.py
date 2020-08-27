@@ -1,17 +1,33 @@
-import os
-import sys
-from generation import DataGenerator
+import argparse
 import logging
+import os
+
+import sys
+
+from generation import CodeQlOrchestrator
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s\t%(asctime)s] %(name)s\t%(message)s")
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--step",
+                    dest="step",
+                    choices=CodeQlOrchestrator.steps,
+                    type=str,
+                    required=True,
+                    help="The generator orchestration step to run")
+
+parser.add_argument("--project-dir",
+                    dest="project_dir",
+                    type=str,
+                    required=True,
+                    help="The CodeQL database directory")
 
 if __name__ == "__main__":
-    projectDir = sys.argv[1]
-    if(len(sys.argv)>2):
-        projectName = sys.argv[2] 
+    arguments = parser.parse_args()
+    project_name = os.path.basename(arguments.project_dir)
+    query_type = os.environ["QUERY_TYPE"]
+    generator = CodeQlOrchestrator(arguments.project_dir, project_name)
+    if arguments.step == "entities":
+        generator.generate_entities(query_type)
     else:
-        projectName = os.path.basename(projectDir)
-
-    queryType = os.environ["QUERY_TYPE"]
-    generator = DataGenerator(projectDir, projectName)
-    ath_to_sources, path_to_sinks, path_to_sanitizers, path_to_triplets, path_to_repr_mapping = generator.generate(queryType)
+        generator.generate_scores(query_type)

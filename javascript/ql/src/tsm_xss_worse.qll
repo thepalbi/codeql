@@ -1,32 +1,33 @@
 import javascript
 
 import NodeRepresentation
+import tsm_repr_pred_Xss
 
 
 module TSMXssWorse{
-    private import TsmRepr 
+    private import TsmRepr
 
     string rep(DataFlow::Node node){
         result = candidateRep(node, _)
     }
 
     predicate isSink(DataFlow::Node node, float score){
-        exists(rep(node)) and   score = sum(getReprScore(rep(node), "snk"))/count(rep(node)) or
+        exists(rep(node)) and   score = sum(doGetReprScore(rep(node), "snk"))/count(rep(node)) or
         not exists(rep(node)) and score = 0
     }
 
     predicate isSource(DataFlow::Node node, float score){
-        exists(rep(node)) and   score = sum(getReprScore(rep(node), "src"))/count(rep(node)) or
+        exists(rep(node)) and   score = sum(doGetReprScore(rep(node), "src"))/count(rep(node)) or
         not exists(rep(node)) and score = 0
     }
 
     predicate isSanitizer(DataFlow::Node node, float score){
         exists(rep(node)) and
-        score = sum(getReprScore(rep(node), "san"))/count(rep(node)) or
+        score = sum(doGetReprScore(rep(node), "san"))/count(rep(node)) or
         not exists(rep(node)) and score = 0
     }
 
-    float getReprScore(string repr, string t){
-        TsmRepr::getReprScore(repr, t) or
+    float doGetReprScore(string repr, string t){
+        result = TsmRepr::getReprScore(repr, t)
    }    
 }

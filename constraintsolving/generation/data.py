@@ -1,7 +1,8 @@
-from .wrapper import CodeQLWrapper
-import os
 import logging
+import os
 from typing import Tuple
+
+from .wrapper import CodeQLWrapper
 
 ql_sources_root = os.environ["CODEQL_SOURCE_ROOT"]
 constaintssolving_dir = os.path.join(ql_sources_root, "constraintsolving/")
@@ -13,11 +14,14 @@ SANITIZERS = "Sanitizers"
 
 SUPPORTED_QUERY_TYPES = ["NoSql", "Sql", "Xss"]
 
-class DataGenerator:
+
+class CodeQlOrchestrator:
     """DataGenerator extracts the events and propagation graph information from the
     provided project. It orchestrates the calls to the CodeQL toolchain, running 
     a couple of queries (for sources, sinks, sanitizers, and the PG).
     """
+
+    steps = ["entities", "scores"]
 
     def __init__(self, project_dir: str, project_name: str):
         """Creates a new DataGenerator for the given project
@@ -29,6 +33,7 @@ class DataGenerator:
         self.project_dir = project_dir
         self.project_name = project_name
         self.codeql = CodeQLWrapper()
+        # noinspection PyInterpreter
         self.logger = logging.getLogger(self.__class__.__name__)
         self.generated_data_dir = self._get_generated_data_dir()
 
@@ -53,7 +58,29 @@ class DataGenerator:
     def _get_bqrs_file(self, filename: str) -> str:
         return os.path.join(constaintssolving_dir, self.project_dir, "results/codeql-javascript/", filename)
 
-    def generate(self, query_type: str) -> Tuple[str, ...]:
+    def generate_scores(self, query_type: str) -> Tuple[str, ...]:
+        # Run metrics-snk query
+        self.logger.info("Generating events scores")
+        self.codeql.database_analyze(
+            self.project_dir,
+            self._get_query_file("metrics-snk.ql"),
+            f"{logs_folder}/js-results.csv")
+
+        # Get results BQRS file
+        bqrs_metrics_file = self._get_bqrs_file("metrics-snk.bqrs")
+        capitalized_query_type = query_type.capitalize()
+        tsm_worse_scores_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-tsmworse-ind-avg.prop.csv")
+        tsm_worse_filtered_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-tsmworse-filtered-avg.prop.csv")
+
+        # Extract result scores
+        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseScores{capitalized_query_type}", tsm_worse_scores_file)
+        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseFiltered{capitalized_query_type}", tsm_worse_filtered_file)
+
+        return tsm_worse_scores_file, tsm_worse_filtered_file
+
+    def generate_entities(self, query_type: str) -> Tuple[str, ...]:
         """Main data generation method, that orchestrates the process.
 
         Args:

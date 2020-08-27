@@ -1,3 +1,6 @@
+/**
+ * @kind graph
+ */
 import javascript
 import PropagationGraphs
 import metrics
