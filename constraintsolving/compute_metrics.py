@@ -168,9 +168,15 @@ def createReprPredicate(outputdir,query_type, query_name):
     print(reprScoreFilename)
     with open(reprScoreFilename, "r") as reprscores:
         with open(output_path , "w") as reprPrFile:
-            reprPrFile.writelines(["float getReprScore(string repr, string t){"])
-            reprPrFile.writelines(reprscores.readlines())
-            reprPrFile.writelines(["}"])
+            reprPrFile.writelines([
+                "module TsmRepr {",
+                "float getReprScore(string repr, string t){\n"])
+            reprscores = reprscores.readlines()
+            if len(reprscores)>0:
+                reprPrFile.writelines(reprscores)
+            else:
+                reprPrFile.write('\t result = 0 and (t = "src" or t = "snk" or t = "san") and repr = ""\n')
+            reprPrFile.writelines(["}","}"])
 
 
 
