@@ -1,24 +1,12 @@
 #!/usr/bin/env bash
-# ./generateEventScores.sh [db-path]
 
-cql=$CODEQL
-ql=$CODEQL_SOURCE_ROOT/javascript/ql/src/metrics-snk.ql 
-query_type=$QUERY_TYPE
-query_name=$QUERY_NAME
+# ./generateEventScores.sh [database path]
+# generates the resulting scores for each Sink
 
-db=$(echo "$1")
-project_name=$(basename "$1")
-bqrsfile="$db/results/codeql-javascript/metrics-snk.bqrs"
-echo "$db"
-echo "$project_name"
+# Edit the following environment variables based on your environment
+#CODEQL= path to `codelql` bynary (e.g., `/home/tools/semmle/codeql-cli/codeql/codeql`)
+#CODEQL_SOURCE_ROOT=  path to the `ql` source folder  root (e.g.,`/home/dev/microsoft/ql`)
+#QUERY_TYPE= query type(e.g.,`Xss`)
+#QUERY_NAME = query name (e.g, `DomXssWorse`)
 
-mkdir -p data/${project_name}
-
-echo analyzing DB $db $ql
-#echo $cql database analyze $db $ql --format=csv --rerun --output=logs/js-results.csv --logdir=logs
-$cql database analyze $db $ql --format=csv --rerun --output=logs/js-results.csv --logdir=logs
-
-echo running bqrs decode $bqrsfile
-$cql bqrs decode --entities=string,url $bqrsfile  --result-set getTSMWorseScores$query_type --format=csv --output=data/${project_name}/${project_name}-tsmworse-ind-avg.prop.csv
-echo running bqrs decode $bqrsfile
-$cql bqrs decode --entities=string,url $bqrsfile  --result-set getTSMWorseFiltered$query_type --format=csv --output=data/${project_name}/${project_name}-tsmworse-filtered-avg.prop.csv
+python3 -m generation.main --step scores --project-dir "$1"

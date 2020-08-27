@@ -1,2 +1,2 @@
 from .wrapper import CodeQLWrapper
-from .data import DataGenerator
+from .data import CodeQlOrchestrator

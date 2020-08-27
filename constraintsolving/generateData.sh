@@ -9,4 +9,4 @@
 #QUERY_TYPE= query type(e.g.,`Xss`)
 #QUERY_NAME = query name (e.g, `DomXssWorse`)
 
-python3 -m generation.main $1
+python3 -m generation.main --step entities --project-dir "$1"
