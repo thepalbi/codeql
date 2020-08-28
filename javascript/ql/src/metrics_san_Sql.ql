@@ -9,7 +9,7 @@ import semmle.javascript.security.dataflow.SqlInjectionCustomizationsWorse
 
 predicate sqlKnownSanitizer(DataFlow::Node node){
     node instanceof SqlInjectionWorse::Sanitizer or
-    (not node instanceof SqlInjection::Sanitizer and Metrics::isKnownSanitizer(node)(node))
+    (not node instanceof SqlInjection::Sanitizer and Metrics::isKnownSanitizer(node))
 }
 
 query predicate predictionsSanitizer(DataFlow::Node node, PropagationGraph::Node pnode, 

@@ -3,7 +3,7 @@ import javascript
 
 import NodeRepresentation
 
-module TSMNoSqlWorse{
+module TSMNosqlWorse{
     import tsm_worse
 
     string rep(DataFlow::Node node){

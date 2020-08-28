@@ -8,7 +8,7 @@ import semmle.javascript.security.dataflow.NosqlInjectionCustomizationsWorse
 
 predicate nosqlKnownSanitizer(DataFlow::Node node){
     node instanceof NosqlInjectionWorse::Sanitizer or
-    (not node instanceof NosqlInjection::Sanitizer and Metrics::isKnownSanitizer(node)(node))
+    (not node instanceof NosqlInjection::Sanitizer and Metrics::isKnownSanitizer(node))
 }
 
 

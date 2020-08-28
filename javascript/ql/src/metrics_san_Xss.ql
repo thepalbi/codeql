@@ -8,7 +8,7 @@ import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 
 predicate xssKnownSanitizer(DataFlow::Node node){
     node instanceof DomBasedXssWorse::Sanitizer or
-    (not node instanceof DomBasedXss::Sanitizer and Metrics::isKnownSanitizer(node)(node))
+    (not node instanceof DomBasedXss::Sanitizer and Metrics::isKnownSanitizer(node))
 }
 
 
