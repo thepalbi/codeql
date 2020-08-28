@@ -2,7 +2,6 @@ import javascript
 import PropagationGraphs
 import Metrics
 import metrics_san
-import tsm_repr_pred
 import tsm_xss_worse
 import TSMXssWorse
 import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse

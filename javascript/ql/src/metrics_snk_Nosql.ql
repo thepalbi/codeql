@@ -3,7 +3,6 @@
  */
 import javascript
 import PropagationGraphs
-//import metrics
 import metrics_snk
 import tsm_nosql_worse
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizationsWorse

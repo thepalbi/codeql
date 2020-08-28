@@ -2,8 +2,7 @@ import javascript
 import PropagationGraphs
 import Metrics
 import metrics_san
-import tsm_repr_pred
-import tsm_sql_worse
+import tsm_nosql_worse
 import TSMNosqlWorse
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizationsWorse
 

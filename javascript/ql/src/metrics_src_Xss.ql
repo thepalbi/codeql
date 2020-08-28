@@ -1,8 +1,16 @@
+
 import javascript
 import PropagationGraphs
-import metrics
-import scores_dombasedxss_005_noflows
+import Metrics
+import metrics_src
+import tsm_xss_worse
+import TSMXssWorse
+import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 
+predicate xssKnownSource(DataFlow::Node node){
+    node instanceof DomBasedXssWorse::Source or
+    (not node instanceof DomBasedXss::Source and Metrics::isKnownSource(node))
+}
 
 query predicate predictionsSource(DataFlow::Node node, PropagationGraph::Node pnode, 
     float score, boolean isKnown, boolean isCandidate, string type, string crep){
@@ -10,9 +18,11 @@ query predicate predictionsSource(DataFlow::Node node, PropagationGraph::Node pn
     and 
     exists(pnode.rep())
     and
-    score = sum(ReprScores::getReprScore(pnode.rep(), "src"))/count(pnode.rep())
+    score = sum(doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
     and 
-    ((isKnown = true and Metrics::isKnownNoSqlInjectionSource(pnode)) or (isKnown = false and not Metrics::isKnownNoSqlInjectionSource(pnode))) 
+    (   (isKnown = true and xssKnownSource(node)) 
+        or (isKnown = false and not xssKnownSource(node))
+    ) 
     and
     ((pnode.isSourceCandidate() and Metrics::getSrcType(node) = type and isCandidate = true )
     or ((not pnode.isSourceCandidate())  and type = "unknown" and isCandidate = false))
