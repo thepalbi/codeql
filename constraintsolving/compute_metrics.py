@@ -161,7 +161,8 @@ def getallmetrics(outputdir, config:SolverConfig):
 
 def createReprPredicate(outputdir,query_type, query_name):
     tsm_queries_folder = os.path.join(os.environ["CODEQL_SOURCE_ROOT"],"javascript","ql","src")
-    output_path = tsm_queries_folder + "/tsm_repr_pred_{0}.qll".format(query_type)
+    #output_path = tsm_queries_folder + "/tsm_repr_pred_{0}.qll".format(query_type)
+    output_path = tsm_queries_folder + "/tsm_repr_pred.qll"
     reprScoreFilename = "results/{0}/reprScores.txt".format(outputdir)
 
     print(output_path)
