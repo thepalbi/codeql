@@ -15,12 +15,12 @@ predicate nosqlKnownSink(DataFlow::Node node){
 query predicate getTSMWorseScoresNoSql(DataFlow::Node node, float score){
     node instanceof NosqlInjection::Sink and
     not node instanceof NosqlInjectionWorse::Sink  and
-    TSMNoSqlWorse::isSink(node, score)
+    TSMNosqlWorse::isSink(node, score)
 }
 
 query  predicate getTSMWorseFilteredNoSql(DataFlow::Node node, float score, boolean isKnown, boolean filtered, string rep){
     Metrics::isSinkCandidate(node) and
-    TSMNoSqlWorse::isSink(node, score)  and
+    TSMNosqlWorse::isSink(node, score)  and
     (Metrics::isEffectiveSink(node) and filtered = true or
     not  Metrics::isEffectiveSink(node) and filtered = false) and
     (nosqlKnownSink(node) and isKnown = true or
@@ -32,7 +32,7 @@ query  predicate getTSMWorseFilteredNoSql(DataFlow::Node node, float score, bool
 
 query predicate getTSMWorseFilteredNoSql2(DataFlow::Node node, float score, boolean isKnown, boolean isNoSqlWorse, string rep){
     Metrics::isSinkCandidate(node) and
-    TSMNoSqlWorse::isSink(node, score)  and
+    TSMNosqlWorse::isSink(node, score)  and
     ( node instanceof NosqlInjection::Sink and not node instanceof NosqlInjectionWorse::Sink and isNoSqlWorse = true or
     not node instanceof NosqlInjection::Sink and isNoSqlWorse = false ) and
     (nosqlKnownSink(node) and isKnown = true or

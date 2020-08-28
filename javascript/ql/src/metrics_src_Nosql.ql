@@ -2,7 +2,7 @@
 import javascript
 import PropagationGraphs
 import Metrics
-import metrics_san
+import metrics_src
 import tsm_nosql_worse
 import TSMNosqlWorse
 import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
