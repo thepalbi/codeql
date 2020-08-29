@@ -1,105 +1,32 @@
-from solver.config import SolverConfig
-from solver.get_constraints import ConstraintBuilder
-from solver.solve_gb import solve_constraints, solve_constraints_combine_model
-from compute_metrics import getallmetrics, createReprPredicate
-import os
-from io import StringIO
-import sys
-import datetime
-import time
 import argparse
-from glob import glob
+import logging
+import os
 
-parser=argparse.ArgumentParser()
-parser.add_argument('-g', dest='generate_constraints', action='store_true')
-parser.add_argument('-s', dest='solve', action='store_true')
-parser.add_argument('--mode', dest='mode', default='combined')
-parser.add_argument('--projects-folder', dest='projects_folder', default='./data')
+from orchestration.orchestrator import Orchestrator
 
-args=parser.parse_args()
-config = SolverConfig()
-query_name = os.environ["QUERY_NAME"]
-query_type = os.environ["QUERY_TYPE"]
+all_steps = "ALL"
+parser = argparse.ArgumentParser()
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s\t%(asctime)s] %(name)s\t%(message)s")
 
-if args.generate_constraints:
-    if args.mode == 'combined':
-        # TODO: fix path to look for projects
-        print("Combined mode")
-        projects = glob(args.projects_folder+'/'+ query_name+'/*')
+parser.add_argument("--single-step", dest="single_step", type=str, default=all_steps, metavar="STEP",
+                    help="Runs a single step of the orchestrator named STEP")
+
+parser.add_argument("--project-dir", dest="project_dir", required=True, type=str,
+                    help="Directory of the CodeQL database")
+parser.add_argument("--query-type", dest="query_type", required=True, type=str, choices=["Xss", "NoSql", "Sql"],
+                    help="Type of the query to solve")
+parser.add_argument("--query-name", dest="query_name", required=True, type=str,
+                    choices=["NosqlInjectionWorse", "SqlInjectionWorse", "DomBasedXssWorse"],
+                    help="Name of the query to solve")
+
+parsed_arguments = parser.parse_args()
+project_dir = os.path.normpath(parsed_arguments.project_dir)
+project_name = os.path.basename(project_dir)
+orchestrator = Orchestrator(project_dir, project_name, parsed_arguments.query_type,
+                            parsed_arguments.query_name)
+
+if __name__ == '__main__':
+    if parsed_arguments.single_step == all_steps:
+        orchestrator.run()
     else:
-        print("Single project mode. Project:",args.mode)
-        projects = glob(args.projects_folder+'/'+args.mode)
-
-
-    print("projects:", projects) 
-
-    projectdir = args.mode if config.query_name is None else args.mode + "/" + config.query_name
-    tstamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
-    projectdir = projectdir + "-" + tstamp
-    print("Project dir: %s" % projectdir)
-
-    os.makedirs("constraints/{0}".format(projectdir), exist_ok=True)
-    os.makedirs("models/{0}".format(projectdir), exist_ok=True)
-    os.makedirs("logs/{0}".format(projectdir), exist_ok=True)
-    os.makedirs("results/{0}".format(projectdir), exist_ok=True)
-
-    projects=[os.path.basename(k) for k in projects]
-    print("Collected {0} projects".format(len(projects)))
-    print("Creating events and reps")
-    constraint_builder = ConstraintBuilder(args.mode,
-                                           'constraints/{2}/{0}-{1}'.format(config.query_name,
-                                                                                 tstamp, args.mode),
-                                           config.min_rep_events,
-                                           config.dataset_type,
-                                           config.constraint_format,
-                                           config.lambda_const)
-    for proj in projects:
-        try:
-            print("Analyzing: ", proj)
-            constraint_builder.readEventsAndReps(proj)
-            constraint_builder.readAllKnown(proj, config.query_name, config.query_type, config.use_all_sanitizers)
-        except Exception as e:
-            print("There was a problem reading events!")
-            traceback.print_exc(file=sys.stdout)
-            pass
-    #exit(1)
-    # remove events with no min reps
-    #constraint_builder.removeRareEvents()
-    # initiate all variables
-    constraint_builder.createVariables()
-
-    print("Adding constraints")
-    for proj in projects:
-        print(">>>>>>>>>>>>>Executing project %s" % proj)
-        try:
-            constraint_builder.generate_flow_constraints(proj, config.constraints_constant_C, config.query_name)
-            pass
-        except:
-            import traceback as tb
-            tb.print_exc()
-
-    constraint_builder.writeVarConstrants()
-    constraint_builder.writeKnownConstraints()
-    constraint_builder.writeObjective()
-
-
-if args.solve:
-    projectdir = args.mode if config.query_name is None else args.mode + "/" + config.query_name
-
-    candidates=glob("constraints/{0}".format(projectdir+"*"))
-    candidates.sort(key=os.path.getmtime)
-    projectdir=candidates[-1].replace("constraints/", "")
-    print("Choosing latest project directory: %s" % projectdir)
-    "results/{0}".format(projectdir)
-    # run solver
-    solve_constraints_combine_model(projectdir, config)
-    #solve_constraints(newdir, config)
-
-    # compute metrics
-    getallmetrics(projectdir, config)
-    createReprPredicate(projectdir, query_type, query_name)
-
-
-# with open("logs/{0}/log{1}.txt".format(config.projectdir, int(datetime.datetime.now().timestamp())), "w") as w:
-#     w.write(mystdout.read())
-
+        orchestrator.run_step(parsed_arguments.single_step)

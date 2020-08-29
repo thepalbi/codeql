@@ -4,14 +4,14 @@ import os
 
 import sys
 
-from generation import CodeQlOrchestrator
+from generation import DataGenerator
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s\t%(asctime)s] %(name)s\t%(message)s")
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--step",
                     dest="step",
-                    choices=CodeQlOrchestrator.steps,
+                    choices=DataGenerator.steps,
                     type=str,
                     required=True,
                     help="The generator orchestration step to run")
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     arguments = parser.parse_args()
     project_name = os.path.basename(arguments.project_dir)
     query_type = os.environ["QUERY_TYPE"]
-    generator = CodeQlOrchestrator(arguments.project_dir, project_name)
+    generator = DataGenerator(arguments.project_dir, project_name)
     if arguments.step == "entities":
         generator.generate_entities(query_type)
     else:

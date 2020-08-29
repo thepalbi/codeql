@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Tuple
 
+from orchestration.steps import OrchestrationStep
 from .wrapper import CodeQLWrapper
 
 ql_sources_root = os.environ["CODEQL_SOURCE_ROOT"]
@@ -15,7 +16,23 @@ SANITIZERS = "Sanitizers"
 SUPPORTED_QUERY_TYPES = ["NoSql", "Sql", "Xss"]
 
 
-class CodeQlOrchestrator:
+class GenerateEntitiesStep(OrchestrationStep):
+    def run(self) -> None:
+        self.orchestrator.data_generator.generate_entities(self.orchestrator.query_type)
+
+    def name(self) -> str:
+        return "generate_entities"
+
+
+class GenerateScoresStep(OrchestrationStep):
+    def run(self) -> None:
+        self.orchestrator.data_generator.generate_scores(self.orchestrator.query_type)
+
+    def name(self) -> str:
+        return "generate_scores"
+
+
+class DataGenerator:
     """DataGenerator extracts the events and propagation graph information from the
     provided project. It orchestrates the calls to the CodeQL toolchain, running 
     a couple of queries (for sources, sinks, sanitizers, and the PG).
@@ -65,11 +82,11 @@ class CodeQlOrchestrator:
         self.logger.info("Generating events scores")
         self.codeql.database_analyze(
             self.project_dir,
-            self._get_query_file(metrics_file+'.ql'),
+            self._get_query_file(metrics_file + ".ql"),
             f"{logs_folder}/js-results.csv")
 
         # Get results BQRS file
-        bqrs_metrics_file = self._get_bqrs_file(metrics_file+'.bqrs')
+        bqrs_metrics_file = self._get_bqrs_file(metrics_file + '.bqrs')
         capitalized_query_type = query_type.capitalize()
         tsm_worse_scores_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-tsmworse-ind-avg.prop.csv")
@@ -78,7 +95,8 @@ class CodeQlOrchestrator:
 
         # Extract result scores
         self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseScores{capitalized_query_type}", tsm_worse_scores_file)
-        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseFiltered{capitalized_query_type}", tsm_worse_filtered_file)
+        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseFiltered{capitalized_query_type}",
+                                tsm_worse_filtered_file)
 
         return tsm_worse_scores_file, tsm_worse_filtered_file
 
