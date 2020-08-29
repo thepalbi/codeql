@@ -20,8 +20,9 @@ parser.add_argument("--query-name", dest="query_name", required=True, type=str,
                     help="Name of the query to solve")
 
 parsed_arguments = parser.parse_args()
-project_name = os.path.basename(parsed_arguments.project_dir)
-orchestrator = Orchestrator(parsed_arguments.project_dir, project_name, parsed_arguments.query_type,
+project_dir = os.path.normpath(parsed_arguments.project_dir)
+project_name = os.path.basename(project_dir)
+orchestrator = Orchestrator(project_dir, project_name, parsed_arguments.query_type,
                             parsed_arguments.query_name)
 
 if __name__ == '__main__':
