@@ -73,5 +73,37 @@ This will generate csv files scoring all events in `data/[db-name]/*tsmworse-*.p
 
 Use `python3 generateMetrics.py [projectList]` where `projectList` is one of these files `nosqlinjection_projects.txt`, `sqlinjection_projects.txt`, and `xss_projects.txt` that contains list of projects.  This script will compute precision and recall across different thresholds for the query type.
  
- 
 
+## \[Still in Development\] Running with the Orchestrator 👑
+The `Orchestrator` is the new implementation of the end-to-end runner. It's responsible for running every step in the 
+constraints solving pipeline. You can use the orchestrator in code, or with it's CLI. The latter one is located in
+`main.py`.
+
+Fist, configure the environment variables defined in
+
+You can either run a single step of the pipeline:
+```bash
+
+# This will run the `generate_scores` step
+
+python main.py --project-dir output/abhinavkumarl-bidding-system/ --single-step generate_scores --query-type Xss --query-name DomBasedXssWorse
+```
+
+Run the whole pipeline:
+
+```bash
+python main.py --project-dir output/abhinavkumarl-bidding-system/ --query-type Xss --query-name DomBasedXssWorse
+```
+
+Or get help from the CLI:
+
+```bash
+python main.py --help
+```
+
+The pipeline at the moment has the following steps implemented:
+- `generate_entities`: Generate sources/sinks/sanitizers `repr`s, propagation graph nodes and edges and a node-to-`repr`
+ mapping.
+- `generate_model`: Generate Gurobi model to optimize.
+- `optimize`: Run Gurobi with the model generated in the `generate_model` step.
+- `generate_scores`: Generate scores info for sinks, sources and sanitizers.
