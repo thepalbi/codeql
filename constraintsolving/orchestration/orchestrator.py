@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from generation.data import DataGenerator, GenerateEntitiesStep, GenerateScoresStep
-from optimizer.gurobi import GenerateModelStep
+from optimizer.gurobi import GenerateModelStep, OptimizeStep
 
 
 class UnknownStepException(Exception):
@@ -15,10 +15,12 @@ class UnknownStepException(Exception):
                f"The available steps are: {self.available_steps}"
 
 
+# TODO: Move all environment variables (CODEQL, etc.) to a yaml config file that the orchestrator know about
 class Orchestrator:
     step_templates = [
         GenerateEntitiesStep,
         GenerateModelStep,
+        OptimizeStep,
         GenerateScoresStep,
     ]
 
@@ -31,7 +33,7 @@ class Orchestrator:
         self.logger = logging.getLogger(self.__class__.__name__)
 
         # Instantiate orchestration step templates
-        self.steps: List[OrchestrationStep] = []
+        self.steps = []
         for step_template in Orchestrator.step_templates:
             self.steps.append(step_template(self))
 
@@ -53,15 +55,3 @@ class Orchestrator:
         separator = ">" * 5
         self.logger.info("%s Running orchestration step: %s %s", separator, step.name(), separator)
         step.run()
-
-
-class OrchestrationStep:
-    def __init__(self, orchestrator: Orchestrator):
-        self.orchestrator = orchestrator
-        self.logger = logging.getLogger(self.__class__.__name__)
-
-    def run(self) -> None:
-        raise NotImplementedError()
-
-    def name(self) -> str:
-        raise NotImplementedError()

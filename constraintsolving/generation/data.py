@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Tuple
 
-from orchestration.orchestrator import OrchestrationStep
+from orchestration.steps import OrchestrationStep
 from .wrapper import CodeQLWrapper
 
 ql_sources_root = os.environ["CODEQL_SOURCE_ROOT"]
@@ -78,11 +78,11 @@ class DataGenerator:
     def generate_scores(self, query_type: str) -> Tuple[str, ...]:
         # Run metrics-snk query
         kind = "snk"
-        metrics_file = "metrics_{0}_{1}.ql".format(kind, query_type)
+        metrics_file = "metrics_{0}_{1}".format(kind, query_type)
         self.logger.info("Generating events scores")
         self.codeql.database_analyze(
             self.project_dir,
-            self._get_query_file(metrics_file),
+            self._get_query_file(metrics_file + ".ql"),
             f"{logs_folder}/js-results.csv")
 
         # Get results BQRS file
