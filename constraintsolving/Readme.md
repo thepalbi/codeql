@@ -48,8 +48,6 @@ This steps can be executed individually or all together in an end-to-end runner.
 Fist, configure the environment variables defined in
 
 You can either run a single step of the pipeline:
-```bash
-
 
 ```bash
 # Run the whole pipeline:

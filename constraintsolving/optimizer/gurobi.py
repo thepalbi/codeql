@@ -18,7 +18,7 @@ class GenerateModelStep(OrchestrationStep):
         # TODO: Implement --mode=combined model generation
         # TODO: Extract this as an orchestrator config?
         # TODO: Fix logging
-        config = SolverConfig(query_name=self.orchestrator.query_name)
+        config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type)
         projects_folder = "./data"
 
         projects = glob(os.path.join(projects_folder, self.orchestrator.project_name))
@@ -85,7 +85,7 @@ class OptimizeStep(OrchestrationStep):
         optimizer_run_name = self.orchestrator.project_name if self.orchestrator.query_name is None \
             else self.orchestrator.project_name + "/" + self.orchestrator.query_name
         # TODO: Also share this between steps
-        config = SolverConfig(query_name=self.orchestrator.query_name)
+        config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type)
 
         candidates = glob("./constraints/{0}".format(optimizer_run_name + "*"))
         candidates.sort(key=os.path.getmtime)
