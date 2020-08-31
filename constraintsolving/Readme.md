@@ -33,10 +33,9 @@ The pipeline at the moment has the following steps implemented:
 - `generate_scores`: Generate scores info for sinks, sources and sanitizers. This will leave the scores in the folder `data/[db-name]/*tsmworse-*.prop.csv`
 
 
-This steps can be executed individually or all together in an end-to-end runner.   You can use the orchestrator in code, or with it's CLI. The latter one is located in `main.py`.
+These steps can be executed individually or all together in an end-to-end runner. You can use the orchestrator in code, or with it's CLI. The latter one is located in `main.py`.
 
-First, configure the `config.json` file, which has to be located at the `constraintsolving/` root dir. It has the
-following properties:
+First, configure the `config.json` file, which has to be located at the `constraintsolving/` root dir. It has the following properties:
 
 ```json
 {
@@ -105,13 +104,13 @@ To run the solver perform:  ``python3 main.py --mode [projectdir] -s``
 
 This will generate results in `results/projectdir/[query-name+timestamp]`and the gurobi model in `models/projectdir/[query-name+timestamp]` folder. 
 
-`results/projectdir/[query-name=timestamp]` will contain `reprScores.txt` which needs to be added to `ql/javascript/ql/src/tsm_[query-type]_worse.qll` file or use the next steps to combine scores
+`results/projectdir/[query-name=timestamp]` will contain `reprScores.txt` which needs to be added to `ql/javascript/ql/src/TSM/tsm_[query-type]_worse.qll` file or use the next steps to combine scores
 
 ## Combine the scores from each database
 
 Use `cd misc; python3 combinescores.py` to combine the scores from each database.
 
-Copy the scores to the target `query-type`:   `codeql/javascript/ql/src/tsm_[query-type]_worse.qll`
+Copy the scores to the target `query-type`:   `codeql/javascript/ql/src/TSM/tsm_[query-type]_worse.qll`
 
 ## Using the scored reps to compute event scores for each database
 

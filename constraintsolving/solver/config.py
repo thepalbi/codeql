@@ -5,7 +5,7 @@ from orchestration import global_config
 
 class SolverConfig:
     def __init__(self, query_name, query_type,
-                 output_path=os.path.join(global_config.sources_root, "javascript", "ql", "src", "tsm_scores")):
+                 output_path=os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", "tsm_scores")):
         # TODO: produce ql file with scores directly here
         self.codeql_output_path = output_path
         # constraint config

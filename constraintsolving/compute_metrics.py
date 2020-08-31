@@ -161,7 +161,7 @@ def getallmetrics(outputdir, config:SolverConfig):
             metricsfile.write(snkstr+"\\\\\n")
 
 def createReprPredicate(outputdir,query_type, query_name):
-    tsm_queries_folder = os.path.join(global_config.sources_root, "javascript", "ql", "src")
+    tsm_queries_folder = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM")
     #output_path = tsm_queries_folder + "/tsm_repr_pred_{0}.qll".format(query_type)
     output_path = tsm_queries_folder + "/tsm_repr_pred.qll"
     reprScoreFilename = "results/{0}/reprScores.txt".format(outputdir)

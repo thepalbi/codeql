@@ -63,17 +63,26 @@ class DataGenerator:
             os.makedirs(generated_data_dir)
         return generated_data_dir
 
-    def _get_query_file_for_entity(self, queried_entity: str, query_type: str) -> str:
-        return self._get_query_file(f"{queried_entity}-{query_type}.ql")
+    def _get_tsm_query_file_for_entity(self, queried_entity: str, query_type: str) -> str:
+        return self._get_tsm_query_file(f"{queried_entity}-{query_type}.ql")
 
     def _get_query_file(self, filename: str) -> str:
-        return os.path.join(global_config.sources_root, "javascript/ql/src/", filename)
+        return os.path.join(global_config.sources_root, "javascript", "ql", "src",  filename)
+
+    def _get_tsm_query_file(self, filename: str) -> str:
+        return os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM",  filename)
 
     def _get_bqrs_file_for_entity(self, queried_entity: str, query_type: str) -> str:
         return self._get_bqrs_file(f"{queried_entity}-{query_type}.bqrs")
 
+    def _get_tsm_bqrs_file_for_entity(self, queried_entity: str, query_type: str) -> str:
+        return self._get_tsm_bqrs_file(f"{queried_entity}-{query_type}.bqrs")
+
     def _get_bqrs_file(self, filename: str) -> str:
-        return os.path.join(constaintssolving_dir, self.project_dir, "results/codeql-javascript/", filename)
+        return os.path.join(constaintssolving_dir, self.project_dir, "results", "codeql-javascript", filename)
+
+    def _get_tsm_bqrs_file(self, filename: str) -> str:
+        return os.path.join(constaintssolving_dir, self.project_dir, "results", "codeql-javascript", "TSM", filename)
 
     def generate_scores(self, query_type: str) -> Tuple[str, ...]:
         # Run metrics-snk query
@@ -82,11 +91,11 @@ class DataGenerator:
         self.logger.info("Generating events scores")
         self.codeql.database_analyze(
             self.project_dir,
-            self._get_query_file(metrics_file + ".ql"),
+            self._get_tsm_query_file(metrics_file + ".ql"),
             f"{logs_folder}/js-results.csv")
 
         # Get results BQRS file
-        bqrs_metrics_file = self._get_bqrs_file(metrics_file + '.bqrs')
+        bqrs_metrics_file = self._get_tsm_bqrs_file(metrics_file + '.bqrs')
         capitalized_query_type = query_type.capitalize()
         tsm_worse_scores_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-tsmworse-ind-avg.prop.csv")
@@ -162,11 +171,11 @@ class DataGenerator:
             "Generating %s data in file=[%s]", entity_type, output_file)
         self.codeql.database_analyze(
             self.project_dir,
-            self._get_query_file_for_entity(
+            self._get_tsm_query_file_for_entity(
                 entity_type,
                 query_type),
             f"{logs_folder}/js-results.csv")
         self.codeql.bqrs_decode(
-            self._get_bqrs_file_for_entity(entity_type, query_type),
+            self._get_tsm_bqrs_file_for_entity(entity_type, query_type),
             result_set,
             output_file)
