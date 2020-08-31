@@ -66,20 +66,11 @@ class DataGenerator:
     def _get_tsm_query_file_for_entity(self, queried_entity: str, query_type: str) -> str:
         return self._get_tsm_query_file(f"{queried_entity}-{query_type}.ql")
 
-    def _get_query_file(self, filename: str) -> str:
-        return os.path.join(global_config.sources_root, "javascript", "ql", "src",  filename)
-
     def _get_tsm_query_file(self, filename: str) -> str:
         return os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM",  filename)
 
-    def _get_bqrs_file_for_entity(self, queried_entity: str, query_type: str) -> str:
-        return self._get_bqrs_file(f"{queried_entity}-{query_type}.bqrs")
-
     def _get_tsm_bqrs_file_for_entity(self, queried_entity: str, query_type: str) -> str:
         return self._get_tsm_bqrs_file(f"{queried_entity}-{query_type}.bqrs")
-
-    def _get_bqrs_file(self, filename: str) -> str:
-        return os.path.join(constaintssolving_dir, self.project_dir, "results", "codeql-javascript", filename)
 
     def _get_tsm_bqrs_file(self, filename: str) -> str:
         return os.path.join(constaintssolving_dir, self.project_dir, "results", "codeql-javascript", "TSM", filename)
@@ -137,7 +128,7 @@ class DataGenerator:
         # running propagation graph queries
         self.codeql.database_analyze(
             self.project_dir,
-            self._get_query_file("PropagationGraph.ql"),
+            self._get_tsm_query_file("PropagationGraph.ql"),
             f"{logs_folder}/js-results.csv")
         # extracting results from bqrs files
         # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-triple-id-small.prop.csv
@@ -150,12 +141,12 @@ class DataGenerator:
         self.logger.info("Generating propagation graph data")
         # propagation graph triplets
         self.codeql.bqrs_decode(
-            self._get_bqrs_file("PropagationGraph.bqrs"),
+            self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
             "tripleWRepID",
             tiplets_output_file)
         # repr
         self.codeql.bqrs_decode(
-            self._get_bqrs_file("PropagationGraph.bqrs"),
+            self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
             "eventToConcatRep",
             repr_mapping_output_file)
         return (
