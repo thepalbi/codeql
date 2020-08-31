@@ -35,7 +35,17 @@ The pipeline at the moment has the following steps implemented:
 
 This steps can be executed individually or all together in an end-to-end runner.   You can use the orchestrator in code, or with it's CLI. The latter one is located in `main.py`.
 
-Fist, configure the environment variables defined in
+Fist, configure the `config.json` file, which has to be located at the `constraintsolving/` root dir. It has the
+following properties:
+
+```json
+{
+  "codeQLExecutable": "absolute path to the codeql executable",
+  "codeQLSourcesRoot": "absolute path to this project's root directory (where the `.git` folder lives)"
+}
+```
+
+Done. You're ready to go 😉!
 
 You can either run a single step of the pipeline:
 

@@ -3,6 +3,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 from DataParser import readKnown
 # dirprefix="C:/Users/saika/projects/ql/constraintsolving/databases/eclipse_orion.client_js_srcVersion_9ef167/eclipse_orion.client_9ef1675/src/"
 from solver.config import SolverConfig
+from orchestration import global_config
 import os
 
 def getmetrics(actual, predicted, c):
@@ -160,7 +161,7 @@ def getallmetrics(outputdir, config:SolverConfig):
             metricsfile.write(snkstr+"\\\\\n")
 
 def createReprPredicate(outputdir,query_type, query_name):
-    tsm_queries_folder = os.path.join(os.environ["CODEQL_SOURCE_ROOT"],"javascript","ql","src")
+    tsm_queries_folder = os.path.join(global_config.sources_root, "javascript", "ql", "src")
     #output_path = tsm_queries_folder + "/tsm_repr_pred_{0}.qll".format(query_type)
     output_path = tsm_queries_folder + "/tsm_repr_pred.qll"
     reprScoreFilename = "results/{0}/reprScores.txt".format(outputdir)

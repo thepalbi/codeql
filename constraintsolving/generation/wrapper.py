@@ -2,6 +2,8 @@ import os
 import subprocess
 import logging
 
+from orchestration import global_config
+
 
 class CodeQLWrapper:
     """CodeQLWrapper is a codeql wrapper in Python. It finds the codeql executable through
@@ -11,7 +13,7 @@ class CodeQLWrapper:
     def __init__(self):
         try:
             # TODO: Check that file exists, and it's codeql?
-            self._code_ql_binary_path = os.environ["CODEQL"]
+            self._code_ql_binary_path = global_config.codeql_executable
             self._logs_directory = "logs/"
             self._logger = logging.getLogger(self.__class__.__name__)
         except KeyError:
