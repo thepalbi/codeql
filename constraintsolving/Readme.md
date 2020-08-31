@@ -17,16 +17,6 @@ Run `python3 -m misc.scrape -dld [project-slug] -o [outputdirectory]` where
 
 Finally unzip the zip file corresponding to the downloaded database (e.g.,:`output/1046224544-fontend.zip`)
 
-## Setting the envorinment variables
-Follow the steps below to prepare the environment:
-
-- Let's say the CodeQL database has bees stored in `output/1046224544_fontend_19c10c3`
-- Set the following environment variables: 
-    - `CODEQL=` path to `codelql` bynary (e.g., `/home/tools/semmle/codeql-cli-atm-home/codeql/codeql`)
-    - `CODEQL_SOURCE_ROOT=`  path to the `ql` queries root (e.g.,`/home/dev/microsoft/ql`)
-    - `QUERY_TYPE=` query type, one of  [`Xss`, `NoSql`, `Sql`]
-    - `QUERY_NAME=` query name, one of  [`NosqlInjectionWorse`, `SqlInjectionWorse`,`DomBasedXssWorse`]
-
 To run the analysis pipeline there are currently two options: 
 
 1) Using the Orquestator to run the analysis end-to-end or indivitual steps
@@ -45,9 +35,17 @@ The pipeline at the moment has the following steps implemented:
 
 This steps can be executed individually or all together in an end-to-end runner.   You can use the orchestrator in code, or with it's CLI. The latter one is located in `main.py`.
 
-Fist, configure the environment variables defined in
+First, configure the `config.json` file, which has to be located at the `constraintsolving/` root dir. It has the
+following properties:
 
-You can either run a single step of the pipeline:
+```json
+{
+  "codeQLExecutable": "absolute path to the codeql executable",
+  "codeQLSourcesRoot": "absolute path to this project's root directory (where the `.git` folder lives)"
+}
+```
+
+Then, you can either run a single step of the pipeline:
 
 ```bash
 # Run the whole pipeline:
@@ -68,6 +66,17 @@ python main.py --help
 ```
 
 # 2) Execute each analysis phase script
+
+## Setting the envorinment variables
+Follow the steps below to prepare the environment:
+
+- Let's say the CodeQL database has bees stored in `output/1046224544_fontend_19c10c3`
+- Set the following environment variables: 
+    - `CODEQL=` path to `codelql` bynary (e.g., `/home/tools/semmle/codeql-cli-atm-home/codeql/codeql`)
+    - `CODEQL_SOURCE_ROOT=`  path to the `ql` queries root (e.g.,`/home/dev/microsoft/ql`)
+    - `QUERY_TYPE=` query type, one of  [`Xss`, `NoSql`, `Sql`]
+    - `QUERY_NAME=` query name, one of  [`NosqlInjectionWorse`, `SqlInjectionWorse`,`DomBasedXssWorse`]
+
 
 ## Generating propagation graph info and known sources/sinks/sanitizers
 

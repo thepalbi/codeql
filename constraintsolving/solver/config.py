@@ -1,9 +1,11 @@
 import os
 
+from orchestration import global_config
+
+
 class SolverConfig:
-    def __init__(self, query_name = os.environ["QUERY_NAME"],\
-         query_type = os.environ["QUERY_TYPE"],\
-         output_path = os.path.join(os.environ["CODEQL_SOURCE_ROOT"],"javascript","ql","src","tsm_scores")):
+    def __init__(self, query_name, query_type,
+                 output_path=os.path.join(global_config.sources_root, "javascript", "ql", "src", "tsm_scores")):
         # TODO: produce ql file with scores directly here
         self.codeql_output_path = output_path
         # constraint config
@@ -23,16 +25,7 @@ class SolverConfig:
         self.constraint_format = "gb"
 
         # metric config
-        self.trainingsizes=[self.known_samples_ratio]
+        self.trainingsizes = [self.known_samples_ratio]
 
         # only events above this threshold score will be predicted as src/snk/sans
         self.thresholds = [0.9]
-
-
-
-
-
-
-
-
-

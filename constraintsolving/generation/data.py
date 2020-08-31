@@ -3,10 +3,10 @@ import os
 from typing import Tuple
 
 from orchestration.steps import OrchestrationStep
+from orchestration import global_config
 from .wrapper import CodeQLWrapper
 
-ql_sources_root = os.environ["CODEQL_SOURCE_ROOT"]
-constaintssolving_dir = os.path.join(ql_sources_root, "constraintsolving/")
+constaintssolving_dir = os.path.join(global_config.sources_root, "constraintsolving/")
 logs_folder = os.path.join(constaintssolving_dir, "logs/")
 
 SOURCES = "Sources"
@@ -67,7 +67,7 @@ class DataGenerator:
         return self._get_query_file(f"{queried_entity}-{query_type}.ql")
 
     def _get_query_file(self, filename: str) -> str:
-        return os.path.join(ql_sources_root, "javascript/ql/src/", filename)
+        return os.path.join(global_config.sources_root, "javascript/ql/src/", filename)
 
     def _get_bqrs_file_for_entity(self, queried_entity: str, query_type: str) -> str:
         return self._get_bqrs_file(f"{queried_entity}-{query_type}.bqrs")
