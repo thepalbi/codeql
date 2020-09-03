@@ -94,8 +94,8 @@ class DataGenerator:
             self.generated_data_dir, f"{self.project_name}-tsmworse-filtered-avg.prop.csv")
 
         # Extract result scores
-        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseScores{capitalized_query_type}", tsm_worse_scores_file)
-        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseFiltered{capitalized_query_type}",
+        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseScores{query_type}", tsm_worse_scores_file)
+        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseFiltered{query_type}",
                                 tsm_worse_filtered_file)
 
         return tsm_worse_scores_file, tsm_worse_filtered_file
