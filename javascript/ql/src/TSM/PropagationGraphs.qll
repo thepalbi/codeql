@@ -2,7 +2,16 @@ import javascript
 import NodeRepresentation
 
 module PropagationGraph {
-  /**
+/**
+ * Gets the minimum number of ocurrences of a candidate representation.
+ *
+ * Reducing this bound will generate more candidate representations, but
+ * will generally negatively affect performance. 
+ */
+private int minOcurrences() { result = 1 }
+
+
+/**
    * A taint step for purposes of the propagation graph.
    *
    * This includes both standard (local) taint steps and an additional step from
@@ -87,7 +96,7 @@ module PropagationGraph {
     string rep() {
       result = candidateRep() and
       // eliminate rare representations
-      count(Node n | n.candidateRep() = result) >= 5
+      count(Node n | n.candidateRep() = result) >= minOcurrences()
     }
 
     string getconcatrep(){
