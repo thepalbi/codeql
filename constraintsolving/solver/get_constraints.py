@@ -247,63 +247,59 @@ class ConstraintBuilder:
         set_sources = 0
         for k in self.known_sources:
             for src in self.known_sources[k]:
-                if src not in self.events.keys() or src in blacklist:
-                    continue
-                self.printKnownConstraints(self.events[src], {"src": "1"})
-                set_sources += 1
-                for rep in self.events[src].reps:
-                    if rep not in self.unique_reps:
-                        continue
-                    srcVar = self.getVar(rep, self._src)
-                    sanVar = self.getVar(rep, self._san)
-                    snkVar = self.getVar(rep, self._snk)
-                    self.variables[srcVar].set_constant(1.0)
-                    self.variables[sanVar].set_constant(0.0)
-                    self.variables[snkVar].set_constant(0.0)
-
+                set_sources += self.setKnownConstraints(src, self._src, blacklist)
+        
         set_sinks = 0
         for k in self.known_sinks:
             for sink in self.known_sinks[k]:
-                if sink not in self.events.keys() or sink in blacklist:
-                    continue
-                self.printKnownConstraints(self.events[sink], {"snk": "1"})
-                set_sinks += 1
-                for rep in self.events[sink].reps:
-                    if rep not in self.unique_reps:
-                        continue
-
-                    srcVar = self.getVar(rep, self._src)
-                    sanVar = self.getVar(rep, self._san)
-                    snkVar = self.getVar(rep, self._snk)
-                    # if variables[snkVar].is_constant:
-                    #     print("{0} already constant".format(snkVar))
-                    self.variables[srcVar].set_constant(0.0)
-                    self.variables[sanVar].set_constant(0.0)
-                    self.variables[snkVar].set_constant(1.0)
+                set_sinks += self.setKnownConstraints(sink, self._snk, blacklist)
 
         set_san = 0
         for k in self.known_sanitizers:
             for san in self.known_sanitizers[k]:
-                if san not in self.events.keys() or san in blacklist:
-                    continue
-                self.printKnownConstraints(self.events[san], {"san": "1"})
-                set_san += 1
-                for rep in self.events[san].reps:
-                    if rep not in self.unique_reps:
-                        continue
-
-                    srcVar = self.getVar(rep, self._src)
-                    sanVar = self.getVar(rep, self._san)
-                    snkVar = self.getVar(rep, self._snk)
-                    # if variables[sanVar].is_constant:
-                    #     print("{0} already constant".format(sanVar))
-                    self.variables[srcVar].set_constant(0.0)
-                    self.variables[sanVar].set_constant(1.0)
-                    self.variables[snkVar].set_constant(0.0)
+                set_san += self.setKnownConstraints(san, self._san, blacklist)
 
         print("Known sources: %d" % set_sources, end=',')
         print("Known sanitizers: %d" % set_san, end=',')
         print("Known sinks: %d" % set_sinks)
+
+    """
+    Sets set a determined constrainst variable to 1 according to its kind [Source, Sink, Sanitizer]
+    """
+    def setKnownConstraints(self, event, kind, blacklist):
+        #  TO_DO: Improve to avoid if statements
+        k_src = 0.0
+        k_san = 0.0
+        k_snk = 0.0
+
+        if kind == self._src:
+            k_src = 1.0
+            kText = "src"
+        if kind == self._san:
+            k_san = 1.0
+            kText = "san"
+        if kind == self._snk:
+            k_snk = 1.0
+            kText = "snk"
+
+        count = 0
+        if event not in self.events.keys() or event in blacklist:
+            return count
+
+        count += 1
+        self.printKnownConstraints(self.events[event], {kText: "1"})
+        for rep in self.events[event].reps:
+            if rep not in self.unique_reps:
+                continue
+
+            srcVar = self.getVar(rep, self._src)
+            sanVar = self.getVar(rep, self._san)
+            snkVar = self.getVar(rep, self._snk)
+            self.variables[srcVar].set_constant(k_src)
+            self.variables[sanVar].set_constant(k_san)
+            self.variables[snkVar].set_constant(k_snk)
+
+        return count
 
     def writeVarConstrants(self):
         # output var.txt and constraints_var.txt
