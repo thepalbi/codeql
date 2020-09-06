@@ -69,8 +69,8 @@ def generate_metris(projectList):
 
             # Get the list of nodes (csv files) from the analyzed projects 
             # Each DB-tsmworse-filtered-avg.prop.csv comes for the query getTSMWorseFilteredSqlQuery
-            # getTSMWorseFilteredSqlQuery...yiels node (sinks in this case) from QueryVTSM that 
-            # are sink candidates, providing info whether they are known sinks and/or effective sinks 
+            # getTSMWorseFilteredSqlQuery...yields nodes (sinks in this case) from QueryVTSM that 
+            # are sink candidates, includinf info about whether they are known sinks and/or effective sinks 
             csvFiles = glob.glob("data/*/*tsm{0}-filtered-avg.prop.csv".format(version), recursive=True)
             projectsToAnalyze = filter(lambda projectName: getProjectNameFromFile(projectName) in projectList, csvFiles) 
             for projectFileName in projectsToAnalyze:
@@ -103,6 +103,9 @@ def generate_metris(projectList):
             #print("Predicted/Candidates: {0}/{1}={2:.2f}".format(total_predicted, candidates, total_predicted / candidates))
             #print("{0}/{1}={2:.4f}".format(total_predicted, candidates, total_predicted / candidates), end=',')
 
+            # true_predicted are all nodes whose score>threshold from getTSMWorseScoresQuery
+            # tolal_predicted are all nodes whose score>threshold from getTSMWorseFilteredSqlQuery
+            # predicted_known are those from total_predicted are came from known source
             print("{0}/{1}".format(predicted_known, total_predicted), end=',')
             precision = true_predicted / (total_predicted + 1e-9)
             print("{0}/{1}={2:.4f}".format(true_predicted, total_predicted, precision), end=',')
