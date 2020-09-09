@@ -65,14 +65,17 @@ class GenerateModelStep(OrchestrationStep):
         for project in projects:
             self.logger.info(">>>>>>>>>>>>>Executing project %s" % project)
             try:
+                # Write flow constraints, as in Seldon 4.2
                 constraint_builder.generate_flow_constraints(project, config.constraints_constant_C, config.query_name)
                 pass
             except:
                 import traceback as tb
                 tb.print_exc()
 
+        # Write variable constraints as in Seldon 4.1
         constraint_builder.writeVarConstrants()
         constraint_builder.writeKnownConstraints()
+        # Write objective as in Seldon 4.4, minimizing the violation of each constraint
         constraint_builder.writeObjective()
 
     def name(self) -> str:

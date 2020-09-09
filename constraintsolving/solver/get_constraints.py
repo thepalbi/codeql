@@ -1,10 +1,12 @@
 from DataParser import readFlows, readEvents, readKnown, readClass, readURL, readFlowsAndReps, readPairs
 from Variable import Variable
+from Event import Event
 import Constraint
 import os
 import re
 import shutil
 from .config import SolverConfig
+from typing import Tuple
 
 class ConstraintBuilder:
     def __init__(self, mode, outputdir, min_rep_events, dataset_type, constraint_format, lambda_const):
@@ -120,13 +122,14 @@ class ConstraintBuilder:
 
         return list(set(blacklist))
 
-    def getVar(self, rep, suffix=""):
+    def getVar(self, rep, suffix="") -> str:
         # if self.rep_count[rep] >= self.min_rep_events:
         return "n{0}{1}".format(self.unique_reps[rep], suffix)
         # else:
         #     assert False, "Invalid rep"
 
-    def getBackOffVar(self, event, suffix, constraint_type="flow"):
+    # When constraint_type == "known" it returns a tuple (constraint, rep count)
+    def getBackOffVar(self, event: Event, suffix: str, constraint_type="flow") -> str:
         reps = event.reps
         #reps = list(filter(lambda x: self.rep_count[x] >= self.min_rep_events, reps))
         if len(reps) == 0:
@@ -134,13 +137,16 @@ class ConstraintBuilder:
         elif len(reps) > 1:
             if self.constraint_format == "gb":
                 if constraint_type == "known":
+                    # sum over backoff vars
                     return " + ".join([self.getVar(r, suffix) for r in reps]), len(reps)
                 else:
+                    # average over backoff vars
                     factor = "{0:.2f}".format(1.0/len(reps))
                     return " + ".join([factor + " " + self.getVar(r, suffix) for r in reps])
             else:
                 return "({0})/{1}".format("+".join([self.getVar(r, suffix) for r in reps]), len(reps))
         else:
+            # len(reps) == 1
             if constraint_type == "flow":
                 return "{0}".format(" + ".join([self.getVar(r, suffix) for r in reps]))
             else:
@@ -368,6 +374,8 @@ class ConstraintBuilder:
 
         # collecting events for every pair of source/sink/sanitizer
         for flow in flows:
+            # sanit_sink will contain for every pair of sanit -> sink, the possible
+            # sources that complete the triplet.
             sanit_sink_tuple = (flow.sanitizer, flow.sink)
             sanit_sink_list = []
             if sanit_sink_tuple in sanit_sink:
@@ -376,6 +384,8 @@ class ConstraintBuilder:
                 sanit_sink[sanit_sink_tuple] = sanit_sink_list
             sanit_sink_list.append(flow.source)
 
+            # source_sink will contain for every pair of source -> sink, the possible
+            # sanitizers that complete the triplet.
             source_sink_tuple = (flow.source, flow.sink)
             source_sink_list = []
             if source_sink_tuple in source_sink:
@@ -385,6 +395,8 @@ class ConstraintBuilder:
 
             source_sink_list.append(flow.sanitizer)
 
+            # source_sanit will contain for every pair of source -> sanit, the possible
+            # sinks that complete the triplet.
             source_sanit_tuple = (flow.source, flow.sanitizer)
             source_sanit_list = []
             if source_sanit_tuple in source_sanit:
@@ -407,7 +419,7 @@ class ConstraintBuilder:
             #                      Constraint.Constraint.LTE) for i,k in enumerate(sanit_sink.keys())
             # ))
 
-            for ss in sanit_sink.keys():
+            for san_snk_pair in sanit_sink.keys():
                 newepsvar = "{0}{1}".format(self._eps, len(self.eps_vars))
                 self.eps_vars.append(newepsvar)
                 # get rep for each node
@@ -418,44 +430,50 @@ class ConstraintBuilder:
                 #                                                                 global_constant_C,
                 #                                                                 newepsvar),
                 #                                        Constraint.Constraint.LTE))
-                constraintsfile.write(Constraint.print("{0} + {1} - {2} - {3}".format(self.getBackOffVar(ss[0], self._san),
-                                                                          self.getBackOffVar(ss[1], self._snk),
-                                                                                      " + ".join(
-                                                                                          [self.getBackOffVar(k, self._src)
-                                                                                           for k in sanit_sink[ss]]).replace(" + ", " - "),
-                                                                                      newepsvar
-                                                                                      ),
+
+                # Adding constraint as in Seldon-Sec 4.2-Fig 4.a
+                constraintsfile.write(Constraint.print("{0} + {1} - {2} - {3}".format(
+                                                                          self.getBackOffVar(san_snk_pair[0], self._san),
+                                                                          self.getBackOffVar(san_snk_pair[1], self._snk),
+                                                                          " + ".join(
+                                                                              [self.getBackOffVar(k, self._src)
+                                                                              for k in sanit_sink[san_snk_pair]]).replace(" + ", " - "),
+                                                                          newepsvar),
                                                        "{0}".format(global_constant_C),
                                                        Constraint.Constraint.LTE, format='norm'))
                 constraintsfile.write("\n")
 
-            for ss in source_sanit.keys():
+            for src_san_pair in source_sanit.keys():
                 newepsvar = "{0}{1}".format(self._eps, len(self.eps_vars))
                 self.eps_vars.append(newepsvar)
                 # constraintsfile.write(Constraint.print(
                 #     "{0} + {1}".format(self.getBackOffVar(ss[0], "src"), self.getBackOffVar(ss[1], "san")),
                 #     "{0} + {1} + {2}".format(" + ".join([self.getBackOffVar(k, "snk") for k in source_sanit[ss]]),
                 #                              global_constant_C, newepsvar), Constraint.Constraint.LTE))
+
+                # Adding constraint as in Seldon-Sec 4.2-Fig 4.b
                 constraintsfile.write(Constraint.print(
-                    "{0} + {1} - {2} - {3}".format(self.getBackOffVar(ss[0], self._src), self.getBackOffVar(ss[1], self._san)
-                                                   , " + ".join([self.getBackOffVar(k, self._snk) for k in source_sanit[ss]]).replace(" + ", " - "),
+                    "{0} + {1} - {2} - {3}".format(self.getBackOffVar(src_san_pair[0], self._src), self.getBackOffVar(san_snk_pair[1], self._san)
+                                                   , " + ".join([self.getBackOffVar(k, self._snk) for k in source_sanit[san_snk_pair]]).replace(" + ", " - "),
                                                    newepsvar
                                                    ),
                     "{0}".format(global_constant_C), Constraint.Constraint.LTE, format='norm'))
 
                 constraintsfile.write("\n")
 
-            for ss in source_sink.keys():
+            for src_snk_pair in source_sink.keys():
                 newepsvar = "{0}{1}".format(self._eps, len(self.eps_vars))
                 self.eps_vars.append(newepsvar)
                 # constraintsfile.write(Constraint.print(
                 #     "{0} + {1}".format(self.getBackOffVar(ss[0], "src"), self.getBackOffVar(ss[1], "snk")),
                 #     "{0} + {1} + {2}".format(" + ".join([self.getBackOffVar(k, "san") for k in source_sink[ss]]),
                 #                              global_constant_C, newepsvar), Constraint.Constraint.LTE))
+
+                # Adding constraint as in Seldon-Sec 4.2-Fig 4.c
                 constraintsfile.write(Constraint.print(
-                    "{0} + {1} - {2} - {3}".format(self.getBackOffVar(ss[0], self._src),
-                                                   self.getBackOffVar(ss[1], self._snk),
-                                                   " + ".join([self.getBackOffVar(k, self._san) for k in source_sink[ss]]).replace(" + ", " - "),
+                    "{0} + {1} - {2} - {3}".format(self.getBackOffVar(src_snk_pair[0], self._src),
+                                                   self.getBackOffVar(src_snk_pair[1], self._snk),
+                                                   " + ".join([self.getBackOffVar(k, self._san) for k in source_sink[src_snk_pair]]).replace(" + ", " - "),
                                                    newepsvar
                                                    ),
                     "{0}".format(global_constant_C), Constraint.Constraint.LTE, format='norm'))
