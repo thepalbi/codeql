@@ -107,13 +107,16 @@ def printmetrics(outputdir, trainingsize, lambda_const, trials):
             #print(vars[repid+_src],' ', vars[repid+_snk], ' ', vars[repid+_san] )
             reprToWrite = None
             if vars[repid+_src] > 0.0:
-                reprToWrite = "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "src", vars[repid + _src])
+                reprToWrite = "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "src", "%.10f" 
+%  vars[repid + _src])
 
             if vars[repid+_snk] > 0.0:
-                reprToWrite = "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "snk", vars[repid + _snk])
+                reprToWrite = "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "snk", "%.10f" 
+%  vars[repid + _snk])
 
             if vars[repid+_san] > 0.0:
-                reprToWrite= "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "san", vars[repid + _san ])
+                reprToWrite= "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "san", "%.10f" 
+% vars[repid + _san ])
 
             if reprToWrite is not None:
                 repConstraints.append(reprToWrite)
