@@ -131,7 +131,7 @@ else:
     if projectListFile is None:
         projectList = [project]
     else:
-        projectList = open(projectListFile).read()
+        projectList = open(projectListFile).readlines()
 
 if __name__ == '__main__':
     logging.info(f"Project List: {projectList}")

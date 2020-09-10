@@ -8,6 +8,12 @@ import shutil
 from .config import SolverConfig
 from typing import Tuple
 
+def safe_str(obj):
+    try: return str(obj)
+    except UnicodeEncodeError:
+        return obj.encode('ascii', 'ignore').decode('ascii')
+    return ""
+
 class ConstraintBuilder:
     def __init__(self, mode, outputdir, min_rep_events, dataset_type, constraint_format, lambda_const):
         self.events = dict()
@@ -199,6 +205,8 @@ class ConstraintBuilder:
         self.delifexists("{0}/constraints_known_snk.txt".format(self.outputdir))
         self.delifexists("{0}/var.txt".format(self.outputdir))
 
+
+
     def createVariables(self):
         print("Creating variables")
 
@@ -219,7 +227,7 @@ class ConstraintBuilder:
                 #outputstring += "{0}:n{1}\n".format(rep, i)
             print("Done variables")
 
-            repToIDfile.write("\n".join(["{0}:n{1}".format(k, self.unique_reps[k]) for k in self.unique_reps.keys()]))
+            repToIDfile.write("\n".join(["{0}:n{1}".format(safe_str(k), safe_str(self.unique_reps[k])) for k in self.unique_reps.keys()]))
 
             print("Wrote to file")
         with open("{0}/eventToRepIDs.txt".format(self.outputdir), "w") as eventToRepIDs:
@@ -453,8 +461,8 @@ class ConstraintBuilder:
 
                 # Adding constraint as in Seldon-Sec 4.2-Fig 4.b
                 constraintsfile.write(Constraint.print(
-                    "{0} + {1} - {2} - {3}".format(self.getBackOffVar(src_san_pair[0], self._src), self.getBackOffVar(san_snk_pair[1], self._san)
-                                                   , " + ".join([self.getBackOffVar(k, self._snk) for k in source_sanit[san_snk_pair]]).replace(" + ", " - "),
+                    "{0} + {1} - {2} - {3}".format(self.getBackOffVar(src_san_pair[0], self._src), self.getBackOffVar(src_san_pair[1], self._san)
+                                                   , " + ".join([self.getBackOffVar(k, self._snk) for k in source_sanit[src_san_pair]]).replace(" + ", " - "),
                                                    newepsvar
                                                    ),
                     "{0}".format(global_constant_C), Constraint.Constraint.LTE, format='norm'))
@@ -493,7 +501,8 @@ class ConstraintBuilder:
     def writeObjective(self):
         with open("{0}/objective.txt".format(self.outputdir), "w") as objectivefile:
             obj = " + ".join(["{0} ".format(self.lambda_const) + k for k in self.variables.keys()])
-            obj = obj + " + " + " + ".join(self.eps_vars)
+            if len(self.eps_vars)>0:
+                obj = obj + " + " + " + ".join(self.eps_vars)
             objectivefile.write(obj)
             objectivefile.write("\n")
 
