@@ -5,6 +5,7 @@ from DataParser import readKnown
 from solver.config import SolverConfig
 from orchestration import global_config
 import os
+import logging
 
 def getmetrics(actual, predicted, c):
     # Precision
@@ -23,9 +24,10 @@ def printmetrics(outputdir, trainingsize, lambda_const, trials):
     _san = "a"
     _snk = "i"
     for trial in range(1, trials+1):
-        events = open("constraints/{0}/eventToRepIDs.txt".format(outputdir)).readlines()
+        logging.info("Reading: constraints/{0}/eventToRepIDs.txt".format(outputdir))
+        events = open("constraints/{0}/eventToRepIDs.txt".format(outputdir),'r', errors='replace').readlines()
         results = open("models/{0}/results_gb_{1}_{2}_{3}.txt".format(outputdir, trainingsize, lambda_const, trial)).readlines()
-        reprs = open("constraints/{0}/repToID.txt".format(outputdir)).readlines()
+        reprs = open("constraints/{0}/repToID.txt".format(outputdir),'r', errors='replace').readlines()
         vars = dict()
         for r in results:
             vars[r.split(":")[0]]=float(r.split(":")[1])

@@ -232,8 +232,8 @@ class ConstraintBuilder:
             print("Wrote to file")
         with open("{0}/eventToRepIDs.txt".format(self.outputdir), "w") as eventToRepIDs:
             for e in self.events.keys():
-                repIDs = ["n{0}".format(self.unique_reps[rep]) for rep in self.events[e].reps]
-                eventToRepIDs.write("{0}:{1}\n".format(e, ",".join(repIDs)))
+                repIDs = ["n{0}".format(safe_str(self.unique_reps[rep])) for rep in self.events[e].reps]
+                eventToRepIDs.write("{0}:{1}\n".format(safe_str(e), ",".join(repIDs)))
 
     def readAllKnown(self, projectdir, query, query_type, use_all_sanitizers):
         # constraints for known sources
@@ -386,32 +386,34 @@ class ConstraintBuilder:
             for snk in san_snk_map[san]:
                 # To-Do: This looks cuadratic. Make it linear
                 sources = [src for src in src_san_map.keys() if san in src_san_map[src]]
-                sanit_sink_tuple = (san, snk)
-                sanit_sink[sanit_sink_tuple] = list(sources)
+                sanit_sink_tuple = (self.events[san], self.events[snk])
+                sanit_sink[sanit_sink_tuple] = list(map(lambda s: self.events[s], sources))
                 #print(sources)
 
                 for src in sources:
                     # source_sink will contain for every pair of source -> sink, the possible
                     # sanitizers that complete the triplet.
-                    source_sink_tuple = (src, snk)
+                    #print(src, src in self.events)
+                    #print(snk, snk in self.events)
+                    source_sink_tuple = (self.events[src], self.events[snk])
                     source_sink_list = []
                     if source_sink_tuple in source_sink:
                         source_sink_list = source_sink.get(source_sink_tuple)
                     else:
                         source_sink[source_sink_tuple] = source_sink_list
-                    source_sink_list.append(san)
+                    source_sink_list.append(self.events[san])
 
 
                     # source_sanit will contain for every pair of source -> sanit, the possible
                     # sinks that complete the triplet.
-                    source_sanit_tuple = (src, san)
+                    source_sanit_tuple = (self.events[src], self.events[san])
                     source_sanit_list = []
                     if source_sanit_tuple in source_sanit:
                         source_sanit_list = source_sanit.get(source_sanit_tuple)
                     else:
                         source_sanit[source_sanit_tuple] = source_sanit_list
 
-                    source_sanit_list.append(snk)
+                    source_sanit_list.append(self.events[snk])
 
         return source_sanit, source_sink, sanit_sink
 
