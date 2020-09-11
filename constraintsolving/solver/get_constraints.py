@@ -358,17 +358,109 @@ class ConstraintBuilder:
         pass
 
     def generate_flow_constraints_join(self, projectdir, global_constant_C):
-        src_san_pairs = readPairs('data/{0}/{0}-pairSrcSan-{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
-                                                                      self.dataset_type is not None else ""), self.events)
-        san_snk_pairs = readPairs('data/{0}/{0}-pairSrcSan-{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
-                                                                      self.dataset_type is not None else ""), self.events)
+        # src_san_pairs = readPairs('data/{0}/{0}-pairSrcSan-{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
+        #                                                               self.dataset_type is not None else ""), self.events)
+        # san_snk_pairs = readPairs('data/{0}/{0}-pairSanSnk-{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
+        #                                                               self.dataset_type is not None else ""), self.events)
 
-        #triples = src_san_pairs.join(san_snk_pairs, on="ssan", how='inner')
-        flow_list = []
-        src_san_pairs.apply(lambda x: self.ff(x, self.events, flow_list, san_snk_pairs))
-
-
+        # triples = src_san_pairs.join(san_snk_pairs, on="ssan", how='inner')
+        #flow_list = []
+        #src_san_pairs.apply(lambda x: self.ff(x, self.events, flow_list, san_snk_pairs))
         pass
+
+    def compute_source_sanit_sink_fromPairs(self, projectdir):
+        san_snk_pairs = readPairs('data/{0}/{0}-src-san{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
+                                    self.dataset_type is not None else ""), self.events)
+        src_san_map =  {k: g["ssan"].tolist() for k,g in san_snk_pairs.groupby("ssrc")}
+        san_snk_pairs = readPairs('data/{0}/{0}-san-snk{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
+                                    self.dataset_type is not None else ""), self.events)
+        san_snk_map = {k: g["ssnk"].tolist() for k,g in san_snk_pairs.groupby("ssan")}
+
+        sanit_sink = dict()
+        source_sanit = dict()
+        source_sink = dict()
+
+        for san in san_snk_map.keys():
+            # sanit_sink will contain for every pair of sanit -> sink, the possible
+            # sources that complete the triplet.
+            for snk in san_snk_map[san]:
+                # To-Do: This looks cuadratic. Make it linear
+                sources = [src for src in src_san_map.keys() if san in src_san_map[src]]
+                sanit_sink_tuple = (san, snk)
+                sanit_sink[sanit_sink_tuple] = list(sources)
+                #print(sources)
+
+                for src in sources:
+                    # source_sink will contain for every pair of source -> sink, the possible
+                    # sanitizers that complete the triplet.
+                    source_sink_tuple = (src, snk)
+                    source_sink_list = []
+                    if source_sink_tuple in source_sink:
+                        source_sink_list = source_sink.get(source_sink_tuple)
+                    else:
+                        source_sink[source_sink_tuple] = source_sink_list
+                    source_sink_list.append(san)
+
+
+                    # source_sanit will contain for every pair of source -> sanit, the possible
+                    # sinks that complete the triplet.
+                    source_sanit_tuple = (src, san)
+                    source_sanit_list = []
+                    if source_sanit_tuple in source_sanit:
+                        source_sanit_list = source_sanit.get(source_sanit_tuple)
+                    else:
+                        source_sanit[source_sanit_tuple] = source_sanit_list
+
+                    source_sanit_list.append(snk)
+
+        return source_sanit, source_sink, sanit_sink
+
+    def generate_flow_constraints_from_pairs(self, projectdir, global_constant_C, query=None):
+        source_sanit, source_sink, sanit_sink = self.compute_source_sanit_sink_fromPairs(projectdir)
+        print("Flows: San-Snk {0}, Src-San {1}, Src-Snk {2}".format(len(sanit_sink), len(source_sanit), len(source_sink)))
+
+        with open("{0}/constraints_flow.txt".format(self.outputdir), "a+") as constraintsfile:
+            for san_snk_pair in sanit_sink.keys():
+                newepsvar = "{0}{1}".format(self._eps, len(self.eps_vars))
+                self.eps_vars.append(newepsvar)
+                # Adding constraint as in Seldon-Sec 4.2-Fig 4.a
+                constraintsfile.write(Constraint.print("{0} + {1} - {2} - {3}".format(
+                                                                          self.getBackOffVar(san_snk_pair[0], self._san),
+                                                                          self.getBackOffVar(san_snk_pair[1], self._snk),
+                                                                          " + ".join(
+                                                                              [self.getBackOffVar(k, self._src)
+                                                                              for k in sanit_sink[san_snk_pair]]).replace(" + ", " - "),
+                                                                          newepsvar),
+                                                       "{0}".format(global_constant_C),
+                                                       Constraint.Constraint.LTE, format='norm'))
+                constraintsfile.write("\n")
+
+            for src_san_pair in source_sanit.keys():
+                newepsvar = "{0}{1}".format(self._eps, len(self.eps_vars))
+                self.eps_vars.append(newepsvar)
+                # Adding constraint as in Seldon-Sec 4.2-Fig 4.b
+                constraintsfile.write(Constraint.print(
+                    "{0} + {1} - {2} - {3}".format(self.getBackOffVar(src_san_pair[0], self._src), self.getBackOffVar(src_san_pair[1], self._san)
+                                                   , " + ".join([self.getBackOffVar(k, self._snk) for k in source_sanit[src_san_pair]]).replace(" + ", " - "),
+                                                   newepsvar
+                                                   ),
+                    "{0}".format(global_constant_C), Constraint.Constraint.LTE, format='norm'))
+
+                constraintsfile.write("\n")
+
+            for src_snk_pair in source_sink.keys():
+                newepsvar = "{0}{1}".format(self._eps, len(self.eps_vars))
+                self.eps_vars.append(newepsvar)
+
+                # Adding constraint as in Seldon-Sec 4.2-Fig 4.c
+                constraintsfile.write(Constraint.print(
+                    "{0} + {1} - {2} - {3}".format(self.getBackOffVar(src_snk_pair[0], self._src),
+                                                   self.getBackOffVar(src_snk_pair[1], self._snk),
+                                                   " + ".join([self.getBackOffVar(k, self._san) for k in source_sink[src_snk_pair]]).replace(" + ", " - "),
+                                                   newepsvar
+                                                   ),
+                    "{0}".format(global_constant_C), Constraint.Constraint.LTE, format='norm'))
+                constraintsfile.write("\n")
 
     def generate_flow_constraints(self, projectdir, global_constant_C, query=None):
         sanit_sink = dict()

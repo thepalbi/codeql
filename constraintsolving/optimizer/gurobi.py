@@ -66,7 +66,8 @@ class GenerateModelStep(OrchestrationStep):
             self.logger.info(">>>>>>>>>>>>>Executing project %s" % project)
             try:
                 # Write flow constraints, as in Seldon 4.2
-                constraint_builder.generate_flow_constraints(project, config.constraints_constant_C, config.query_name)
+                #constraint_builder.generate_flow_constraints(project, config.constraints_constant_C, config.query_name)
+                constraint_builder.generate_flow_constraints_from_pairs(project, config.constraints_constant_C, config.query_name)
                 pass
             except:
                 import traceback as tb

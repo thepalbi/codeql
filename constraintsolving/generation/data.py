@@ -126,25 +126,47 @@ class DataGenerator:
             query_type, SANITIZERS, f"sanitizer{query_type}Classes", sanitizers_output_file)
 
         # running propagation graph queries
-        self.codeql.database_analyze(
-            self.project_dir,
-            self._get_tsm_query_file("PropagationGraph.ql"),
-            f"{logs_folder}/js-results.csv")
+        try:
+            self.codeql.database_analyze(
+                self.project_dir,
+                self._get_tsm_query_file("PropagationGraph.ql"),
+                f"{logs_folder}/js-results.csv")
+        except Exception as error:
+            self.logger.info("Error Analyzing PropagationGraph.ql")
+
+
+        self.logger.info("Generating propagation graph data")
+        # propagation graph triplets
         # extracting results from bqrs files
         # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-triple-id-small.prop.csv
-        tiplets_output_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-triple-id-small.prop.csv")
+        #tiplets_output_file = os.path.join(
+        #    self.generated_data_dir, f"{self.project_name}-triple-id-small.prop.csv")
+        # self.codeql.bqrs_decode(
+        #     self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
+        #     "tripleWRepID",
+        #     tiplets_output_file)
+
+        # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-src-san.prop.csv
+        src_san_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-src-san-small.prop.csv")
+        self.codeql.bqrs_decode(
+            self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
+            "pairSrcSan",
+            src_san_output_file)
+
+        # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-san-snk.prop.csv
+        san_snk_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-san-snk-small.prop.csv")
+        self.codeql.bqrs_decode(
+            self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
+            "pairSanSnk",
+            san_snk_output_file)
+
+        # repr
         # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-eventToConcatRep-small.prop.csv
         repr_mapping_output_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-eventToConcatRep-small.prop.csv")
 
-        self.logger.info("Generating propagation graph data")
-        # propagation graph triplets
-        self.codeql.bqrs_decode(
-            self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
-            "tripleWRepID",
-            tiplets_output_file)
-        # repr
         self.codeql.bqrs_decode(
             self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
             "eventToConcatRep",
@@ -153,7 +175,9 @@ class DataGenerator:
             sources_output_file,
             sinks_output_file,
             sanitizers_output_file,
-            tiplets_output_file,
+            src_san_output_file,
+            san_snk_output_file,
+            #tiplets_output_file,
             repr_mapping_output_file
         )
 
