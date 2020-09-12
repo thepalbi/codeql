@@ -358,18 +358,13 @@ class ConstraintBuilder:
         sinks = list(other[other["ssan"] == row["ssan"]]["ssnk"])
         pass
 
-    def generate_flow_constraints_join(self, projectdir, global_constant_C):
-        # src_san_pairs = readPairs('data/{0}/{0}-pairSrcSan-{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
-        #                                                               self.dataset_type is not None else ""), self.events)
-        # san_snk_pairs = readPairs('data/{0}/{0}-pairSanSnk-{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
-        #                                                               self.dataset_type is not None else ""), self.events)
-
-        # triples = src_san_pairs.join(san_snk_pairs, on="ssan", how='inner')
-        #flow_list = []
-        #src_san_pairs.apply(lambda x: self.ff(x, self.events, flow_list, san_snk_pairs))
-        pass
-
     def compute_source_sanit_sink_fromPairs(self, projectdir):
+        """ Generates the following mappings that are handy to the generation of the flow constrainst for the model
+        It computes the joinn  of the pairs (src,san) and (san, snk) obtained from  the PropagationGraph  
+        source_sanit: (src,san)-> [snk], 
+        source_sink:  (src,snk) -> [san], 
+        sanit_sink: (san,snk) -> [src]
+        """
         san_snk_pairs = readPairs('data/{0}/{0}-src-san{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
                                     self.dataset_type is not None else ""), self.events)
         san_src_map =  {k: g["ssrc"].tolist() for k,g in san_snk_pairs.groupby("ssan")}
@@ -417,7 +412,10 @@ class ConstraintBuilder:
 
         return source_sanit, source_sink, sanit_sink
 
-    def generate_flow_constraints_from_pairs(self, projectdir, global_constant_C, query=None):
+    def generate_flow_constraints_from_pairs(self, projectdir: str, global_constant_C, query=None):
+        """ Genrate the flow constraints required for the Gurobi model
+        It gets the potential flows by joining the pairs (src, san) (san, snk) from the progapation graph   
+        """
         source_sanit, source_sink, sanit_sink = self.compute_source_sanit_sink_fromPairs(projectdir)
         print("Flows: San-Snk {0}, Src-San {1}, Src-Snk {2}".format(len(sanit_sink), len(source_sanit), len(source_sink)))
 
@@ -464,7 +462,13 @@ class ConstraintBuilder:
                     "{0}".format(global_constant_C), Constraint.Constraint.LTE, format='norm'))
                 constraintsfile.write("\n")
 
+    #@deprecated("use compute_source_sanit_sink_fromPairs")
     def generate_flow_constraints(self, projectdir, global_constant_C, query=None):
+        """Generate the flow constraints required for the Gurobi model.
+        It gets the potential flows out of the triples (src, san, snk) from the progapation graph.
+        Deprecate due to extremely large csv file from the triples. Replaces by compute_source_sanit_sink_fromPairs   
+        """
+
         sanit_sink = dict()
         source_sanit = dict()
         source_sink = dict()
