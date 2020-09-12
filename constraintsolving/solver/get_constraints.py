@@ -383,11 +383,12 @@ class ConstraintBuilder:
         for san in san_snk_map.keys():
             # sanit_sink will contain for every pair of sanit -> sink, the possible
             # sources that complete the triplet.
+            sources = [src for src in src_san_map.keys() if san in src_san_map[src]]
+            sanit_sink_list = list(map(lambda s: self.events[s], sources))
             for snk in san_snk_map[san]:
                 # To-Do: This looks cuadratic. Make it linear
-                sources = [src for src in src_san_map.keys() if san in src_san_map[src]]
                 sanit_sink_tuple = (self.events[san], self.events[snk])
-                sanit_sink[sanit_sink_tuple] = list(map(lambda s: self.events[s], sources))
+                sanit_sink[sanit_sink_tuple] = sanit_sink_list
                 #print(sources)
 
                 for src in sources:
