@@ -7,6 +7,7 @@ import re
 import shutil
 from .config import SolverConfig
 from typing import Tuple
+import sys
 
 def safe_str(obj):
     try: return str(obj)
@@ -371,7 +372,7 @@ class ConstraintBuilder:
     def compute_source_sanit_sink_fromPairs(self, projectdir):
         san_snk_pairs = readPairs('data/{0}/{0}-src-san{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
                                     self.dataset_type is not None else ""), self.events)
-        src_san_map =  {k: g["ssan"].tolist() for k,g in san_snk_pairs.groupby("ssrc")}
+        san_src_map =  {k: g["ssrc"].tolist() for k,g in san_snk_pairs.groupby("ssan")}
         san_snk_pairs = readPairs('data/{0}/{0}-san-snk{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
                                     self.dataset_type is not None else ""), self.events)
         san_snk_map = {k: g["ssnk"].tolist() for k,g in san_snk_pairs.groupby("ssan")}
@@ -383,13 +384,11 @@ class ConstraintBuilder:
         for san in san_snk_map.keys():
             # sanit_sink will contain for every pair of sanit -> sink, the possible
             # sources that complete the triplet.
-            sources = [src for src in src_san_map.keys() if san in src_san_map[src]]
+            sources =  san_src_map[san]
             sanit_sink_list = list(map(lambda s: self.events[s], sources))
             for snk in san_snk_map[san]:
-                # To-Do: This looks cuadratic. Make it linear
                 sanit_sink_tuple = (self.events[san], self.events[snk])
                 sanit_sink[sanit_sink_tuple] = sanit_sink_list
-                #print(sources)
 
                 for src in sources:
                     # source_sink will contain for every pair of source -> sink, the possible
