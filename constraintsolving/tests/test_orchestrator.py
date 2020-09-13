@@ -24,6 +24,13 @@ def test_generate_model_regression_with_sql_worse_and_bidding_system():
 
 
 def generate_model_and_assert_regression_passes(project_dir: str, project_name: str, query_type: str, query_name: str, expected_files_dir: str):
+    # Start orchestrator
+    orch = Orchestrator(project_dir, project_name, query_type, query_name)
+
+    # Run generate_entities and generate_model step
+    orch.run_step('generate_entities')
+    orch.run_step('generate_model')
+
     # Generate actual and expected results paths
     expected_entities_dir = os.path.join(
         global_config.sources_root, 'constraintsolving', 'tests', expected_files_dir)
@@ -34,13 +41,6 @@ def generate_model_and_assert_regression_passes(project_dir: str, project_name: 
     constraints_dir_name = os.listdir(actual_entities_dir)[0]
     actual_entities_dir = os.path.join(
         actual_entities_dir, constraints_dir_name)
-
-    # Start orchestrator
-    orch = Orchestrator(project_dir, project_name, query_type, query_name)
-
-    # Run generate_entities and generate_model step
-    orch.run_step('generate_entities')
-    orch.run_step('generate_model')
 
     # Do results compare
     dir_comparer = filecmp.dircmp(expected_entities_dir, actual_entities_dir)
