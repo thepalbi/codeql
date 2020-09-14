@@ -5,6 +5,8 @@
 
 trigger:
 - msr-propgraph
+pr:
+- msr-propgraph
 
 pool:
   vmImage: 'ubuntu-latest'
