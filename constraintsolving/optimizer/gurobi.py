@@ -32,7 +32,7 @@ class GenerateModelStep(OrchestrationStep):
         os.makedirs("{1}/constraints/{0}".format(optimizer_run_name, config.working_dir), exist_ok=True)
         os.makedirs("{1}/models/{0}".format(optimizer_run_name, config.working_dir), exist_ok=True)
         os.makedirs("{1}/logs/{0}".format(optimizer_run_name, config.working_dir), exist_ok=True)
-        os.makedirs("{1}/results/{0}".format(optimizer_run_name, config.results_dir), exist_ok=True)
+        os.makedirs("{1}/{0}".format(optimizer_run_name, config.results_dir), exist_ok=True)
 
         projects = [os.path.basename(k) for k in projects]
         self.logger.info("Collected {0} projects".format(len(projects)))
@@ -97,7 +97,7 @@ class OptimizeStep(OrchestrationStep):
         candidates.sort(key=os.path.getmtime)
         optimizer_run_name = candidates[-1].replace(constraints_dir, "")
         print("Choosing latest project directory: %s" % optimizer_run_name)
-        "results/{0}".format(optimizer_run_name)
+
         # run solver
         solve_constraints_combine_model(optimizer_run_name, config)
         # solve_constraints(newdir, config)
