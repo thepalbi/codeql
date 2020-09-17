@@ -40,7 +40,8 @@ class DataGenerator:
 
     steps = ["entities", "scores"]
 
-    def __init__(self, project_dir: str, project_name: str):
+    def __init__(self, project_dir: str, project_name: str,
+                working_dir:str = global_config.working_directory):
         """Creates a new DataGenerator for the given project
 
         Args:
@@ -52,11 +53,12 @@ class DataGenerator:
         self.codeql = CodeQLWrapper()
         # noinspection PyInterpreter
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.working_dir = working_dir
         self.generated_data_dir = self._get_generated_data_dir()
 
     def _get_generated_data_dir(self):
         generated_data_dir = os.path.join(
-            constaintssolving_dir, f"data/{self.project_name}/")
+            constaintssolving_dir, f"{self.working_dir}/data/{self.project_name}/")
         if not os.path.isdir(generated_data_dir):
             self.logger.warn(
                 "Creating directory for generated data at %s", generated_data_dir)

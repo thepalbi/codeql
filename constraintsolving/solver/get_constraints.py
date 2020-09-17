@@ -16,13 +16,14 @@ def safe_str(obj):
     return ""
 
 class ConstraintBuilder:
-    def __init__(self, mode, outputdir, min_rep_events, dataset_type, constraint_format, lambda_const):
+    def __init__(self, mode, outputdir, min_rep_events, dataset_type, constraint_format, lambda_const, working_dir):
         self.events = dict()
         self.unique_reps = dict()
         self.reps_map = dict()
         self.mode = mode
         self.outputdir = outputdir
         os.makedirs(outputdir, exist_ok=True)
+        self.working_dir = working_dir
         self.delete_old_constraints()
         self.variables = dict()
         self.eps_vars = list()
@@ -44,9 +45,10 @@ class ConstraintBuilder:
 
 
     def readEventsAndReps(self, projectdir):
-        readEvents('data/{0}/{0}-eventToConcatRep{1}.prop.csv'.format(projectdir,
-                                                                      "-" + self.dataset_type if
-                                                                      self.dataset_type is not None else ""),
+        readEvents('{1}/data/{0}/{0}-eventToConcatRep{2}.prop.csv'.format(projectdir,
+                                                                    self.working_dir,    
+                                                                    "-" + self.dataset_type if
+                                                                    self.dataset_type is not None else ""),
                    self.events,
                    self.unique_reps,
                    self.rep_count)
@@ -239,14 +241,14 @@ class ConstraintBuilder:
     def readAllKnown(self, projectdir, query, query_type, use_all_sanitizers):
         # constraints for known sources
         print("Constraints for known events")
-        known_sources = readKnown("data/{0}/{0}-{1}-{2}.prop.csv".format(projectdir, "sources", query_type), "sources", query)
-        known_sinks = readKnown("data/{0}/{0}-{1}-{2}.prop.csv".format(projectdir,"sinks",query_type), "sinks", query)
+        known_sources = readKnown("{1}/data/{0}/{0}-{2}-{3}.prop.csv".format(projectdir, self.working_dir, "sources", query_type), "sources", query)
+        known_sinks = readKnown("{1}/data/{0}/{0}-{2}-{3}.prop.csv".format(projectdir, self.working_dir,"sinks",query_type), "sinks", query)
         if use_all_sanitizers:
             print("Using all sanitizers")
             # TO-DO: Check last parameter: Is None or should be removed?
-            known_sanitizers = readKnown("data/{0}/{0}-{1}-{2}.prop.csv".format(projectdir, "sanitizers", query_type), "sanitizers", None)
+            known_sanitizers = readKnown("{1}/data/{0}/{0}-{2}-{3}.prop.csv".format(projectdir, self.working_dir, "sanitizers", query_type), "sanitizers", None)
         else:
-            known_sanitizers = readKnown("data/{0}/{0}-{1}-{2}.prop.csv".format(projectdir, "sanitizers", query_type), "sanitizers", query)
+            known_sanitizers = readKnown("{1}/data/{0}/{0}-{2}-{3}.prop.csv".format(projectdir, self.working_dir, "sanitizers", query_type), "sanitizers", query)
         self.known_sources[projectdir] = known_sources
         self.known_sinks[projectdir] = known_sinks
         self.known_sanitizers[projectdir] = known_sanitizers
@@ -365,10 +367,10 @@ class ConstraintBuilder:
         source_sink:  (src,snk) -> [san], 
         sanit_sink: (san,snk) -> [src]
         """
-        san_snk_pairs = readPairs('data/{0}/{0}-src-san{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
+        san_snk_pairs = readPairs('{1}/data/{0}/{0}-src-san{2}.prop.csv'.format(projectdir, self.working_dir, "-" + self.dataset_type if
                                     self.dataset_type is not None else ""), self.events)
         san_src_map =  {k: g["ssrc"].tolist() for k,g in san_snk_pairs.groupby("ssan")}
-        san_snk_pairs = readPairs('data/{0}/{0}-san-snk{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
+        san_snk_pairs = readPairs('{1}/data/{0}/{0}-san-snk{2}.prop.csv'.format(projectdir, self.working_dir, "-" + self.dataset_type if
                                     self.dataset_type is not None else ""), self.events)
         san_snk_map = {k: g["ssnk"].tolist() for k,g in san_snk_pairs.groupby("ssan")}
 
@@ -418,6 +420,8 @@ class ConstraintBuilder:
         """
         source_sanit, source_sink, sanit_sink = self.compute_source_sanit_sink_fromPairs(projectdir)
         print("Flows: San-Snk {0}, Src-San {1}, Src-Snk {2}".format(len(sanit_sink), len(source_sanit), len(source_sink)))
+
+        print("{0}/constraints_flow.txt".format(self.outputdir))
 
         with open("{0}/constraints_flow.txt".format(self.outputdir), "a+") as constraintsfile:
             for san_snk_pair in sanit_sink.keys():
@@ -473,7 +477,7 @@ class ConstraintBuilder:
         source_sanit = dict()
         source_sink = dict()
 
-        flows = readFlowsAndReps('data/{0}/{0}-triple-id{1}.prop.csv'.format(projectdir,  "-" + self.dataset_type if
+        flows = readFlowsAndReps('{1}/data/{0}/{0}-triple-id{1}.prop.csv'.format(projectdir, self.working_dir, "-" + self.dataset_type if
                                                                       self.dataset_type is not None else ""), self.events)
 
         print("Unique reps: ", len(self.unique_reps))

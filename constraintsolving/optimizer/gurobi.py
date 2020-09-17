@@ -19,8 +19,7 @@ class GenerateModelStep(OrchestrationStep):
         # TODO: Extract this as an orchestrator config?
         # TODO: Fix logging
         config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type)
-        projects_folder = "./data"
-
+        projects_folder = os.path.join(config.working_dir, "data")
         projects = glob(os.path.join(projects_folder, self.orchestrator.project_name))
         self.logger.info("Generating models for projects: %s", projects)
 
@@ -30,21 +29,23 @@ class GenerateModelStep(OrchestrationStep):
         optimizer_run_name = optimizer_run_name + "-" + timestamp
         self.logger.info("Project dir: %s" % optimizer_run_name)
 
-        os.makedirs("constraints/{0}".format(optimizer_run_name), exist_ok=True)
-        os.makedirs("models/{0}".format(optimizer_run_name), exist_ok=True)
-        os.makedirs("logs/{0}".format(optimizer_run_name), exist_ok=True)
-        os.makedirs("results/{0}".format(optimizer_run_name), exist_ok=True)
+        os.makedirs("{1}/constraints/{0}".format(optimizer_run_name, config.working_dir), exist_ok=True)
+        os.makedirs("{1}/models/{0}".format(optimizer_run_name, config.working_dir), exist_ok=True)
+        os.makedirs("{1}/logs/{0}".format(optimizer_run_name, config.working_dir), exist_ok=True)
+        os.makedirs("{1}/results/{0}".format(optimizer_run_name, config.results_dir), exist_ok=True)
 
         projects = [os.path.basename(k) for k in projects]
         self.logger.info("Collected {0} projects".format(len(projects)))
         self.logger.info("Creating events and reps")
         constraint_builder = ConstraintBuilder(self.orchestrator.project_name,
-                                               'constraints/{2}/{0}-{1}'.format(config.query_name, timestamp,
-                                                                                self.orchestrator.project_name),
+                                               '{3}/constraints/{2}/{0}-{1}'.format(config.query_name, timestamp,
+                                                                                self.orchestrator.project_name,
+                                                                                config.working_dir),
                                                config.min_rep_events,
                                                config.dataset_type,
                                                config.constraint_format,
-                                               config.lambda_const)
+                                               config.lambda_const,
+                                               config.working_dir)
         for project in projects:
             try:
                 self.logger.info("Analizing project: %s", project)
@@ -91,9 +92,10 @@ class OptimizeStep(OrchestrationStep):
         # TODO: Also share this between steps
         config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type)
 
-        candidates = glob("./constraints/{0}".format(optimizer_run_name + "*"))
+        constraints_dir = "{0}/constraints/".format(config.working_dir)
+        candidates = glob("{1}{0}".format(optimizer_run_name + "*",constraints_dir))
         candidates.sort(key=os.path.getmtime)
-        optimizer_run_name = candidates[-1].replace("constraints/", "")
+        optimizer_run_name = candidates[-1].replace(constraints_dir, "")
         print("Choosing latest project directory: %s" % optimizer_run_name)
         "results/{0}".format(optimizer_run_name)
         # run solver
