@@ -4,6 +4,8 @@ from typing import List
 from generation.data import DataGenerator, GenerateEntitiesStep, GenerateScoresStep
 from optimizer.gurobi import GenerateModelStep, OptimizeStep
 
+from orchestration import global_config
+
 
 class UnknownStepException(Exception):
     def __init__(self, step_name: str, available_steps: List[str]):
@@ -29,7 +31,7 @@ class Orchestrator:
         self.query_name = query_name
         self.project_dir = project_dir
         self.project_name = project_name
-        self.data_generator = DataGenerator(project_dir, project_name)
+        self.data_generator = DataGenerator(project_dir, project_name, global_config.working_directory)
         self.logger = logging.getLogger(self.__class__.__name__)
 
         # Instantiate orchestration step templates

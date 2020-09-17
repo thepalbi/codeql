@@ -18,16 +18,19 @@ def getmetrics(actual, predicted, c):
     return scores
 
 
-def printmetrics(outputdir, trainingsize, lambda_const, trials):
+def printmetrics(outputdir, trainingsize, config: SolverConfig):
+    lambda_const = config.lambda_const 
+    trials = config.trials
+
     scores=[]
     _src = "s"
     _san = "a"
     _snk = "i"
     for trial in range(1, trials+1):
-        logging.info("Reading: constraints/{0}/eventToRepIDs.txt".format(outputdir))
-        events = open("constraints/{0}/eventToRepIDs.txt".format(outputdir),'r', errors='replace').readlines()
-        results = open("models/{0}/results_gb_{1}_{2}_{3}.txt".format(outputdir, trainingsize, lambda_const, trial)).readlines()
-        reprs = open("constraints/{0}/repToID.txt".format(outputdir),'r', errors='replace').readlines()
+        logging.info("Reading: {1}/constraints/{0}/eventToRepIDs.txt".format(outputdir, config.working_dir))
+        events = open("{1}/constraints/{0}/eventToRepIDs.txt".format(outputdir, config.working_dir),'r', errors='replace').readlines()
+        results = open("{1}/models/{0}/results_gb_{2}_{3}_{4}.txt".format(outputdir, config.working_dir,trainingsize, lambda_const, trial)).readlines()
+        reprs = open("{1}/constraints/{0}/repToID.txt".format(outputdir, config.working_dir),'r', errors='replace').readlines()
         vars = dict()
         for r in results:
             vars[r.split(":")[0]]=float(r.split(":")[1])
@@ -157,7 +160,7 @@ def getallmetrics(outputdir, config:SolverConfig):
             sanstr = "san"
             metricsfile.write("{0}\n".format(trainingsize))
             for thresh in config.thresholds:
-                src, snk, san = printmetrics(outputdir, trainingsize, config.lambda_const, config.trials)
+                src, snk, san = printmetrics(outputdir, trainingsize, config)
                 srcstr=srcstr+"&"+src
                 snkstr=snkstr+"&"+snk
                 sanstr=sanstr+"&"+san

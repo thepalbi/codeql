@@ -5,6 +5,7 @@ import csv
 import sys
 import argparse
 import logging
+from orchestration import global_config
 from typing import List
 
 def getProjectNameFromFile(f: str) -> str:
@@ -35,13 +36,13 @@ def generate_metris(projectList: List[str]):
         # VWorse is the baseline version of the query  to compare against 
         # V0 is the last version of the query
         # V0 - VWorse = elements discovered in last version that doesn't appear in baseline
-        csvFiles = glob.glob("data/*/*tsm{0}-ind-avg.prop.csv".format(version), recursive=True)
+        csvFiles = glob.glob("{1}/data/*/*tsm{0}-ind-avg.prop.csv".format(version, global_config.working_directory), recursive=True)
         projectsToAnalyzeRecall = list(filter(lambda projectName: getProjectNameFromFile(projectName) in projectList, csvFiles))
         # Get the list of nodes (csv files) from the analyzed projects 
         # Each DB-tsmworse-filtered-avg.prop.csv comes for the query getTSMWorseFilteredQuery
         # getTSMWorseFilteredSqlQuery...yields nodes (sinks in this case) from QueryVTSM that 
         # are sink candidates, includind info about whether they are known sinks and/or effective sinks 
-        csvFiles = glob.glob("data/*/*tsm{0}-filtered-avg.prop.csv".format(version), recursive=True)
+        csvFiles = glob.glob("{1}/data/*/*tsm{0}-filtered-avg.prop.csv".format(version, global_config.working_directory), recursive=True)
         projectsToAnalyzePrecision = list(filter(lambda projectName: getProjectNameFromFile(projectName) in projectList, csvFiles))
 
         for threshold in [0.26, 0.27,0.28]:

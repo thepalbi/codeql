@@ -5,8 +5,8 @@ import shutil
 from .config import SolverConfig
 
 def solve_constraints_combine_model(projectdir, config:SolverConfig):
-    constraintsdir = 'constraints/{0}'.format(projectdir)
-    modelfile_path = "models/{0}/gurobi_model_{1}_{2}.lp".format(projectdir, config.known_samples_ratio, 1)
+    constraintsdir = '{1}/constraints/{0}'.format(projectdir, config.working_dir)
+    modelfile_path = "{1}/models/{0}/gurobi_model_{2}_{3}.lp".format(projectdir, config.working_dir, config.known_samples_ratio, 1)
     # write minimization objective
     print("Writing minimization objective")
     with open(modelfile_path, "w") as modelfile:
@@ -78,8 +78,9 @@ def solve_constraints_combine_model(projectdir, config:SolverConfig):
         non_zero = 0
         ones = 0
         eps_non_zero = 0
-        with open("models/{0}/results_gb_{1}_{2}_{3}.txt".format(projectdir,
-                                                                 config.known_samples_ratio, config.lambda_const, 1),
+        with open("{1}/models/{0}/results_gb_{2}_{3}_{4}.txt".format(projectdir, 
+                                                                config.working_dir,
+                                                                config.known_samples_ratio, config.lambda_const, 1),
                   "w") as resultfile:
             for v in m.getVars():
                 if v.x == 0:
@@ -104,7 +105,7 @@ def solve_constraints_combine_model(projectdir, config:SolverConfig):
 
 
 def solve_constraints(projectdir, config:SolverConfig):
-    constraintsdir = 'constraints/{0}'.format(projectdir)
+    constraintsdir = '{1}/constraints/{0}'.format(projectdir, config.working_dir)
     for trial in range(1, config.trials+1):
         try:
             # Create a new model
@@ -140,8 +141,8 @@ def solve_constraints(projectdir, config:SolverConfig):
             m.setObjective(problem.objective(), GRB.MINIMIZE)
 
             #if query is None:
-            m.write("models/{0}/gurobi_model_{1}_{2}.lp".format(projectdir, config.known_samples_ratio, trial))
-            m.write("models/{0}/gurobi_model_{1}_{2}.mps".format(projectdir, config.known_samples_ratio, trial))
+            m.write("{1}/models/{0}/gurobi_model_{2}_{3}.lp".format(projectdir, config.working_dir,  config.known_samples_ratio, trial))
+            m.write("{1}/models/{0}/gurobi_model_{@}_{3}.mps".format(projectdir, config.working_dir, config.known_samples_ratio, trial))
             # else:
             #     os.makedirs("models/{0}/{1}".format(projectdir, query), exist_ok=True)
             #     m.write("models/{0}/{1}/gurobi_model_{1}_{2}.lp".format(projectdir, query, known_samples_ratio, trial))
@@ -152,8 +153,9 @@ def solve_constraints(projectdir, config:SolverConfig):
             zero=0
             non_zero=0
             ones=0
-            with open("models/{0}/results_gb_{1}_{2}_{3}.txt".format(projectdir,
-                                                                     config.known_samples_ratio, config.lambda_const, trial), "w") as resultfile:
+            with open("{1}/models/{0}/results_gb_{2}_{3}_{4}.txt".format(projectdir,
+                                                                    config.working_dir,
+                                                                    config.known_samples_ratio, config.lambda_const, trial), "w") as resultfile:
                 for v in m.getVars():
                     resultfile.write('%s:%g\n' % (v.varName, v.x))
                     if v.x == 0:
