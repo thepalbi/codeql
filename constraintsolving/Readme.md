@@ -40,7 +40,9 @@ First, configure the `config.json` file, which has to be located at the `constra
 ```json
 {
   "codeQLExecutable": "absolute path to the codeql executable",
-  "codeQLSourcesRoot": "absolute path to this project's root directory (where the `.git` folder lives)"
+  "codeQLSourcesRoot": "absolute path to this project's root directory (where the `.git` folder lives)",
+  "workingDirectory": "absolute path to the working directory",
+  "resultsDirectory": "absolute path to the results dir"
 }
 ```
 

@@ -126,7 +126,8 @@ def printmetrics(outputdir, trainingsize, config: SolverConfig):
             if reprToWrite is not None:
                 repConstraints.append(reprToWrite)
 
-        with open("results/{0}/reprScores.txt".format(outputdir), "w") as reprscores:
+        repr_scores_file_path = os.path.join(config.results_dir, outputdir, "reprScores.txt")
+        with open(repr_scores_file_path, "w") as reprscores:
             sizeReprSet = len(repConstraints) 
             countRepr = 0     
             for repConstraint in repConstraints:
@@ -153,7 +154,8 @@ def printmetrics(outputdir, trainingsize, config: SolverConfig):
 
 
 def getallmetrics(outputdir, config:SolverConfig):
-    with open("results/{0}/metrics.txt".format(outputdir), "w") as metricsfile:
+    metrics_file_path = os.path.join(config.results_dir, outputdir, "metrics.txt")
+    with open(metrics_file_path, "w") as metricsfile:
         for trainingsize in config.trainingsizes:
             srcstr = "src"
             snkstr = "snk"
@@ -172,11 +174,12 @@ def createReprPredicate(outputdir,query_type, query_name):
     tsm_queries_folder = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM")
     #output_path = tsm_queries_folder + "/tsm_repr_pred_{0}.qll".format(query_type)
     output_path = tsm_queries_folder + "/tsm_repr_pred.qll"
-    reprScoreFilename = "results/{0}/reprScores.txt".format(outputdir)
+
+    repr_scores_path = os.path.join(global_config.results_directory, outputdir, "reprScores.txt")
 
     print(output_path)
-    print(reprScoreFilename)
-    with open(reprScoreFilename, "r") as reprscores:
+    print(repr_scores_path)
+    with open(repr_scores_path, "r") as reprscores:
         with open(output_path , "w") as reprPrFile:
             reprPrFile.writelines([
                 "module TsmRepr {",
