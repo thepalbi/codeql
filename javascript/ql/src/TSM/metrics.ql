@@ -1,7 +1,7 @@
 import javascript
 import PropagationGraphs
 import metrics
-import scores_nosqlinjection
+//import scores_nosqlinjection
 
 query predicate stats(int loc, int functions, int files, int sourceCandidates, int sinkCandidates, int sanitizerCandidates){    
     loc = sum(File f | | f.getNumberOfLinesOfCode())

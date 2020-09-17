@@ -221,6 +221,11 @@ predicate isKnownNoSqlInjectionSource(DataFlow::Node node){
     node instanceof NosqlInjection::Source
 }
 
+predicate isKnownNoSqlInjectionSanitizer(DataFlow::Node node){
+  node instanceof NosqlInjection::Sanitizer
+}
+
+
 predicate isKnownDomBasedXssSink(DataFlow::Node node){
     node instanceof DomBasedXss::Sink
 }

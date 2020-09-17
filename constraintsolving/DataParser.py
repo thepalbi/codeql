@@ -4,6 +4,7 @@ from FlowRelation import FlowRelation
 import multiprocessing
 import traceback as tb
 import re
+from typing import List
 
 def remapRepsToClusters(reps):
     clustersdata = open(r"C:\Users\saika\projects\adaptive-thread-modelling-gnn\clusters.txt").readlines()
@@ -24,6 +25,7 @@ def remapRepsToClusters(reps):
 
 
 def readEvents(file_loc, events=None, unique_reps=None, rep_count=None):
+    print("Reading events from: ", file_loc)
     df=pd.read_csv(file_loc)
 
     # create events
@@ -36,6 +38,7 @@ def readEvents(file_loc, events=None, unique_reps=None, rep_count=None):
         event_obj = Event(rep, reps=rep.strip().split("::"))
         events[rep] = event_obj
     new_unique_reps = [r.strip().split("::") for r in new_reps]
+    # Flattens the new_unique_reps, and makes a diff
     new_unique_reps = set([i for g in new_unique_reps for i in g]).difference(set(unique_reps.keys()))
     print("New Unique reps: %d" % len(new_unique_reps))
     print(list(new_unique_reps)[:5])
@@ -109,7 +112,7 @@ def f(events, tup, flows):
         tb.print_exc()
 
 
-def readFlowsAndReps(file_loc:str, events):
+def readFlowsAndReps(file_loc:str, events) -> List[FlowRelation]:
     df=pd.read_csv(file_loc)
     flows = []
     error_ids = []
@@ -136,7 +139,10 @@ def readPairs(file_loc:str, events):
     return df
 
 
-def readKnown(file_loc:str, suffix:str, query):
+def readKnown(file_loc:str, suffix:str, query) -> List[str]:
+    print("Reading known from: ", file_loc)
+    print("Query: ", query)
+
     df=pd.read_csv(file_loc)
     print("Unique {0} locations: {1}, reps: {2} ".format(suffix,len(list(set(df["URL for nd"]))), len(list(set(df["repr"])))))
 

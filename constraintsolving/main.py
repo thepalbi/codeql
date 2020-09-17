@@ -1,96 +1,61 @@
-from config import SolverConfig
-from get_constraints import ConstraintBuilder
-from solve_gb import solve_constraints, solve_constraints_combine_model
-from compute_metrics import getallmetrics
-import os
-from io import StringIO
-import sys
-import datetime
-import time
 import argparse
-from glob import glob
+import logging
+import os
+import glob
 
-parser=argparse.ArgumentParser()
-parser.add_argument('-g', dest='generate_constraints', action='store_true')
-parser.add_argument('-s', dest='solve', action='store_true')
-parser.add_argument('--mode', dest='mode', default='combined')
 
-args=parser.parse_args()
-config = SolverConfig()
+from orchestration.orchestrator import Orchestrator
 
-if args.generate_constraints:
-    if args.mode == 'combined':
-        # TODO: fix path to look for projects
-        print("Combined mode")
-        projects = glob('databases\\projects\\NoSqlInjection\\*')
+
+all_steps = "ALL"
+
+run_separate_on_multiple_projects = False
+
+parser = argparse.ArgumentParser()
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s\t%(asctime)s] %(name)s\t%(message)s")
+
+parser.add_argument("--single-step", dest="single_step", type=str, default=all_steps, metavar="STEP",
+                    help="Runs a single step of the orchestrator named STEP")
+
+parser.add_argument("--project-dir", dest="project_dir", required=True, type=str,
+                    help="Directory of the CodeQL database")
+parser.add_argument("--query-type", dest="query_type", required=True, type=str, choices=["Xss", "NoSql", "Sql"],
+                    help="Type of the query to solve")
+parser.add_argument("--query-name", dest="query_name", required=True, type=str,
+                    choices=["NosqlInjectionWorse", "SqlInjectionWorse", "DomBasedXssWorse"],
+                    help="Name of the query to solve")
+parser.add_argument("--project-list", dest="projectListFile", required=False, type=str, 
+                    help="Run all steps on the project passed on this list")
+
+
+parsed_arguments = parser.parse_args()
+project_dir = os.path.normpath(parsed_arguments.project_dir)
+project_name = os.path.basename(project_dir)
+orchestrator = Orchestrator(project_dir, project_name, parsed_arguments.query_type,
+                            parsed_arguments.query_name)
+projectListFile = parsed_arguments.projectListFile
+
+if parsed_arguments.projectListFile is not None:
+    run_separate_on_multiple_projects = True
+
+if __name__ == '__main__':
+    if parsed_arguments.single_step == all_steps:
+        if run_separate_on_multiple_projects:
+            projectList = open(projectListFile).readlines()
+            for project in projectList:
+                logging.info(f"Processing: {project}")
+                projectPrefix =  os.path.join(project_dir, project.replace('\r', '').replace('\n', '').replace("/","_"))
+                logging.info(f"Prefix: {projectPrefix}")
+                projectCandidate = glob.glob(projectPrefix+"_*", recursive=True)
+                print(projectCandidate)
+                if len(projectCandidate)>0:
+                    logging.info(f"Filename: {projectCandidate}")
+                    orchestrator = Orchestrator(projectCandidate[0], 
+                                                os.path.basename(projectCandidate[0]), 
+                                                parsed_arguments.query_type,
+                                                parsed_arguments.query_name)
+                    orchestrator.run()
+        else:
+            orchestrator.run()
     else:
-        print("Single project mode")
-        projects = glob('databases\\projects\\*\\'+args.mode)
-
-    projectdir = args.mode if config.query is None else args.mode + "/" + config.query
-    tstamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
-    projectdir = projectdir + "-" + tstamp
-    print("Project dir: %s" % projectdir)
-
-    os.makedirs("constraints/{0}".format(projectdir), exist_ok=True)
-    os.makedirs("models/{0}".format(projectdir), exist_ok=True)
-    os.makedirs("logs/{0}".format(projectdir), exist_ok=True)
-    os.makedirs("results/{0}".format(projectdir), exist_ok=True)
-
-    projects=[os.path.basename(k) for k in projects]
-    print("Collected {0} projects".format(len(projects)))
-    print("Creating events and reps")
-    constraint_builder = ConstraintBuilder(args.mode,
-                                           'constraints/{2}/{0}-{1}'.format(config.query,
-                                                                                 tstamp, args.mode),
-                                           config.min_rep_events,
-                                           config.dataset_type,
-                                           config.constraint_format,
-                                           config.lambda_const)
-    for proj in projects:
-        try:
-            print(proj)
-            constraint_builder.readEventsAndReps(proj)
-            constraint_builder.readAllKnown(proj, config.query, config.use_all_sanitizers)
-        except:
-            pass
-    #exit(1)
-    # remove events with no min reps
-    #constraint_builder.removeRareEvents()
-    # initiate all variables
-    constraint_builder.createVariables()
-
-    print("Adding constraints")
-    for proj in projects:
-        print(">>>>>>>>>>>>>Executing project %s" % proj)
-        try:
-            constraint_builder.generate_flow_constraints(proj, config.constraints_constant_C, config.query)
-            pass
-        except:
-            import traceback as tb
-            tb.print_exc()
-
-    constraint_builder.writeVarConstrants()
-    constraint_builder.writeKnownConstraints()
-    constraint_builder.writeObjective()
-
-
-if args.solve:
-    projectdir = args.mode if config.query is None else args.mode + "/" + config.query
-
-    candidates=glob("constraints/{0}".format(projectdir+"*"))
-    candidates.sort(key=os.path.getmtime)
-    projectdir=candidates[-1].replace("constraints/", "")
-    print("Choosing latest project directory: %s" % projectdir)
-
-    # run solver
-    solve_constraints_combine_model(projectdir, config)
-    #solve_constraints(newdir, config)
-
-    # compute metrics
-    getallmetrics(projectdir, config)
-
-
-# with open("logs/{0}/log{1}.txt".format(config.projectdir, int(datetime.datetime.now().timestamp())), "w") as w:
-#     w.write(mystdout.read())
-
+        orchestrator.run_step(parsed_arguments.single_step)

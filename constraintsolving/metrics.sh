@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 cql='/mnt/c/Users/saika/projects/codeql-2.2.0/codeql.exe'
-qlsrc='C:/Users/saika/projects/ql/javascript/ql/src/metrics-src.ql'
-qlsnk='C:/Users/saika/projects/ql/javascript/ql/src/metrics-snk.ql'
-qlsan='C:/Users/saika/projects/ql/javascript/ql/src/metrics-san.ql'
+qlsrc='C:/Users/saika/projects/ql/javascript/ql/src/TSM/metrics-src.ql'
+qlsnk='C:/Users/saika/projects/ql/javascript/ql/src/TSM/metrics-snk.ql'
+qlsan='C:/Users/saika/projects/ql/javascript/ql/src/TSM/metrics-san.ql'
 db="C:/Users/saika/projects/ql/constraintsolving/databases/projects/remoteexec/build/$1"
 query="CommandInjection"
 

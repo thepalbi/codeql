@@ -5,7 +5,7 @@ import gurobipy as gp
 
 import numpy as np
 
-from config import SolverConfig
+from .config import SolverConfig
 import tensorflow_constrained_optimization as tfco
 import tensorflow as tf
 

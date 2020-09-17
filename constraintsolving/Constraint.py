@@ -8,7 +8,7 @@ class Constraint(Enum):
     GT=4
 
 
-def print(lhs:str, rhs:str, constraint_type: Constraint, format='gb'):
+def print(lhs:str, rhs:str, constraint_type: Constraint, format='gb') -> str:
     if constraint_type == Constraint.LTE:
         if format == 'gb':
             return "{0} - {1} <= 0".format(lhs, rhs.replace(" + ", " - "))

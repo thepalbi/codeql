@@ -1,5 +1,6 @@
 /**
  * @kind graph
+ * @id javascript/propagation-graph
  */
 
 import javascript
@@ -46,7 +47,7 @@ predicate tripleWAtleastOneRep(NodeWithFewReps src, NodeWithFewReps san, NodeWit
   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
 }
 
-query predicate tripleWRepID(string ssrc, string ssan, string ssnk) {
+predicate tripleWRepID(string ssrc, string ssan, string ssnk) {
     exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
     reachableFromSourceCandidate(src, san) and
     san.isSanitizerCandidate() and
@@ -61,27 +62,34 @@ query predicate tripleWRepID(string ssrc, string ssan, string ssnk) {
     // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
 }
 
-predicate pairSrcSan(string ssrc, string ssan){
+
+query predicate pairSrcSan(string ssrc, string ssan){
     exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
         reachableFromSourceCandidate(src, san) and
         san.isSanitizerCandidate() and
         src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
         reachableFromSanitizerCandidate(san, snk) and
         snk.isSinkCandidate() and 
-        ssrc = getconcatrep(src) and 
-        ssan = getconcatrep(san) 
+        ssrc = src.getconcatrep() and 
+        ssan = san.getconcatrep()  
+        //ssnk = snk.getconcatrep()    
+        //ssrc = getconcatrep(src) and 
+        //ssan = getconcatrep(san) 
         )
 }
 
-predicate pairSanSnk(string ssan, string ssnk){
+query predicate pairSanSnk(string ssan, string ssnk){
     exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
         reachableFromSourceCandidate(src, san) and
         san.isSanitizerCandidate() and
         src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
         reachableFromSanitizerCandidate(san, snk) and
         snk.isSinkCandidate() and         
-        ssan = getconcatrep(san) and
-        ssnk = getconcatrep(snk)
+        //ssrc = src.getconcatrep() and 
+        ssan = san.getconcatrep() and 
+        ssnk = snk.getconcatrep()    
+        // ssan = getconcatrep(san) and
+        // ssnk = getconcatrep(snk)
         )
 }
 
@@ -93,6 +101,7 @@ predicate tripleWEventType(string ssrc, string ssan, string ssnk) {
     ssnk = snk.getId()
     )
 }
+
 
 
 query predicate eventToConcatRep(PropagationGraph::Node n, string repr){

@@ -1,9 +1,16 @@
+import os
+
+from orchestration import global_config
+
+
 class SolverConfig:
-    def __init__(self):
+    def __init__(self, query_name, query_type,
+                 output_path=os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", "tsm_scores")):
         # TODO: produce ql file with scores directly here
-        self.codeql_output_path = r"C:\Users\saika\projects\ql\javascript\ql\src\tsm_scores"
+        self.codeql_output_path = output_path
         # constraint config
-        self.query = "DomBasedXssWorse"
+        self.query_name = query_name
+        self.query_type = query_type
         self.constraints_constant_C = 0.75
         self.use_all_sanitizers = False
 
@@ -18,16 +25,7 @@ class SolverConfig:
         self.constraint_format = "gb"
 
         # metric config
-        self.trainingsizes=[self.known_samples_ratio]
+        self.trainingsizes = [self.known_samples_ratio]
 
         # only events above this threshold score will be predicted as src/snk/sans
         self.thresholds = [0.9]
-
-
-
-
-
-
-
-
-

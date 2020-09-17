@@ -1,6 +1,3 @@
-/**
- * @kind graph
- */
 import javascript
 import semmle.javascript.security.dataflow.BrokenCryptoAlgorithmCustomizations
 import semmle.javascript.security.dataflow.CleartextStorageCustomizations
@@ -125,24 +122,6 @@ predicate sanitizerClasses(DataFlow::Node nd, string q, string repr){
     ) and
     repr = PropagationGraph::getconcatrep(nd)
 }
-
-predicate sanitizerSqlClasses(DataFlow::Node nd, string q, string repr){
-    (           
-        nd instanceof SqlInjection::Sanitizer and q="SqlInjection" or
-        nd instanceof SqlInjectionWorse::Sanitizer and q="SqlInjectionWorse"       
-    ) and
-    repr = PropagationGraph::getconcatrep(nd)
-}
-
-query predicate sanitizerXssClasses(DataFlow::Node nd, string q, string repr){
-    (           
-        nd instanceof DomBasedXss::Sanitizer and q="DomBasedXss" or
-        nd instanceof DomBasedXssWorse::Sanitizer and q="DomBasedXssWorse"       
-    ) and
-    repr = PropagationGraph::getconcatrep(nd)
-}
-
-
 
   predicate allSanitizers(DataFlow::Node nd){
     (
