@@ -48,7 +48,6 @@ class ConstraintBuilder:
 
 
     def readEventsAndReps(self, projectdir, ctx):
-        # TODO: Change below directory here by propagating it in ctx from previous step
         readEvents(ctx[REPR_MAP_ENTITIES],
                    self.events,
                    self.unique_reps,
@@ -247,7 +246,6 @@ class ConstraintBuilder:
     def readAllKnown(self, projectdir, query, query_type, use_all_sanitizers, ctx):
         # constraints for known sources
         print("Constraints for known events")
-        # TODO: Propagate below dirs in ctx from previous step
         known_sources = readKnown(ctx[SOURCE_ENTITIES], "sources", query)
         known_sinks = readKnown(ctx[SINK_ENTITIES], "sinks", query)
         if use_all_sanitizers:
@@ -369,7 +367,7 @@ class ConstraintBuilder:
         sinks = list(other[other["ssan"] == row["ssan"]]["ssnk"])
         pass
 
-    def compute_source_sanit_sink_fromPairs(self, projectdir):
+    def compute_source_sanit_sink_fromPairs(self, projectdir, ctx):
         """ Generates the following mappings that are handy to the generation of the flow constrainst for the model
         It computes the joinn  of the pairs (src,san) and (san, snk) obtained from  the PropagationGraph  
         source_sanit: (src,san)-> [snk], 
@@ -426,7 +424,7 @@ class ConstraintBuilder:
         """ Genrate the flow constraints required for the Gurobi model
         It gets the potential flows by joining the pairs (src, san) (san, snk) from the progapation graph   
         """
-        source_sanit, source_sink, sanit_sink = self.compute_source_sanit_sink_fromPairs(projectdir)
+        source_sanit, source_sink, sanit_sink = self.compute_source_sanit_sink_fromPairs(projectdir, ctx)
         print("Flows: San-Snk {0}, Src-San {1}, Src-Snk {2}".format(len(sanit_sink), len(source_sanit), len(source_sink)))
 
         constraints_flow_path = os.path.join(self.outputdir, "constraints_flow.txt")
