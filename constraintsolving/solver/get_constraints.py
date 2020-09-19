@@ -44,14 +44,16 @@ class ConstraintBuilder:
         self.outputdir = newdir
 
 
-    def readEventsAndReps(self, projectdir):
+    def readEventsAndReps(self, projectdir, ctx):
+        # TODO: Change below directory here by propagating it in ctx from previous step
         readEvents('{1}/data/{0}/{0}-eventToConcatRep{2}.prop.csv'.format(projectdir,
                                                                     self.working_dir,    
                                                                     "-" + self.dataset_type if
                                                                     self.dataset_type is not None else ""),
                    self.events,
                    self.unique_reps,
-                   self.rep_count)
+                   self.rep_count,
+                   ctx)
 
     def createBlackList(self):
         blacklist = []
@@ -162,6 +164,7 @@ class ConstraintBuilder:
                 return "{0}".format(" + ".join([self.getVar(r, suffix) for r in reps])), 1
 
     def printKnownConstraints(self,  event, map:dict):
+        # TODO: What's that list(map.keys())[0] in the filename?
         with open("{0}/constraints_known_{1}.txt".format(self.outputdir, list(map.keys())[0]), "a+") as constraintsfile:
             src_var, src_rhs = self.getBackOffVar(event, self._src, "known")
             constraintsfile.write(
@@ -210,10 +213,11 @@ class ConstraintBuilder:
 
 
 
-    def createVariables(self):
+    def createVariables(self, ctx):
         print("Creating variables")
 
-        with open("{0}/repToID.txt".format(self.outputdir), "w") as repToIDfile:
+        rep_to_id_path = os.path.join(self.outputdir, "repToID.txt")
+        with open(rep_to_id_path, "w") as repToIDfile:
             newvars=[["n{0}{1}".format(self.unique_reps[k], self._src),
                       "n{0}{1}".format(self.unique_reps[k], self._san),
                       "n{0}{1}".format(self.unique_reps[k], self._snk)]
@@ -233,14 +237,17 @@ class ConstraintBuilder:
             repToIDfile.write("\n".join(["{0}:n{1}".format(safe_str(k), safe_str(self.unique_reps[k])) for k in self.unique_reps.keys()]))
 
             print("Wrote to file")
-        with open("{0}/eventToRepIDs.txt".format(self.outputdir), "w") as eventToRepIDs:
+
+        event_to_rep_ids_path = os.path.join(self.outputdir, "eventToRepIDs.txt")
+        with open(event_to_rep_ids_path, "w") as eventToRepIDs:
             for e in self.events.keys():
                 repIDs = ["n{0}".format(safe_str(self.unique_reps[rep])) for rep in self.events[e].reps]
                 eventToRepIDs.write("{0}:{1}\n".format(safe_str(e), ",".join(repIDs)))
 
-    def readAllKnown(self, projectdir, query, query_type, use_all_sanitizers):
+    def readAllKnown(self, projectdir, query, query_type, use_all_sanitizers, ctx):
         # constraints for known sources
         print("Constraints for known events")
+        # TODO: Propagate below dirs in ctx from previous step
         known_sources = readKnown("{1}/data/{0}/{0}-{2}-{3}.prop.csv".format(projectdir, self.working_dir, "sources", query_type), "sources", query)
         known_sinks = readKnown("{1}/data/{0}/{0}-{2}-{3}.prop.csv".format(projectdir, self.working_dir,"sinks",query_type), "sinks", query)
         if use_all_sanitizers:
@@ -253,7 +260,7 @@ class ConstraintBuilder:
         self.known_sinks[projectdir] = known_sinks
         self.known_sanitizers[projectdir] = known_sanitizers
 
-    def writeKnownConstraints(self):
+    def writeKnownConstraints(self, ctx):
         print("Computing blacklist")
         blacklist = self.createBlackList()
 
@@ -318,16 +325,17 @@ class ConstraintBuilder:
 
         return count
 
-    def writeVarConstrants(self):
+    def writeVarConstrants(self, ctx):
         # output var.txt and constraints_var.txt
-        with open("{0}/var.txt".format(self.outputdir), "w") as varfile:
+        var_path = os.path.join(self.outputdir, "var.txt")
+        with open(var_path, "w") as varfile:
             varfile.write("\n".join([self.variables[v].print() for v in self.variables.keys()]))
             varfile.write("\n")
             # for v in self.variables.keys():
             #     varfile.write(self.variables[v].print())
             #     varfile.write("\n")
 
-        with open("{0}/var.txt".format(self.outputdir), "a") as varfile:
+        with open(var_path, "a") as varfile:
             varfile.write("\n".join([v+":variable" for v in self.eps_vars]))
             varfile.write("\n")
             # for v in self.eps_vars:
@@ -335,7 +343,8 @@ class ConstraintBuilder:
             #     varfile.write("\n")
 
         # output constraints.txt
-        with open("{0}/constraints_var.txt".format(self.outputdir), "a+") as constraintsfile:
+        constraints_var_path = os.path.join(self.outputdir, "constraints_var.txt")
+        with open(constraints_var_path, "a+") as constraintsfile:
             constraintsfile.write("\n".join([Constraint.print(self.variables[v].id, "1", Constraint.Constraint.LTE, format='norm')
                                              for v in self.variables.keys() if not self.variables[v].is_constant]))
             constraintsfile.write("\n")
@@ -349,7 +358,7 @@ class ConstraintBuilder:
             #         constraintsfile.write(Constraint.print(self.variables[v].id, "0", Constraint.Constraint.GTE))
             #         constraintsfile.write("\n")
 
-        with open("{0}/constraints_var.txt".format(self.outputdir), "a") as constraintsfile:
+        with open(constraints_var_path, "a") as constraintsfile:
             constraintsfile.write("\n".join([Constraint.print(v, "0", Constraint.Constraint.GTE, format='norm') for v in self.eps_vars]))
             constraintsfile.write("\n")
             # for v in self.eps_vars:
@@ -367,6 +376,7 @@ class ConstraintBuilder:
         source_sink:  (src,snk) -> [san], 
         sanit_sink: (san,snk) -> [src]
         """
+        # TODO: Propagate below paths on context from previous step
         san_snk_pairs = readPairs('{1}/data/{0}/{0}-src-san{2}.prop.csv'.format(projectdir, self.working_dir, "-" + self.dataset_type if
                                     self.dataset_type is not None else ""), self.events)
         san_src_map =  {k: g["ssrc"].tolist() for k,g in san_snk_pairs.groupby("ssan")}
@@ -414,16 +424,17 @@ class ConstraintBuilder:
 
         return source_sanit, source_sink, sanit_sink
 
-    def generate_flow_constraints_from_pairs(self, projectdir: str, global_constant_C, query=None):
+    def generate_flow_constraints_from_pairs(self, projectdir: str, global_constant_C, query=None, ctx=dict()):
         """ Genrate the flow constraints required for the Gurobi model
         It gets the potential flows by joining the pairs (src, san) (san, snk) from the progapation graph   
         """
         source_sanit, source_sink, sanit_sink = self.compute_source_sanit_sink_fromPairs(projectdir)
         print("Flows: San-Snk {0}, Src-San {1}, Src-Snk {2}".format(len(sanit_sink), len(source_sanit), len(source_sink)))
 
-        print("{0}/constraints_flow.txt".format(self.outputdir))
+        constraints_flow_path = os.path.join(self.outputdir, "constraints_flow.txt")
+        print(constraints_flow_path)
 
-        with open("{0}/constraints_flow.txt".format(self.outputdir), "a+") as constraintsfile:
+        with open(constraints_flow_path, "a+") as constraintsfile:
             for san_snk_pair in sanit_sink.keys():
                 newepsvar = "{0}{1}".format(self._eps, len(self.eps_vars))
                 self.eps_vars.append(newepsvar)
@@ -600,7 +611,8 @@ class ConstraintBuilder:
 
         print("Dropped: %d" % dropped)
 
-    def writeObjective(self):
+    def writeObjective(self, ctx):
+        objective_path = os.path.join(self.outputdir, "objective.txt")
         with open("{0}/objective.txt".format(self.outputdir), "w") as objectivefile:
             obj = " + ".join(["{0} ".format(self.lambda_const) + k for k in self.variables.keys()])
             if len(self.eps_vars)>0:

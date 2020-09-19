@@ -33,6 +33,11 @@ class GenerateModelStep(OrchestrationStep):
         logs_dir = os.path.join(config.working_dir, "logs", project_name, optimizer_run_name)
         results_dir = os.path.join(config.results_dir, project_name, optimizer_run_name)
 
+        ctx["wd_constraints_dir"] = constraints_dir
+        ctx["wd_models_dir"] = models_dir
+        ctx["wd_logs_dir"] = logs_dir
+        ctx["results_dir"] = results_dir
+
         # Create directories if needed
         for directory in [constraints_dir, models_dir, logs_dir, results_dir]:
             os.makedirs(directory, exist_ok=True)
@@ -50,9 +55,9 @@ class GenerateModelStep(OrchestrationStep):
         for project in projects:
             try:
                 self.logger.info("Analizing project: %s", project)
-                constraint_builder.readEventsAndReps(project)
+                constraint_builder.readEventsAndReps(project, ctx)
                 constraint_builder.readAllKnown(project, config.query_name, config.query_type,
-                                                config.use_all_sanitizers)
+                                                config.use_all_sanitizers, ctx)
             except Exception as e:
                 self.logger.info("There was a problem reading events!")
                 traceback.self.logger.info_exc(file=sys.stdout)
@@ -61,7 +66,7 @@ class GenerateModelStep(OrchestrationStep):
         # remove events with no min reps
         # constraint_builder.removeRareEvents()
         # initiate all variables
-        constraint_builder.createVariables()
+        constraint_builder.createVariables(ctx)
 
         self.logger.info("Adding constraints")
         for project in projects:
@@ -69,17 +74,17 @@ class GenerateModelStep(OrchestrationStep):
             try:
                 # Write flow constraints, as in Seldon 4.2
                 #constraint_builder.generate_flow_constraints(project, config.constraints_constant_C, config.query_name)
-                constraint_builder.generate_flow_constraints_from_pairs(project, config.constraints_constant_C, config.query_name)
+                constraint_builder.generate_flow_constraints_from_pairs(project, config.constraints_constant_C, query=config.query_name, ctx=ctx)
                 pass
             except:
                 import traceback as tb
                 tb.print_exc()
 
         # Write variable constraints as in Seldon 4.1
-        constraint_builder.writeVarConstrants()
-        constraint_builder.writeKnownConstraints()
+        constraint_builder.writeVarConstrants(ctx)
+        constraint_builder.writeKnownConstraints(ctx)
         # Write objective as in Seldon 4.4, minimizing the violation of each constraint
-        constraint_builder.writeObjective()
+        constraint_builder.writeObjective(ctx)
 
         return ctx
 
