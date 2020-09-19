@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Tuple
 
-from orchestration.steps import OrchestrationStep
+from orchestration.steps import OrchestrationStep, Context
 from orchestration import global_config
 from .wrapper import CodeQLWrapper
 
@@ -17,16 +17,18 @@ SUPPORTED_QUERY_TYPES = ["NoSql", "Sql", "Xss"]
 
 
 class GenerateEntitiesStep(OrchestrationStep):
-    def run(self) -> None:
+    def run(self, ctx: Context) -> Context:
         self.orchestrator.data_generator.generate_entities(self.orchestrator.query_type)
+        return ctx
 
     def name(self) -> str:
         return "generate_entities"
 
 
 class GenerateScoresStep(OrchestrationStep):
-    def run(self) -> None:
+    def run(self, ctx: Context) -> Context:
         self.orchestrator.data_generator.generate_scores(self.orchestrator.query_type)
+        return ctx
 
     def name(self) -> str:
         return "generate_scores"

@@ -7,14 +7,14 @@ import sys
 import time
 
 from compute_metrics import getallmetrics, createReprPredicate
-from orchestration.steps import OrchestrationStep
+from orchestration.steps import OrchestrationStep, Context
 from solver.config import SolverConfig
 from solver.get_constraints import ConstraintBuilder
 from solver.solve_gb import solve_constraints_combine_model
 
 
 class GenerateModelStep(OrchestrationStep):
-    def run(self) -> None:
+    def run(self, ctx: Context) -> Context:
         # TODO: Implement --mode=combined model generation
         # TODO: Extract this as an orchestrator config?
         # TODO: Fix logging
@@ -23,24 +23,25 @@ class GenerateModelStep(OrchestrationStep):
         projects = glob(os.path.join(projects_folder, self.orchestrator.project_name))
         self.logger.info("Generating models for projects: %s", projects)
 
-        optimizer_run_name = self.orchestrator.project_name if config.query_name is None \
-            else self.orchestrator.project_name + "/" + config.query_name
         timestamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
-        optimizer_run_name = optimizer_run_name + "-" + timestamp
-        self.logger.info("Project dir: %s" % optimizer_run_name)
+        optimizer_run_name = f"{config.query_name}-{timestamp}"
+        project_name = self.orchestrator.project_name
+        self.logger.info(f"Project dir: {project_name}/{optimizer_run_name}")
 
-        os.makedirs("{1}/constraints/{0}".format(optimizer_run_name, config.working_dir), exist_ok=True)
-        os.makedirs("{1}/models/{0}".format(optimizer_run_name, config.working_dir), exist_ok=True)
-        os.makedirs("{1}/logs/{0}".format(optimizer_run_name, config.working_dir), exist_ok=True)
-        os.makedirs("{1}/{0}".format(optimizer_run_name, config.results_dir), exist_ok=True)
+        constraints_dir = os.path.join(config.working_dir, "constraints", project_name, optimizer_run_name)
+        models_dir = os.path.join(config.working_dir, "models", project_name, optimizer_run_name)
+        logs_dir = os.path.join(config.working_dir, "logs", project_name, optimizer_run_name)
+        results_dir = os.path.join(config.results_dir, project_name, optimizer_run_name)
+
+        # Create directories if needed
+        for directory in [constraints_dir, models_dir, logs_dir, results_dir]:
+            os.makedirs(directory, exist_ok=True)
 
         projects = [os.path.basename(k) for k in projects]
         self.logger.info("Collected {0} projects".format(len(projects)))
         self.logger.info("Creating events and reps")
         constraint_builder = ConstraintBuilder(self.orchestrator.project_name,
-                                               '{3}/constraints/{2}/{0}-{1}'.format(config.query_name, timestamp,
-                                                                                self.orchestrator.project_name,
-                                                                                config.working_dir),
+                                               constraints_dir,
                                                config.min_rep_events,
                                                config.dataset_type,
                                                config.constraint_format,
@@ -80,12 +81,14 @@ class GenerateModelStep(OrchestrationStep):
         # Write objective as in Seldon 4.4, minimizing the violation of each constraint
         constraint_builder.writeObjective()
 
+        return ctx
+
     def name(self) -> str:
         return "generate_model"
 
 
 class OptimizeStep(OrchestrationStep):
-    def run(self) -> None:
+    def run(self, ctx: Context) -> Context:
         # TODO: Extract this and share between steps. Maybe add some context passing between steps
         optimizer_run_name = self.orchestrator.project_name if self.orchestrator.query_name is None \
             else self.orchestrator.project_name + "/" + self.orchestrator.query_name
@@ -105,6 +108,8 @@ class OptimizeStep(OrchestrationStep):
         # compute metrics
         getallmetrics(optimizer_run_name, config)
         createReprPredicate(optimizer_run_name, self.orchestrator.query_type, self.orchestrator.query_name)
+
+        return ctx
 
     def name(self) -> str:
         return "optimize"
