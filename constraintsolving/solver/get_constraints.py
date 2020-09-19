@@ -9,6 +9,9 @@ from .config import SolverConfig
 from typing import Tuple
 import sys
 
+from orchestration.steps import SOURCE_ENTITIES, SINK_ENTITIES, SANITIZER_ENTITIES, \
+    SRC_SAN_TUPLES_ENTITIES, SAN_SNK_TUPLES_ENTITIES, REPR_MAP_ENTITIES
+
 def safe_str(obj):
     try: return str(obj)
     except UnicodeEncodeError:
@@ -46,10 +49,7 @@ class ConstraintBuilder:
 
     def readEventsAndReps(self, projectdir, ctx):
         # TODO: Change below directory here by propagating it in ctx from previous step
-        readEvents('{1}/data/{0}/{0}-eventToConcatRep{2}.prop.csv'.format(projectdir,
-                                                                    self.working_dir,    
-                                                                    "-" + self.dataset_type if
-                                                                    self.dataset_type is not None else ""),
+        readEvents(ctx[REPR_MAP_ENTITIES],
                    self.events,
                    self.unique_reps,
                    self.rep_count,
@@ -248,14 +248,14 @@ class ConstraintBuilder:
         # constraints for known sources
         print("Constraints for known events")
         # TODO: Propagate below dirs in ctx from previous step
-        known_sources = readKnown("{1}/data/{0}/{0}-{2}-{3}.prop.csv".format(projectdir, self.working_dir, "sources", query_type), "sources", query)
-        known_sinks = readKnown("{1}/data/{0}/{0}-{2}-{3}.prop.csv".format(projectdir, self.working_dir,"sinks",query_type), "sinks", query)
+        known_sources = readKnown(ctx[SOURCE_ENTITIES], "sources", query)
+        known_sinks = readKnown(ctx[SINK_ENTITIES], "sinks", query)
         if use_all_sanitizers:
             print("Using all sanitizers")
             # TO-DO: Check last parameter: Is None or should be removed?
-            known_sanitizers = readKnown("{1}/data/{0}/{0}-{2}-{3}.prop.csv".format(projectdir, self.working_dir, "sanitizers", query_type), "sanitizers", None)
+            known_sanitizers = readKnown(ctx[SANITIZER_ENTITIES], "sanitizers", None)
         else:
-            known_sanitizers = readKnown("{1}/data/{0}/{0}-{2}-{3}.prop.csv".format(projectdir, self.working_dir, "sanitizers", query_type), "sanitizers", query)
+            known_sanitizers = readKnown(ctx[SANITIZER_ENTITIES], "sanitizers", query)
         self.known_sources[projectdir] = known_sources
         self.known_sinks[projectdir] = known_sinks
         self.known_sanitizers[projectdir] = known_sanitizers
@@ -377,11 +377,9 @@ class ConstraintBuilder:
         sanit_sink: (san,snk) -> [src]
         """
         # TODO: Propagate below paths on context from previous step
-        san_snk_pairs = readPairs('{1}/data/{0}/{0}-src-san{2}.prop.csv'.format(projectdir, self.working_dir, "-" + self.dataset_type if
-                                    self.dataset_type is not None else ""), self.events)
+        san_snk_pairs = readPairs(ctx[SRC_SAN_TUPLES_ENTITIES], self.events)
         san_src_map =  {k: g["ssrc"].tolist() for k,g in san_snk_pairs.groupby("ssan")}
-        san_snk_pairs = readPairs('{1}/data/{0}/{0}-san-snk{2}.prop.csv'.format(projectdir, self.working_dir, "-" + self.dataset_type if
-                                    self.dataset_type is not None else ""), self.events)
+        san_snk_pairs = readPairs(ctx[SAN_SNK_TUPLES_ENTITIES], self.events)
         san_snk_map = {k: g["ssnk"].tolist() for k,g in san_snk_pairs.groupby("ssan")}
 
         sanit_sink = dict()
@@ -477,7 +475,7 @@ class ConstraintBuilder:
                     "{0}".format(global_constant_C), Constraint.Constraint.LTE, format='norm'))
                 constraintsfile.write("\n")
 
-    #@deprecated("use compute_source_sanit_sink_fromPairs")
+    # @deprecated("use compute_source_sanit_sink_fromPairs")
     def generate_flow_constraints(self, projectdir, global_constant_C, query=None):
         """Generate the flow constraints required for the Gurobi model.
         It gets the potential flows out of the triples (src, san, snk) from the progapation graph.

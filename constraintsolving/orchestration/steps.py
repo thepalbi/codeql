@@ -5,6 +5,16 @@ Context = NewType('Context', Dict[str, Any])
 
 
 # Inter-step context keys
+
+# Generated entities keys
+SOURCE_ENTITIES = "entities.sources"
+SINK_ENTITIES = "entities.sinks"
+SANITIZER_ENTITIES = "entities.sanitizers"
+SRC_SAN_TUPLES_ENTITIES = "entities.src_san_tuple"
+SAN_SNK_TUPLES_ENTITIES = "entities.san_snk_tuple"
+REPR_MAP_ENTITIES = "entities.repr_map"
+
+# Directory keys
 CONSTRAINTS_DIR_KEY = "wd_constraints_dir"
 MODELS_DIR_KEY = "wd_models_dir"
 LOGS_DIR_KEY = "wd_logs_dir"

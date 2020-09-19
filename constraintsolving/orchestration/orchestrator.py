@@ -18,7 +18,6 @@ class UnknownStepException(Exception):
                f"The available steps are: {self.available_steps}"
 
 
-# TODO: Move all environment variables (CODEQL, etc.) to a yaml config file that the orchestrator know about
 class Orchestrator:
     step_templates = [
         GenerateEntitiesStep,
