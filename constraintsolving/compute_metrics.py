@@ -4,6 +4,7 @@ from DataParser import readKnown
 # dirprefix="C:/Users/saika/projects/ql/constraintsolving/databases/eclipse_orion.client_js_srcVersion_9ef167/eclipse_orion.client_9ef1675/src/"
 from solver.config import SolverConfig
 from orchestration import global_config
+from orchestration.steps import RESULTS_DIR_KEY
 import os
 import logging
 
@@ -153,8 +154,8 @@ def printmetrics(outputdir, trainingsize, config: SolverConfig):
             )
 
 
-def getallmetrics(outputdir, config:SolverConfig):
-    metrics_file_path = os.path.join(config.results_dir, outputdir, "metrics.txt")
+def getallmetrics(outputdir, config: SolverConfig, ctx):
+    metrics_file_path = os.path.join(ctx[RESULTS_DIR_KEY], "metrics.txt")
     with open(metrics_file_path, "w") as metricsfile:
         for trainingsize in config.trainingsizes:
             srcstr = "src"

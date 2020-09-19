@@ -3,15 +3,17 @@ from gurobipy import GRB
 from .MyConstraintedProblem import GBTaintSpecConstraints
 import shutil
 from .config import SolverConfig
+from orchestration.steps import CONSTRAINTS_DIR_KEY, MODELS_DIR_KEY
+import os
 
-def solve_constraints_combine_model(projectdir, config:SolverConfig):
-    constraintsdir = '{1}/constraints/{0}'.format(projectdir, config.working_dir)
-    modelfile_path = "{1}/models/{0}/gurobi_model_{2}_{3}.lp".format(projectdir, config.working_dir, config.known_samples_ratio, 1)
+def solve_constraints_combine_model(config: SolverConfig, ctx):
+    constraintsdir = ctx[CONSTRAINTS_DIR_KEY]
+    modelfile_path = os.path.join(ctx[MODELS_DIR_KEY], f"gurobi_model_{config.known_samples_ratio}_{1}.lp")
     # write minimization objective
     print("Writing minimization objective")
     with open(modelfile_path, "w") as modelfile:
         modelfile.write("Minimize\n")
-        modelfile.write(open(constraintsdir+"/objective.txt").read())
+        modelfile.write(open(os.path.join(constraintsdir, "objective.txt")).read())
         modelfile.write("\n")
 
     # write constraints
@@ -21,14 +23,14 @@ def solve_constraints_combine_model(projectdir, config:SolverConfig):
 
     i=0
     with open(modelfile_path, "a") as modelfile:
-        for l in open(constraintsdir + "/constraints_flow.txt").readlines():
+        for l in open(os.path.join(constraintsdir, "constraints_flow.txt")).readlines():
             #parts = l.split("<=")
             #modelfile.write("R{0}: {1} - {2} <= 0\n".format(i, parts[0], parts[1].replace("+", "-").rstrip()))
             modelfile.write("R{0}: {1}\n".format(i,l.strip()))
             i += 1
         print("Done flows")
         try:
-            for ltriple in open(constraintsdir + "/constraints_known_src.txt").readlines():
+            for ltriple in open(os.path.join(constraintsdir, "constraints_known_src.txt")).readlines():
                 for l in ltriple.split(","):
                     modelfile.write("R{0}: {1}\n".format(i, l ))
                     i += 1
@@ -36,7 +38,7 @@ def solve_constraints_combine_model(projectdir, config:SolverConfig):
             print("No known sources")
 
         try:
-            for ltriple in open(constraintsdir + "/constraints_known_san.txt").readlines():
+            for ltriple in open(os.path.join(constraintsdir, "constraints_known_san.txt")).readlines():
                 for l in ltriple.split(","):
                     modelfile.write("R{0}: {1}\n".format(i, l))
                     i += 1
@@ -44,7 +46,7 @@ def solve_constraints_combine_model(projectdir, config:SolverConfig):
             print("No known sanitizers")
 
         try:
-            for ltriple in open(constraintsdir + "/constraints_known_snk.txt").readlines():
+            for ltriple in open(os.path.join(constraintsdir, "constraints_known_snk.txt")).readlines():
                 for l in ltriple.split(","):
                     modelfile.write("R{0}: {1} \n".format(i, l))
                     i += 1
@@ -61,7 +63,7 @@ def solve_constraints_combine_model(projectdir, config:SolverConfig):
     print("Writing Bounds")
     with open(modelfile_path, "a") as modelfile:
         modelfile.write("Bounds\n")
-        for line in open(constraintsdir + "/constraints_var.txt").readlines():
+        for line in open(os.path.join(constraintsdir, "constraints_var.txt")).readlines():
             if not line.startswith("0 "):
                 modelfile.write("{0}\n".format(line.strip()))
     #shutil.copyfileobj(open(constraintsdir + "/constraints_var.txt"), open(modelfile_path, "a"))
@@ -78,10 +80,8 @@ def solve_constraints_combine_model(projectdir, config:SolverConfig):
         non_zero = 0
         ones = 0
         eps_non_zero = 0
-        with open("{1}/models/{0}/results_gb_{2}_{3}_{4}.txt".format(projectdir, 
-                                                                config.working_dir,
-                                                                config.known_samples_ratio, config.lambda_const, 1),
-                  "w") as resultfile:
+        
+        with open(os.path.join(ctx[MODELS_DIR_KEY], f"results_gb_{config.known_samples_ratio}_{config.lambda_const}_{1}.txt"), "w") as resultfile:
             for v in m.getVars():
                 if v.x == 0:
                     zero += 1

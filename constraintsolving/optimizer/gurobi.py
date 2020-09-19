@@ -7,7 +7,8 @@ import sys
 import time
 
 from compute_metrics import getallmetrics, createReprPredicate
-from orchestration.steps import OrchestrationStep, Context
+from orchestration.steps import OrchestrationStep, Context,\
+    CONSTRAINTS_DIR_KEY, MODELS_DIR_KEY, RESULTS_DIR_KEY, LOGS_DIR_KEY
 from solver.config import SolverConfig
 from solver.get_constraints import ConstraintBuilder
 from solver.solve_gb import solve_constraints_combine_model
@@ -33,10 +34,10 @@ class GenerateModelStep(OrchestrationStep):
         logs_dir = os.path.join(config.working_dir, "logs", project_name, optimizer_run_name)
         results_dir = os.path.join(config.results_dir, project_name, optimizer_run_name)
 
-        ctx["wd_constraints_dir"] = constraints_dir
-        ctx["wd_models_dir"] = models_dir
-        ctx["wd_logs_dir"] = logs_dir
-        ctx["results_dir"] = results_dir
+        ctx[CONSTRAINTS_DIR_KEY] = constraints_dir
+        ctx[MODELS_DIR_KEY] = models_dir
+        ctx[LOGS_DIR_KEY] = logs_dir
+        ctx[RESULTS_DIR_KEY] = results_dir
 
         # Create directories if needed
         for directory in [constraints_dir, models_dir, logs_dir, results_dir]:
@@ -101,17 +102,17 @@ class OptimizeStep(OrchestrationStep):
         config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type)
 
         constraints_dir = "{0}/constraints/".format(config.working_dir)
-        candidates = glob("{1}{0}".format(optimizer_run_name + "*",constraints_dir))
+        candidates = glob(f"{ctx[CONSTRAINTS_DIR_KEY]}*")
         candidates.sort(key=os.path.getmtime)
         optimizer_run_name = candidates[-1].replace(constraints_dir, "")
         print("Choosing latest project directory: %s" % optimizer_run_name)
 
         # run solver
-        solve_constraints_combine_model(optimizer_run_name, config)
+        solve_constraints_combine_model(config, ctx)
         # solve_constraints(newdir, config)
 
         # compute metrics
-        getallmetrics(optimizer_run_name, config)
+        getallmetrics(optimizer_run_name, config, ctx)
         createReprPredicate(optimizer_run_name, self.orchestrator.query_type, self.orchestrator.query_name)
 
         return ctx
