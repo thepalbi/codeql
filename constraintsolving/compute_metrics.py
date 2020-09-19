@@ -4,7 +4,7 @@ from DataParser import readKnown
 # dirprefix="C:/Users/saika/projects/ql/constraintsolving/databases/eclipse_orion.client_js_srcVersion_9ef167/eclipse_orion.client_9ef1675/src/"
 from solver.config import SolverConfig
 from orchestration import global_config
-from orchestration.steps import RESULTS_DIR_KEY
+from orchestration.steps import RESULTS_DIR_KEY, CONSTRAINTS_DIR_KEY, MODELS_DIR_KEY, RESULTS_DIR_KEY
 import os
 import logging
 
@@ -19,7 +19,7 @@ def getmetrics(actual, predicted, c):
     return scores
 
 
-def printmetrics(outputdir, trainingsize, config: SolverConfig):
+def printmetrics(trainingsize, config: SolverConfig, ctx):
     lambda_const = config.lambda_const 
     trials = config.trials
 
@@ -27,11 +27,13 @@ def printmetrics(outputdir, trainingsize, config: SolverConfig):
     _src = "s"
     _san = "a"
     _snk = "i"
+    event_to_rep_id_path = os.path.join(ctx[CONSTRAINTS_DIR_KEY], "eventToRepIDs.txt")
+    rep_to_id_path = os.path.join(ctx[CONSTRAINTS_DIR_KEY], "repToID.txt")
+
     for trial in range(1, trials+1):
-        logging.info("Reading: {1}/constraints/{0}/eventToRepIDs.txt".format(outputdir, config.working_dir))
-        events = open("{1}/constraints/{0}/eventToRepIDs.txt".format(outputdir, config.working_dir),'r', errors='replace').readlines()
-        results = open("{1}/models/{0}/results_gb_{2}_{3}_{4}.txt".format(outputdir, config.working_dir,trainingsize, lambda_const, trial)).readlines()
-        reprs = open("{1}/constraints/{0}/repToID.txt".format(outputdir, config.working_dir),'r', errors='replace').readlines()
+        events = open(event_to_rep_id_path,'r', errors='replace').readlines()
+        results = open(f"{ctx[MODELS_DIR_KEY]}/results_gb_{trainingsize}_{lambda_const}_{trial}.txt").readlines()
+        reprs = open(rep_to_id_path,'r', errors='replace').readlines()
         vars = dict()
         for r in results:
             vars[r.split(":")[0]]=float(r.split(":")[1])
@@ -127,7 +129,7 @@ def printmetrics(outputdir, trainingsize, config: SolverConfig):
             if reprToWrite is not None:
                 repConstraints.append(reprToWrite)
 
-        repr_scores_file_path = os.path.join(config.results_dir, outputdir, "reprScores.txt")
+        repr_scores_file_path = os.path.join(ctx[RESULTS_DIR_KEY], "reprScores.txt")
         with open(repr_scores_file_path, "w") as reprscores:
             sizeReprSet = len(repConstraints) 
             countRepr = 0     
@@ -154,7 +156,7 @@ def printmetrics(outputdir, trainingsize, config: SolverConfig):
             )
 
 
-def getallmetrics(outputdir, config: SolverConfig, ctx):
+def getallmetrics(config: SolverConfig, ctx):
     metrics_file_path = os.path.join(ctx[RESULTS_DIR_KEY], "metrics.txt")
     with open(metrics_file_path, "w") as metricsfile:
         for trainingsize in config.trainingsizes:
@@ -163,7 +165,7 @@ def getallmetrics(outputdir, config: SolverConfig, ctx):
             sanstr = "san"
             metricsfile.write("{0}\n".format(trainingsize))
             for thresh in config.thresholds:
-                src, snk, san = printmetrics(outputdir, trainingsize, config)
+                src, snk, san = printmetrics(trainingsize, config, ctx)
                 srcstr=srcstr+"&"+src
                 snkstr=snkstr+"&"+snk
                 sanstr=sanstr+"&"+san
@@ -171,12 +173,9 @@ def getallmetrics(outputdir, config: SolverConfig, ctx):
             metricsfile.write(sanstr+"\\\\\n")
             metricsfile.write(snkstr+"\\\\\n")
 
-def createReprPredicate(outputdir,query_type, query_name):
-    tsm_queries_folder = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM")
-    #output_path = tsm_queries_folder + "/tsm_repr_pred_{0}.qll".format(query_type)
-    output_path = tsm_queries_folder + "/tsm_repr_pred.qll"
-
-    repr_scores_path = os.path.join(global_config.results_directory, outputdir, "reprScores.txt")
+def createReprPredicate(ctx):
+    output_path = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", "tsm_repr_pred.qll")
+    repr_scores_path = os.path.join(ctx[RESULTS_DIR_KEY], "reprScores.txt")
 
     print(output_path)
     print(repr_scores_path)

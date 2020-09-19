@@ -3,6 +3,7 @@ from typing import Dict, Any, NewType
 
 Context = NewType('Context', Dict[str, Any])
 
+
 # Inter-step context keys
 CONSTRAINTS_DIR_KEY = "wd_constraints_dir"
 MODELS_DIR_KEY = "wd_models_dir"

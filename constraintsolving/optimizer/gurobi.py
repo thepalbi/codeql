@@ -96,24 +96,15 @@ class GenerateModelStep(OrchestrationStep):
 class OptimizeStep(OrchestrationStep):
     def run(self, ctx: Context) -> Context:
         # TODO: Extract this and share between steps. Maybe add some context passing between steps
-        optimizer_run_name = self.orchestrator.project_name if self.orchestrator.query_name is None \
-            else self.orchestrator.project_name + "/" + self.orchestrator.query_name
-        # TODO: Also share this between steps
+        # TODO: Share this in ctx
         config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type)
 
-        constraints_dir = "{0}/constraints/".format(config.working_dir)
-        candidates = glob(f"{ctx[CONSTRAINTS_DIR_KEY]}*")
-        candidates.sort(key=os.path.getmtime)
-        optimizer_run_name = candidates[-1].replace(constraints_dir, "")
-        print("Choosing latest project directory: %s" % optimizer_run_name)
-
-        # run solver
+        # Run solver
         solve_constraints_combine_model(config, ctx)
-        # solve_constraints(newdir, config)
 
-        # compute metrics
-        getallmetrics(optimizer_run_name, config, ctx)
-        createReprPredicate(optimizer_run_name, self.orchestrator.query_type, self.orchestrator.query_name)
+        # Compute metrics
+        getallmetrics(config, ctx)
+        createReprPredicate(ctx)
 
         return ctx
 
