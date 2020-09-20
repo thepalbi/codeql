@@ -93,7 +93,8 @@ class DataGenerator:
     def generate_scores(self, query_type: str) -> Tuple[str, ...]:
         # Run metrics-snk query
         kind = "snk"
-        metrics_file = "metrics_{0}_{1}".format(kind, query_type)
+        capitalized_query_type = query_type.capitalize()
+        metrics_file = "metrics_{0}_{1}".format(kind, capitalized_query_type)
         self.logger.info("Generating events scores")
         self.codeql.database_analyze(
             self.project_dir,
@@ -102,7 +103,6 @@ class DataGenerator:
 
         # Get results BQRS file
         bqrs_metrics_file = self._get_tsm_bqrs_file(metrics_file + '.bqrs')
-        capitalized_query_type = query_type.capitalize()
         tsm_worse_scores_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-tsmworse-ind-avg.prop.csv")
         tsm_worse_filtered_file = os.path.join(
