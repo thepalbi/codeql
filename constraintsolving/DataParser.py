@@ -24,7 +24,7 @@ def remapRepsToClusters(reps):
     pass
 
 
-def readEvents(file_loc, events=None, unique_reps=None, rep_count=None):
+def readEvents(file_loc, events=None, unique_reps=None, rep_count=None, ctx=dict()):
     print("Reading events from: ", file_loc)
     df=pd.read_csv(file_loc)
 

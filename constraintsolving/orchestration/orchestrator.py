@@ -5,6 +5,7 @@ from generation.data import DataGenerator, GenerateEntitiesStep, GenerateScoresS
 from optimizer.gurobi import GenerateModelStep, OptimizeStep
 
 from orchestration import global_config
+from orchestration.steps import Context
 
 
 class UnknownStepException(Exception):
@@ -17,7 +18,6 @@ class UnknownStepException(Exception):
                f"The available steps are: {self.available_steps}"
 
 
-# TODO: Move all environment variables (CODEQL, etc.) to a yaml config file that the orchestrator know about
 class Orchestrator:
     step_templates = [
         GenerateEntitiesStep,
@@ -41,19 +41,20 @@ class Orchestrator:
 
     def run(self):
         self.logger.info("Running ALL orchestration steps")
+        ctx: Context = dict()
         for step in self.steps:
-            self.do_run_step(step)
+            ctx = self.do_run_step(step, ctx)
 
     def run_step(self, step_name: str):
         self.logger.info("Running SINGLE orchestration step")
         for step in self.steps:
             if step.name() == step_name:
-                self.do_run_step(step)
+                self.do_run_step(step, dict())
                 return
         # Step was not found
         raise UnknownStepException(step_name, [step.name() for step in self.steps])
 
-    def do_run_step(self, step):
+    def do_run_step(self, step, ctx: Context) -> Context:
         separator = ">" * 5
         self.logger.info("%s Running orchestration step: %s %s", separator, step.name(), separator)
-        step.run()
+        return step.run(ctx)

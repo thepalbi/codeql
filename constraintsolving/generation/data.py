@@ -2,11 +2,14 @@ import logging
 import os
 from typing import Tuple
 
-from orchestration.steps import OrchestrationStep
+from orchestration.steps import OrchestrationStep, Context
+from orchestration.steps import SOURCE_ENTITIES, SINK_ENTITIES, SANITIZER_ENTITIES, \
+    SRC_SAN_TUPLES_ENTITIES, SAN_SNK_TUPLES_ENTITIES, REPR_MAP_ENTITIES
 from orchestration import global_config
 from .wrapper import CodeQLWrapper
 
-constaintssolving_dir = os.path.join(global_config.sources_root, "constraintsolving/")
+constaintssolving_dir = os.path.join(
+    global_config.sources_root, "constraintsolving/")
 logs_folder = os.path.join(constaintssolving_dir, "logs/")
 
 SOURCES = "Sources"
@@ -17,16 +20,26 @@ SUPPORTED_QUERY_TYPES = ["NoSql", "Sql", "Xss"]
 
 
 class GenerateEntitiesStep(OrchestrationStep):
-    def run(self) -> None:
-        self.orchestrator.data_generator.generate_entities(self.orchestrator.query_type)
+    def run(self, ctx: Context) -> Context:
+        # TODO: How to format this appropriately?
+        (ctx[SOURCE_ENTITIES],
+         ctx[SINK_ENTITIES],
+         ctx[SANITIZER_ENTITIES],
+         ctx[SRC_SAN_TUPLES_ENTITIES],
+         ctx[SAN_SNK_TUPLES_ENTITIES],
+         ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.generate_entities(self.orchestrator.query_type)
+        
+        return ctx
 
     def name(self) -> str:
         return "generate_entities"
 
 
 class GenerateScoresStep(OrchestrationStep):
-    def run(self) -> None:
-        self.orchestrator.data_generator.generate_scores(self.orchestrator.query_type)
+    def run(self, ctx: Context) -> Context:
+        self.orchestrator.data_generator.generate_scores(
+            self.orchestrator.query_type)
+        return ctx
 
     def name(self) -> str:
         return "generate_scores"
@@ -41,7 +54,7 @@ class DataGenerator:
     steps = ["entities", "scores"]
 
     def __init__(self, project_dir: str, project_name: str,
-                working_dir:str = global_config.working_directory):
+                 working_dir: str = global_config.working_directory):
         """Creates a new DataGenerator for the given project
 
         Args:
@@ -80,7 +93,8 @@ class DataGenerator:
     def generate_scores(self, query_type: str) -> Tuple[str, ...]:
         # Run metrics-snk query
         kind = "snk"
-        metrics_file = "metrics_{0}_{1}".format(kind, query_type)
+        capitalized_query_type = query_type.capitalize()
+        metrics_file = "metrics_{0}_{1}".format(kind, capitalized_query_type)
         self.logger.info("Generating events scores")
         self.codeql.database_analyze(
             self.project_dir,
@@ -89,14 +103,14 @@ class DataGenerator:
 
         # Get results BQRS file
         bqrs_metrics_file = self._get_tsm_bqrs_file(metrics_file + '.bqrs')
-        capitalized_query_type = query_type.capitalize()
         tsm_worse_scores_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-tsmworse-ind-avg.prop.csv")
         tsm_worse_filtered_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-tsmworse-filtered-avg.prop.csv")
 
         # Extract result scores
-        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseScores{query_type}", tsm_worse_scores_file)
+        self.codeql.bqrs_decode(
+            bqrs_metrics_file, f"getTSMWorseScores{query_type}", tsm_worse_scores_file)
         self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseFiltered{query_type}",
                                 tsm_worse_filtered_file)
 
@@ -136,17 +150,7 @@ class DataGenerator:
         except Exception as error:
             self.logger.info("Error Analyzing PropagationGraph.ql")
 
-
         self.logger.info("Generating propagation graph data")
-        # propagation graph triplets
-        # extracting results from bqrs files
-        # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-triple-id-small.prop.csv
-        #tiplets_output_file = os.path.join(
-        #    self.generated_data_dir, f"{self.project_name}-triple-id-small.prop.csv")
-        # self.codeql.bqrs_decode(
-        #     self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
-        #     "tripleWRepID",
-        #     tiplets_output_file)
 
         # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-src-san.prop.csv
         src_san_output_file = os.path.join(
@@ -179,7 +183,6 @@ class DataGenerator:
             sanitizers_output_file,
             src_san_output_file,
             san_snk_output_file,
-            #tiplets_output_file,
             repr_mapping_output_file
         )
 
