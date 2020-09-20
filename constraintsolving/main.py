@@ -43,6 +43,8 @@ if __name__ == '__main__':
         if run_separate_on_multiple_projects:
             projectList = open(projectListFile).readlines()
             for project in projectList:
+                if(project.startswith("#")):
+                    continue
                 logging.info(f"Processing: {project}")
                 projectPrefix =  os.path.join(project_dir, project.replace('\r', '').replace('\n', '').replace("/","_"))
                 logging.info(f"Prefix: {projectPrefix}")

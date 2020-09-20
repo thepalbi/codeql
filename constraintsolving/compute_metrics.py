@@ -30,7 +30,7 @@ def printmetrics(outputdir, trainingsize, config: SolverConfig):
         logging.info("Reading: {1}/constraints/{0}/eventToRepIDs.txt".format(outputdir, config.working_dir))
         events = open("{1}/constraints/{0}/eventToRepIDs.txt".format(outputdir, config.working_dir),'r', errors='replace').readlines()
         results = open("{1}/models/{0}/results_gb_{2}_{3}_{4}.txt".format(outputdir, config.working_dir,trainingsize, lambda_const, trial)).readlines()
-        reprs = open("{1}/constraints/{0}/repToID.txt".format(outputdir, config.working_dir),'r', errors='replace').readlines()
+        reprs = open("{1}/constraints/{0}/repToID.txt".format(outputdir, config.working_dir),'r', encoding='utf-8', errors='replace').readlines()
         vars = dict()
         for r in results:
             vars[r.split(":")[0]]=float(r.split(":")[1])

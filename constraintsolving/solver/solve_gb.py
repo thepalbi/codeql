@@ -26,28 +26,38 @@ def solve_constraints_combine_model(projectdir, config:SolverConfig):
             #modelfile.write("R{0}: {1} - {2} <= 0\n".format(i, parts[0], parts[1].replace("+", "-").rstrip()))
             modelfile.write("R{0}: {1}\n".format(i,l.strip()))
             i += 1
+        modelfile.flush()
         print("Done flows")
         try:
             for ltriple in open(constraintsdir + "/constraints_known_src.txt").readlines():
                 for l in ltriple.split(","):
                     modelfile.write("R{0}: {1}\n".format(i, l ))
                     i += 1
+            modelfile.flush()
         except:
             print("No known sources")
 
         try:
-            for ltriple in open(constraintsdir + "/constraints_known_san.txt").readlines():
+            constraintFile = open(constraintsdir + "/constraints_known_san.txt")
+            for ltriple in constraintFile.readlines():
                 for l in ltriple.split(","):
                     modelfile.write("R{0}: {1}\n".format(i, l))
                     i += 1
+            modelfile.flush()
+            constraintFile.close()
+
         except:
             print("No known sanitizers")
 
         try:
-            for ltriple in open(constraintsdir + "/constraints_known_snk.txt").readlines():
+            constraintFile = open(constraintsdir + "/constraints_known_snk.txt")
+            for ltriple in constraintFile.readlines():
                 for l in ltriple.split(","):
                     modelfile.write("R{0}: {1} \n".format(i, l))
                     i += 1
+            modelfile.flush()
+            constraintFile.close()
+
         except:
             print("No known sinks")
 
@@ -61,9 +71,11 @@ def solve_constraints_combine_model(projectdir, config:SolverConfig):
     print("Writing Bounds")
     with open(modelfile_path, "a") as modelfile:
         modelfile.write("Bounds\n")
-        for line in open(constraintsdir + "/constraints_var.txt").readlines():
+        constraintFile = open(constraintsdir + "/constraints_var.txt")
+        for line in constraintFile.readlines():
             if not line.startswith("0 "):
                 modelfile.write("{0}\n".format(line.strip()))
+        constraintFile.close()
     #shutil.copyfileobj(open(constraintsdir + "/constraints_var.txt"), open(modelfile_path, "a"))
 
     with open(modelfile_path, "a") as modelfile:

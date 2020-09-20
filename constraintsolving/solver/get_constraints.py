@@ -12,7 +12,7 @@ import sys
 def safe_str(obj):
     try: return str(obj)
     except UnicodeEncodeError:
-        return obj.encode('ascii', 'ignore').decode('ascii')
+        return obj.encode('utf-8', 'replace').decode('ascii','replace')
     return ""
 
 class ConstraintBuilder:
@@ -213,7 +213,7 @@ class ConstraintBuilder:
     def createVariables(self):
         print("Creating variables")
 
-        with open("{0}/repToID.txt".format(self.outputdir), "w") as repToIDfile:
+        with open("{0}/repToID.txt".format(self.outputdir), "w", encoding='utf-8') as repToIDfile:
             newvars=[["n{0}{1}".format(self.unique_reps[k], self._src),
                       "n{0}{1}".format(self.unique_reps[k], self._san),
                       "n{0}{1}".format(self.unique_reps[k], self._snk)]
@@ -233,7 +233,7 @@ class ConstraintBuilder:
             repToIDfile.write("\n".join(["{0}:n{1}".format(safe_str(k), safe_str(self.unique_reps[k])) for k in self.unique_reps.keys()]))
 
             print("Wrote to file")
-        with open("{0}/eventToRepIDs.txt".format(self.outputdir), "w") as eventToRepIDs:
+        with open("{0}/eventToRepIDs.txt".format(self.outputdir), "w", encoding='utf-8') as eventToRepIDs:
             for e in self.events.keys():
                 repIDs = ["n{0}".format(safe_str(self.unique_reps[rep])) for rep in self.events[e].reps]
                 eventToRepIDs.write("{0}:{1}\n".format(safe_str(e), ",".join(repIDs)))
