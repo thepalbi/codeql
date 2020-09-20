@@ -33,7 +33,7 @@ def printmetrics(trainingsize, config: SolverConfig, ctx):
     for trial in range(1, trials+1):
         logging.info("Reading: {0}".format(event_to_rep_id_path))
         events = open(event_to_rep_id_path,'r', errors='replace', encoding='utf-8').readlines()
-        results = open(f"{ctx[MODELS_DIR_KEY]}/results_gb_{trainingsize}_{lambda_const}_{trial}.txt").readlines()
+        results = open(f"{ctx[MODELS_DIR_KEY]}/results_gb_{trainingsize}_{lambda_const}_{trial}.txt", encoding='utf-8').readlines()
         reprs = open(rep_to_id_path,'r', errors='replace', encoding='utf-8').readlines()
         vars = dict()
         for r in results:

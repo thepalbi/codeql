@@ -45,7 +45,6 @@ def solve_constraints_combine_model(config: SolverConfig, ctx):
                     modelfile.write("R{0}: {1}\n".format(i, l))
                     i += 1
             modelfile.flush()
-            constraintFile.close()
 
         except:
             print("No known sanitizers")
@@ -56,7 +55,6 @@ def solve_constraints_combine_model(config: SolverConfig, ctx):
                     modelfile.write("R{0}: {1} \n".format(i, l))
                     i += 1
             modelfile.flush()
-            constraintFile.close()
 
         except:
             print("No known sinks")
@@ -74,7 +72,6 @@ def solve_constraints_combine_model(config: SolverConfig, ctx):
         for line in open(os.path.join(constraintsdir, "constraints_var.txt"), encoding='utf-8').readlines():
             if not line.startswith("0 "):
                 modelfile.write("{0}\n".format(line.strip()))
-        constraintFile.close()
     #shutil.copyfileobj(open(constraintsdir + "/constraints_var.txt"), open(modelfile_path, "a"))
 
     with open(modelfile_path, "a") as modelfile:
