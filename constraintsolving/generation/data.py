@@ -93,8 +93,8 @@ class DataGenerator:
     def generate_scores(self, query_type: str) -> Tuple[str, ...]:
         # Run metrics-snk query
         kind = "snk"
-        capitalized_query_type = query_type.capitalize()
-        metrics_file = "metrics_{0}_{1}".format(kind, capitalized_query_type)
+        #capitalized_query_type = query_type.capitalize()
+        metrics_file = "metrics_{0}_{1}".format(kind, query_type)
         self.logger.info("Generating events scores")
         self.codeql.database_analyze(
             self.project_dir,
