@@ -42,19 +42,29 @@ def printmetrics(trainingsize, config: SolverConfig, ctx):
         allevents=[]
         allevents2=dict()
         for e in events:
+            #print("Event: ", e)                
             name=":".join(e.split(":")[:-1])
-            reps=e.split(":")[-1].split(",")
-            srcscores=0.0
-            snkscores=0.0
-            sanscores=0.0
-            for r in reps:
-                r=r.strip()
-                srcscores+=vars[r+_src]
-                snkscores+=vars[r+_snk]
-                sanscores+=vars[r+_san]
-            eventScores[name + ":src"] = srcscores / len(reps)
-            eventScores[name + ":san"] = sanscores / len(reps)
-            eventScores[name + ":snk"] = snkscores / len(reps)
+
+            # check if the event has associated variables
+            if e.find(":n")>=0:
+                reps=e.split(":")[-1].split(",")
+                srcscores=0.0
+                snkscores=0.0
+                sanscores=0.0
+                for r in reps:
+                    r=r.strip()
+                    #print("Rep: ", r)
+                    srcscores+=vars[r+_src]
+                    snkscores+=vars[r+_snk]
+                    sanscores+=vars[r+_san]
+                eventScores[name + ":src"] = srcscores / len(reps)
+                eventScores[name + ":san"] = sanscores / len(reps)
+                eventScores[name + ":snk"] = snkscores / len(reps)
+            else: 
+                reps = []
+                eventScores[name + ":src"] = 0
+                eventScores[name + ":san"] = 0
+                eventScores[name + ":snk"] = 0
             allevents.append(name)
             allevents2[name]=reps
 
@@ -111,21 +121,24 @@ def printmetrics(trainingsize, config: SolverConfig, ctx):
             #print("Repr set size: ", len(reprs))
         repConstraints = []    
         for repr in reprs:
-            repid=repr.split(":")[-1].strip()
-            rep=":".join(repr.split(":")[0:-1])
-            #print(vars[repid+_src],' ', vars[repid+_snk], ' ', vars[repid+_san] )
-            reprToWrite = None
-            if vars[repid+_src] > 0.0:
-                reprToWrite = "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "src", "%.10f" 
-%  vars[repid + _src])
+            if repr.find(":n")>=0:
+                repid=repr.split(":")[-1].strip()
+                rep=":".join(repr.split(":")[0:-1])
+                #print(vars[repid+_src],' ', vars[repid+_snk], ' ', vars[repid+_san] )
+                reprToWrite = None
+                #print("rep,", repr)
+                #print("repid,", repid)
+                if vars[repid+_src] > 0.0:
+                    reprToWrite = "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "src", "%.10f" 
+    %  vars[repid + _src])
 
-            if vars[repid+_snk] > 0.0:
-                reprToWrite = "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "snk", "%.10f" 
-%  vars[repid + _snk])
+                if vars[repid+_snk] > 0.0:
+                    reprToWrite = "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "snk", "%.10f" 
+    %  vars[repid + _snk])
 
-            if vars[repid+_san] > 0.0:
-                reprToWrite= "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "san", "%.10f" 
-% vars[repid + _san ])
+                if vars[repid+_san] > 0.0:
+                    reprToWrite= "repr = \"{0}\" and t = \"{1}\" and result = {2}".format(rep, "san", "%.10f" 
+    % vars[repid + _san ])
 
             if reprToWrite is not None:
                 repConstraints.append(reprToWrite)
