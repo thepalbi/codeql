@@ -8,7 +8,7 @@ import time
 
 from compute_metrics import getallmetrics, createReprPredicate
 from orchestration.steps import OrchestrationStep, Context,\
-    CONSTRAINTS_DIR_KEY, MODELS_DIR_KEY, RESULTS_DIR_KEY, LOGS_DIR_KEY
+    CONSTRAINTS_DIR_KEY, MODELS_DIR_KEY, RESULTS_DIR_KEY, LOGS_DIR_KEY, SOURCE_ENTITIES, SANITIZER_ENTITIES,  SINK_ENTITIES,SRC_SAN_TUPLES_ENTITIES,SAN_SNK_TUPLES_ENTITIES, REPR_MAP_ENTITIES
 from solver.config import SolverConfig
 from solver.get_constraints import ConstraintBuilder
 from solver.solve_gb import solve_constraints_combine_model
@@ -19,12 +19,13 @@ class GenerateModelStep(OrchestrationStep):
         # TODO: Implement --mode=combined model generation
         # TODO: Extract this as an orchestrator config?
         # TODO: Fix logging
-        (ctx[SOURCE_ENTITIES],
-         ctx[SINK_ENTITIES],
-         ctx[SANITIZER_ENTITIES],
-         ctx[SRC_SAN_TUPLES_ENTITIES],
-         ctx[SAN_SNK_TUPLES_ENTITIES],
-         ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
+        if SOURCE_ENTITIES not in ctx:
+            (ctx[SOURCE_ENTITIES],
+            ctx[SINK_ENTITIES],
+            ctx[SANITIZER_ENTITIES],
+            ctx[SRC_SAN_TUPLES_ENTITIES],
+            ctx[SAN_SNK_TUPLES_ENTITIES],
+            ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
 
         config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type)
         projects_folder = os.path.join(config.working_dir, "data")
