@@ -48,10 +48,6 @@ class GenerateScoresStep(OrchestrationStep):
             ctx[SAN_SNK_TUPLES_ENTITIES],
             ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
 
-        if RESULTS_DIR_KEY not in ctx:
-            result_dir = self.compute_results_dir()
-            ctx[RESULTS_DIR_KEY] = result_dir
-
         createReprPredicate(ctx)
         
         self.orchestrator.data_generator.generate_scores(
@@ -87,10 +83,6 @@ class GenerateTSMReprStep(OrchestrationStep):
             ctx[SRC_SAN_TUPLES_ENTITIES],
             ctx[SAN_SNK_TUPLES_ENTITIES],
             ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
-
-        if RESULTS_DIR_KEY not in ctx:
-            result_dir = self.compute_results_dir()
-            ctx[RESULTS_DIR_KEY] = result_dir
 
         createReprPredicate(ctx)
         return ctx

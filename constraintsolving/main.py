@@ -76,7 +76,7 @@ if __name__ == '__main__':
         print(project)
         project_name = os.path.basename(project)
         orchestrator = Orchestrator(project, project_name, parsed_arguments.query_type,
-                            parsed_arguments.query_name, results_dir)
+                            parsed_arguments.query_name, working_dir, results_dir)
 
         if parsed_arguments.single_step == all_steps:
             orchestrator.run()

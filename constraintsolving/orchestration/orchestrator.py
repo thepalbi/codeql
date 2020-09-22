@@ -5,8 +5,7 @@ from generation.data import DataGenerator, GenerateEntitiesStep, GenerateScoresS
 from optimizer.gurobi import GenerateModelStep, OptimizeStep
 
 from orchestration import global_config
-from orchestration.steps import Context
-
+from orchestration.steps import Context,  RESULTS_DIR_KEY, WORKING_DIR_KEY
 
 class UnknownStepException(Exception):
     def __init__(self, step_name: str, available_steps: List[str]):
@@ -48,6 +47,9 @@ class Orchestrator:
     def run(self):
         self.logger.info("Running ALL orchestration steps")
         ctx: Context = dict()
+        ctx[RESULTS_DIR_KEY] = self.results_dir
+        ctx[WORKING_DIR_KEY] = self.working_dir
+        
         for step in self.steps:
             ctx = self.do_run_step(step, ctx)
 
@@ -55,7 +57,10 @@ class Orchestrator:
         self.logger.info("Running SINGLE orchestration step")
         for step in self.steps:
             if step.name() == step_name:
-                self.do_run_step(step, dict())
+                ctx: Context = dict()
+                ctx[RESULTS_DIR_KEY] = self.results_dir
+                ctx[WORKING_DIR_KEY] = self.working_dir
+                self.do_run_step(step, ctx)
                 return
         # Step was not found
         raise UnknownStepException(step_name, [step.name() for step in self.steps])
