@@ -8,7 +8,9 @@ import time
 
 from compute_metrics import getallmetrics, createReprPredicate
 from orchestration.steps import OrchestrationStep, Context,\
-    CONSTRAINTS_DIR_KEY, MODELS_DIR_KEY, RESULTS_DIR_KEY, LOGS_DIR_KEY
+    CONSTRAINTS_DIR_KEY, MODELS_DIR_KEY, RESULTS_DIR_KEY, WORKING_DIR_KEY, LOGS_DIR_KEY, \
+    SOURCE_ENTITIES, SANITIZER_ENTITIES,  SINK_ENTITIES,SRC_SAN_TUPLES_ENTITIES,SAN_SNK_TUPLES_ENTITIES, REPR_MAP_ENTITIES
+
 from solver.config import SolverConfig
 from solver.get_constraints import ConstraintBuilder
 from solver.solve_gb import solve_constraints_combine_model
@@ -19,7 +21,20 @@ class GenerateModelStep(OrchestrationStep):
         # TODO: Implement --mode=combined model generation
         # TODO: Extract this as an orchestrator config?
         # TODO: Fix logging
-        config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type)
+        if SOURCE_ENTITIES not in ctx:
+            (ctx[SOURCE_ENTITIES],
+            ctx[SINK_ENTITIES],
+            ctx[SANITIZER_ENTITIES],
+            ctx[SRC_SAN_TUPLES_ENTITIES],
+            ctx[SAN_SNK_TUPLES_ENTITIES],
+            ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
+
+        results_dir = ctx[RESULTS_DIR_KEY]
+        working_dir = ctx[WORKING_DIR_KEY]
+        
+        config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type,
+                                 working_dir=working_dir, results_dir=results_dir)
+
         projects_folder = os.path.join(config.working_dir, "data")
         projects = glob(os.path.join(projects_folder, self.orchestrator.project_name))
         self.logger.info("Generating models for projects: %s", projects)
@@ -97,14 +112,25 @@ class OptimizeStep(OrchestrationStep):
     def run(self, ctx: Context) -> Context:
         # TODO: Extract this and share between steps. Maybe add some context passing between steps
         # TODO: Share this in ctx
-        config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type)
+        (ctx[SOURCE_ENTITIES],
+         ctx[SINK_ENTITIES],
+         ctx[SANITIZER_ENTITIES],
+         ctx[SRC_SAN_TUPLES_ENTITIES],
+         ctx[SAN_SNK_TUPLES_ENTITIES],
+         ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
+
+        results_dir = ctx[RESULTS_DIR_KEY]
+        working_dir = ctx[WORKING_DIR_KEY]
+      
+        config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type,
+                                 working_dir=working_dir, results_dir=results_dir)
 
         # Run solver
         solve_constraints_combine_model(config, ctx)
 
         # Compute metrics
         getallmetrics(config, ctx)
-        createReprPredicate(ctx)
+        #createReprPredicate(ctx)
 
         return ctx
 

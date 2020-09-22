@@ -5,8 +5,7 @@ from generation.data import DataGenerator, GenerateEntitiesStep, GenerateScoresS
 from optimizer.gurobi import GenerateModelStep, OptimizeStep
 
 from orchestration import global_config
-from orchestration.steps import Context
-
+from orchestration.steps import Context,  RESULTS_DIR_KEY, WORKING_DIR_KEY
 
 class UnknownStepException(Exception):
     def __init__(self, step_name: str, available_steps: List[str]):
@@ -25,13 +24,19 @@ class Orchestrator:
         OptimizeStep,
         GenerateScoresStep,
     ]
+    # step_templates = [
+    #     GenerateEntitiesStep
+    # ]
 
-    def __init__(self, project_dir: str, project_name: str, query_type: str, query_name: str):
+    def __init__(self, project_dir: str, project_name: str, query_type: str, query_name: str, 
+                 working_dir: str, results_dir: str):
         self.query_type = query_type
         self.query_name = query_name
         self.project_dir = project_dir
         self.project_name = project_name
-        self.data_generator = DataGenerator(project_dir, project_name, global_config.working_directory)
+        self.working_dir = working_dir
+        self.results_dir = results_dir
+        self.data_generator = DataGenerator(project_dir, project_name, working_dir, results_dir)
         self.logger = logging.getLogger(self.__class__.__name__)
 
         # Instantiate orchestration step templates
@@ -42,6 +47,9 @@ class Orchestrator:
     def run(self):
         self.logger.info("Running ALL orchestration steps")
         ctx: Context = dict()
+        ctx[RESULTS_DIR_KEY] = self.results_dir
+        ctx[WORKING_DIR_KEY] = self.working_dir
+        
         for step in self.steps:
             ctx = self.do_run_step(step, ctx)
 
@@ -49,7 +57,10 @@ class Orchestrator:
         self.logger.info("Running SINGLE orchestration step")
         for step in self.steps:
             if step.name() == step_name:
-                self.do_run_step(step, dict())
+                ctx: Context = dict()
+                ctx[RESULTS_DIR_KEY] = self.results_dir
+                ctx[WORKING_DIR_KEY] = self.working_dir
+                self.do_run_step(step, ctx)
                 return
         # Step was not found
         raise UnknownStepException(step_name, [step.name() for step in self.steps])
