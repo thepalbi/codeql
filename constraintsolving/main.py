@@ -45,13 +45,20 @@ parser.add_argument("--project-list", dest="projectListFile", required=False, ty
 parser.add_argument("--results-dir", dest="results_dir", required=False, type=str,
                     help="Directory where results of the analysis are placed (replaces default in config.json")
 
+parser.add_argument("--working-dir", dest="working_dir", required=False, type=str,
+                    help="Working directory (replaces default in config.json")
+
 
 parsed_arguments = parser.parse_args()
 project_dir = os.path.normpath(parsed_arguments.project_dir)
 results_dir = global_config.results_directory
+working_dir = global_config.working_directory
 
 if(parsed_arguments.results_dir is not None):
     results_dir = os.path.normpath(parsed_arguments.results_dir)
+
+if(parsed_arguments.working_dir is not None):
+    working_dir = os.path.normpath(parsed_arguments.working_dir)
 
 logging.info(f"Results folder: {results_dir}")
 
