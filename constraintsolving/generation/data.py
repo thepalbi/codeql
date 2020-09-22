@@ -1,12 +1,15 @@
 import logging
 import os
 from typing import Tuple
+import glob
 
 from orchestration.steps import OrchestrationStep, Context
 from orchestration.steps import SOURCE_ENTITIES, SINK_ENTITIES, SANITIZER_ENTITIES, \
-    SRC_SAN_TUPLES_ENTITIES, SAN_SNK_TUPLES_ENTITIES, REPR_MAP_ENTITIES
+    SRC_SAN_TUPLES_ENTITIES, SAN_SNK_TUPLES_ENTITIES, REPR_MAP_ENTITIES, RESULTS_DIR_KEY
 from orchestration import global_config
 from .wrapper import CodeQLWrapper
+from compute_metrics import createReprPredicate
+from orchestration import global_config
 
 constaintssolving_dir = os.path.join(
     global_config.sources_root, "constraintsolving/")
@@ -37,12 +40,63 @@ class GenerateEntitiesStep(OrchestrationStep):
 
 class GenerateScoresStep(OrchestrationStep):
     def run(self, ctx: Context) -> Context:
+        if SOURCE_ENTITIES not in ctx:
+            (ctx[SOURCE_ENTITIES],
+            ctx[SINK_ENTITIES],
+            ctx[SANITIZER_ENTITIES],
+            ctx[SRC_SAN_TUPLES_ENTITIES],
+            ctx[SAN_SNK_TUPLES_ENTITIES],
+            ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
+
+        if RESULTS_DIR_KEY not in ctx:
+            result_dir = self.compute_results_dir()
+            ctx[RESULTS_DIR_KEY] = result_dir
+
+        createReprPredicate(ctx)
+        
         self.orchestrator.data_generator.generate_scores(
             self.orchestrator.query_type)
         return ctx
 
+    def compute_results_dir(self):
+        project_name = self.orchestrator.project_name
+        print(self.orchestrator.query_name)
+        print(self.orchestrator.results_dir)
+        #timestamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
+        patternToSearch = os.path.join(self.orchestrator.results_dir, project_name)+ "/{0}-*".format(self.orchestrator.query_name)
+        print(patternToSearch)
+        results_candidates = glob.glob(patternToSearch)
+        print(results_candidates)
+        if len(results_candidates)>0:
+            results_candidates.sort()
+            result_dir = results_candidates[-1]
+            print(result_dir)
+        else:
+            raise ValueError('Cannot find results directory for' + self.orchestrator.project_name )
+        return result_dir
+
     def name(self) -> str:
         return "generate_scores"
+
+class GenerateTSMReprStep(OrchestrationStep):
+    def run(self, ctx: Context) -> Context:
+        if SOURCE_ENTITIES not in ctx:
+            (ctx[SOURCE_ENTITIES],
+            ctx[SINK_ENTITIES],
+            ctx[SANITIZER_ENTITIES],
+            ctx[SRC_SAN_TUPLES_ENTITIES],
+            ctx[SAN_SNK_TUPLES_ENTITIES],
+            ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
+
+        if RESULTS_DIR_KEY not in ctx:
+            result_dir = self.compute_results_dir()
+            ctx[RESULTS_DIR_KEY] = result_dir
+
+        createReprPredicate(ctx)
+        return ctx
+
+    def name(self) -> str:
+        return "generate_tsm_repr"
 
 
 class DataGenerator:
@@ -54,7 +108,9 @@ class DataGenerator:
     steps = ["entities", "scores"]
 
     def __init__(self, project_dir: str, project_name: str,
-                 working_dir: str = global_config.working_directory):
+                 working_dir: str = global_config.working_directory,
+                 results_dir: str = global_config.results_directory,
+                ):
         """Creates a new DataGenerator for the given project
 
         Args:
@@ -67,6 +123,7 @@ class DataGenerator:
         # noinspection PyInterpreter
         self.logger = logging.getLogger(self.__class__.__name__)
         self.working_dir = working_dir
+        self.results_dir = results_dir
         self.generated_data_dir = self._get_generated_data_dir()
 
     def _get_generated_data_dir(self):
@@ -185,6 +242,34 @@ class DataGenerator:
             san_snk_output_file,
             repr_mapping_output_file
         )
+
+    def get_entity_files(self, query_type: str) -> Tuple[str, ...]:
+        if not query_type in SUPPORTED_QUERY_TYPES:
+            raise Exception(
+                "{0} is not a supported query type. Currently supports {1}".format(query_type, SUPPORTED_QUERY_TYPES))
+        sources_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-sources-{query_type}.prop.csv")
+        sinks_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-sinks-{query_type}.prop.csv")
+        sanitizers_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-sanitizers-{query_type}.prop.csv")
+        
+        src_san_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-src-san-small.prop.csv")
+        san_snk_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-san-snk-small.prop.csv")
+        repr_mapping_output_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-eventToConcatRep-small.prop.csv")
+
+        return (
+            sources_output_file,
+            sinks_output_file,
+            sanitizers_output_file,
+            src_san_output_file,
+            san_snk_output_file,
+            repr_mapping_output_file
+        )
+
 
     def _generate_for_entity(self, query_type: str, entity_type: str, result_set: str, output_file: str):
         self.logger.info(

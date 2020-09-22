@@ -8,22 +8,25 @@ import logging
 from orchestration import global_config
 from typing import List
 
-def getProjectNameFromFile(f: str) -> str:
+def getProjectNameFromFile(f: str, working_dir) -> str:
     """
     Helper funcion that obtains a project name from a project file name
     """
+    f = f.replace(working_dir+"/data/","", 1)
     f=f.replace("\\","/")
+    #f=f.replace('\n', '').replace('\r', '')
     # e.g.  LondonMaeCompany_ldpproto_fe04304 -> LondonMaeCompany/ldpproto 
-    projectName = '/'.join(f.split("/")[1].replace("_","/").split("/")[:-1])  
+    projectName = '/'.join(f.split("/")[0].replace("_","/").split("/")[:-1])  
     #print(projectName)
     return projectName
 
-def generate_metris(projectList: List[str]):
+def generate_metris(projectList: List[str], working_directory=global_config.working_directory):
     """
     Given a list of project names, produces the recall and precision metrics 
     To compute recall it uses as ground trought the different between and old (Vworse) and current query (V0)
-    Lets call that different new_nodes. The recall is computed by checking how many of the new_nodes appear
-    in the nodes computes by the TSM query. A threshold is used to filter infered nodes with low score.
+    Lets call that difference 'new_nodes'. The recall is computed by checking how many of the new_nodes appear
+    in the nodes computed by the TSM query. 
+    A threshold is used to filter infered nodes with low score.
     Let's call this set TP. Recall is #TP/#new_nodes 
     To compute presicion TP is compared against the set of nodes predicted using TSM (getTSMWorseFilteredQuery)   
     """
@@ -36,14 +39,19 @@ def generate_metris(projectList: List[str]):
         # VWorse is the baseline version of the query  to compare against 
         # V0 is the last version of the query
         # V0 - VWorse = elements discovered in last version that doesn't appear in baseline
-        csvFiles = glob.glob("{1}/data/*/*tsm{0}-ind-avg.prop.csv".format(version, global_config.working_directory), recursive=True)
-        projectsToAnalyzeRecall = list(filter(lambda projectName: getProjectNameFromFile(projectName) in projectList, csvFiles))
+        csvFiles = glob.glob("{1}/data/*/*tsm{0}-ind-avg.prop.csv".format(version, working_directory), recursive=True)
+        #print("CVSs", csvFiles)
+        projectsToAnalyzeRecall = list(filter(lambda projectName: getProjectNameFromFile(projectName, working_dir) in projectList, csvFiles))
+        #print("Projects to analyze:", projectsToAnalyzeRecall)
         # Get the list of nodes (csv files) from the analyzed projects 
         # Each DB-tsmworse-filtered-avg.prop.csv comes for the query getTSMWorseFilteredQuery
-        # getTSMWorseFilteredSqlQuery...yields nodes (sinks in this case) from QueryVTSM that 
+        # getTSMWorseFilteredQuery...yields nodes (sinks in this case) from QueryVTSM that 
         # are sink candidates, includind info about whether they are known sinks and/or effective sinks 
         csvFiles = glob.glob("{1}/data/*/*tsm{0}-filtered-avg.prop.csv".format(version, global_config.working_directory), recursive=True)
-        projectsToAnalyzePrecision = list(filter(lambda projectName: getProjectNameFromFile(projectName) in projectList, csvFiles))
+        projectsToAnalyzePrecision = list(filter(lambda projectName: getProjectNameFromFile(projectName, working_dir) in projectList, csvFiles))
+
+        logging.info(f"Projects for recall: {projectsToAnalyzeRecall}")
+        logging.info(f"Projects for precision: {projectsToAnalyzePrecision}")
 
         for threshold in [0.26, 0.27,0.28]:
             print(threshold, end=",")
@@ -58,7 +66,8 @@ def generate_metris(projectList: List[str]):
                     print("Failed to read: ", projectFileName)
                     continue
 
-                projectID = projectFileName.split("/")[1]
+                #projectID = projectFileName.split("/")[1]
+                projectID = getProjectNameFromFile(projectFileName, working_dir)
 
                 predicted = 0
                 if len(data.index) > 0:
@@ -66,6 +75,7 @@ def generate_metris(projectList: List[str]):
                     true_predicted += predicted
                     d[projectID] = predicted
                 else:
+                    logging.warning(f"{projectFileName} has cero elements")
                     d[projectID] = 0
 
                 totalForProject = len(data["URL for node"])
@@ -91,8 +101,9 @@ def generate_metris(projectList: List[str]):
                     continue
                 
                 logging.info(f"Analyzing precision for: {projectFileName} for threshold {threshold}")
-                projectID = projectFileName.split("/")[1]
-        
+                #projectID = projectFileName.split("/")[1]
+                projectID = getProjectNameFromFile(projectFileName, working_dir)
+
                 candidatesForProject = len(data)
                 candidates += candidatesForProject
 
@@ -121,19 +132,24 @@ logging.basicConfig(level=logging.INFO, format="[%(levelname)s\t%(asctime)s] %(n
 
 parser.add_argument("--project-list", dest="projectListFile", required=False, type=str)
 parser.add_argument("--project-name", dest="project", required=False, type=str)
+parser.add_argument("--working-dir", dest="working_dir", required=False, type=str)
 
 parsed_arguments = parser.parse_args()
 
 projectListFile =  parsed_arguments.projectListFile
 project =  parsed_arguments.project
+working_dir = parsed_arguments.working_dir
+
 if project is None and projectListFile is None:
     parser.print_usage()
 else:
     if projectListFile is None:
         projectList = [project]
     else:
-        projectList = open(projectListFile).readlines()
-
+        with open(projectListFile) as pl:
+           projectList = pl.read().splitlines() 
+        
 if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.WARNING)
     logging.info(f"Project List: {projectList}")
-    generate_metris(projectList)
+    generate_metris(projectList, working_dir)

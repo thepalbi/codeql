@@ -144,7 +144,7 @@ def printmetrics(trainingsize, config: SolverConfig, ctx):
                 repConstraints.append(reprToWrite)
 
         repr_scores_file_path = os.path.join(ctx[RESULTS_DIR_KEY], "reprScores.txt")
-        with open(repr_scores_file_path, "w") as reprscores:
+        with open(repr_scores_file_path, "w", encoding='utf-8') as reprscores:
             sizeReprSet = len(repConstraints) 
             countRepr = 0     
             for repConstraint in repConstraints:
@@ -193,8 +193,8 @@ def createReprPredicate(ctx):
 
     print(output_path)
     print(repr_scores_path)
-    with open(repr_scores_path, "r") as reprscores:
-        with open(output_path , "w") as reprPrFile:
+    with open(repr_scores_path, "r", encoding='utf-8') as reprscores:
+        with open(output_path , "w", encoding='utf-8') as reprPrFile:
             reprPrFile.writelines([
                 "module TsmRepr {",
                 "float getReprScore(string repr, string t){\n"])

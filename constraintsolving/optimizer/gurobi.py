@@ -19,6 +19,13 @@ class GenerateModelStep(OrchestrationStep):
         # TODO: Implement --mode=combined model generation
         # TODO: Extract this as an orchestrator config?
         # TODO: Fix logging
+        (ctx[SOURCE_ENTITIES],
+         ctx[SINK_ENTITIES],
+         ctx[SANITIZER_ENTITIES],
+         ctx[SRC_SAN_TUPLES_ENTITIES],
+         ctx[SAN_SNK_TUPLES_ENTITIES],
+         ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
+
         config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type)
         projects_folder = os.path.join(config.working_dir, "data")
         projects = glob(os.path.join(projects_folder, self.orchestrator.project_name))
@@ -97,6 +104,15 @@ class OptimizeStep(OrchestrationStep):
     def run(self, ctx: Context) -> Context:
         # TODO: Extract this and share between steps. Maybe add some context passing between steps
         # TODO: Share this in ctx
+        (ctx[SOURCE_ENTITIES],
+         ctx[SINK_ENTITIES],
+         ctx[SANITIZER_ENTITIES],
+         ctx[SRC_SAN_TUPLES_ENTITIES],
+         ctx[SAN_SNK_TUPLES_ENTITIES],
+         ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
+
+
+
         config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type)
 
         # Run solver
@@ -104,7 +120,7 @@ class OptimizeStep(OrchestrationStep):
 
         # Compute metrics
         getallmetrics(config, ctx)
-        createReprPredicate(ctx)
+        #createReprPredicate(ctx)
 
         return ctx
 

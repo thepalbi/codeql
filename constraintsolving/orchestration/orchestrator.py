@@ -25,13 +25,17 @@ class Orchestrator:
         OptimizeStep,
         GenerateScoresStep,
     ]
+    # step_templates = [
+    #     GenerateEntitiesStep
+    # ]
 
-    def __init__(self, project_dir: str, project_name: str, query_type: str, query_name: str):
+    def __init__(self, project_dir: str, project_name: str, query_type: str, query_name: str, results_dir):
         self.query_type = query_type
         self.query_name = query_name
         self.project_dir = project_dir
         self.project_name = project_name
-        self.data_generator = DataGenerator(project_dir, project_name, global_config.working_directory)
+        self.results_dir = results_dir
+        self.data_generator = DataGenerator(project_dir, project_name, global_config.working_directory, results_dir)
         self.logger = logging.getLogger(self.__class__.__name__)
 
         # Instantiate orchestration step templates

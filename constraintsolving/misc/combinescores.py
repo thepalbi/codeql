@@ -10,8 +10,8 @@ import pandas as pd
 
 def combine_scores(query, \
                     project_dir=os.path.dirname(os.path.dirname(os.path.realpath(__file__)))):
-    
-    files=glob.glob(os.path.join(project_dir,"results")+"/*/{0}-*/reprScores.txt".format(query))
+    print(project_dir)
+    files=glob.glob(os.path.join(project_dir) + "/*/{0}-*/reprScores.txt".format(query))
     print(files)
 
     files.sort(key=os.path.getmtime)
@@ -66,8 +66,8 @@ parser = argparse.ArgumentParser()
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s\t%(asctime)s] %(name)s\t%(message)s")
 
 
-#parser.add_argument("--project-dir", dest="project_dir", required=True, type=str,
-#                    help="Directory of the CodeQL database")
+parser.add_argument("--project-dir", dest="project_dir", required=True, type=str,
+                    help="Directory of the results score")
 parser.add_argument("--query-name", dest="query_name", required=True, type=str,
                     choices=["NosqlInjectionWorse", "SqlInjectionWorse", "DomBasedXssWorse"],
                     help="Name of the query to solve")
@@ -77,6 +77,6 @@ parsed_arguments = parser.parse_args()
 #project_name = os.path.basename(project_dir)
 #query = os.environ["QUERY_NAME"]
 query_name = parsed_arguments.query_name
-
+working_dir = parsed_arguments.project_dir
 if __name__ == '__main__':
-    combine_scores(query_name)
+    combine_scores(query_name, working_dir)
