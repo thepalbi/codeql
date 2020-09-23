@@ -75,7 +75,7 @@ def generate_metris(projectList: List[str], working_directory=global_config.work
                     true_predicted += predicted
                     d[projectID] = predicted
                 else:
-                    logging.warning(f"{projectFileName} has cero elements")
+                    logging.warning(f"{projectFileName} has zero elements")
                     d[projectID] = 0
 
                 totalForProject = len(data["URL for node"])

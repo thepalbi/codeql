@@ -187,9 +187,9 @@ def getallmetrics(config: SolverConfig, ctx):
             metricsfile.write(sanstr+"\\\\\n")
             metricsfile.write(snkstr+"\\\\\n")
 
-def createReprPredicate(ctx):
+def createReprPredicate(ctx, reprScoresFiles = "reprScores.txt"):
     output_path = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", "tsm_repr_pred.qll")
-    repr_scores_path = os.path.join(ctx[RESULTS_DIR_KEY], "reprScores.txt")
+    repr_scores_path = os.path.join(ctx[RESULTS_DIR_KEY], reprScoresFiles)
 
     print(output_path)
     print(repr_scores_path)

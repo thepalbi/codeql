@@ -29,13 +29,14 @@ class Orchestrator:
     # ]
 
     def __init__(self, project_dir: str, project_name: str, query_type: str, query_name: str, 
-                 working_dir: str, results_dir: str):
+                 working_dir: str, results_dir: str, scores_file = "reprScores.txt"):
         self.query_type = query_type
         self.query_name = query_name
         self.project_dir = project_dir
         self.project_name = project_name
         self.working_dir = working_dir
         self.results_dir = results_dir
+        self.scores_file = scores_file
         self.data_generator = DataGenerator(project_dir, project_name, working_dir, results_dir)
         self.logger = logging.getLogger(self.__class__.__name__)
 
