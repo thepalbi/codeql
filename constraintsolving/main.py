@@ -55,7 +55,7 @@ parsed_arguments = parser.parse_args()
 project_dir = os.path.normpath(parsed_arguments.project_dir)
 results_dir = global_config.results_directory
 working_dir = global_config.working_directory
-scores_file = "reprScores.txt"
+scores_file = None
 
 if(parsed_arguments.results_dir is not None):
     results_dir = os.path.normpath(parsed_arguments.results_dir)

@@ -20,7 +20,7 @@ def getProjectNameFromFile(f: str, working_dir) -> str:
     #print(projectName)
     return projectName
 
-def generate_metris(projectList: List[str], working_directory=global_config.working_directory):
+def generate_metris(projectList: List[str], working_directory=global_config.working_directory, combined:bool):
     """
     Given a list of project names, produces the recall and precision metrics 
     To compute recall it uses as ground trought the different between and old (Vworse) and current query (V0)
@@ -40,7 +40,11 @@ def generate_metris(projectList: List[str], working_directory=global_config.work
         # VWorse is the baseline version of the query  to compare against 
         # V0 is the last version of the query
         # V0 - VWorse = elements discovered in last version that doesn't appear in baseline
-        csvFiles = glob.glob("{1}/data/*/*tsm{0}-ind-avg.prop.csv".format(version, working_directory), recursive=True)
+        subfix = ""        
+        if(combined):
+            subfix = "-combined"
+        
+        csvFiles = glob.glob("{1}/data/*/*tsm{0}-ind-avg{1}.prop.csv".format(version, working_directory, combined), recursive=True)
         #print("CVSs", csvFiles)
         projectsToAnalyzeRecall = list(filter(lambda projectName: getProjectNameFromFile(projectName, working_dir) in projectList, csvFiles))
         #print("Projects to analyze:", projectsToAnalyzeRecall)
@@ -48,7 +52,7 @@ def generate_metris(projectList: List[str], working_directory=global_config.work
         # Each DB-tsmworse-filtered-avg.prop.csv comes for the query getTSMWorseFilteredQuery
         # getTSMWorseFilteredQuery...yields nodes (sinks in this case) from QueryVTSM that 
         # are sink candidates, includind info about whether they are known sinks and/or effective sinks 
-        csvFiles = glob.glob("{1}/data/*/*tsm{0}-filtered-avg.prop.csv".format(version, working_directory), recursive=True)
+        csvFiles = glob.glob("{1}/data/*/*tsm{0}-filtered-avg{1}.prop.csv".format(version, working_directory, combined), recursive=True)
         projectsToAnalyzePrecision = list(filter(lambda projectName: getProjectNameFromFile(projectName, working_dir) in projectList, csvFiles))
 
         logging.info(f"Projects for recall: {projectsToAnalyzeRecall}")
@@ -139,12 +143,14 @@ logging.basicConfig(level=logging.INFO, format="[%(levelname)s\t%(asctime)s] %(n
 parser.add_argument("--project-list", dest="projectListFile", required=False, type=str)
 parser.add_argument("--project-name", dest="project", required=False, type=str)
 parser.add_argument("--working-dir", dest="working_dir", required=False, type=str)
+parser.add_argument("--use-combined", dest="combined", required=False, default=False, type=bool)
 
 parsed_arguments = parser.parse_args()
 
 projectListFile =  parsed_arguments.projectListFile
 project =  parsed_arguments.project
 working_dir = parsed_arguments.working_dir
+combined = parsed_arguments.combined
 
 if project is None and projectListFile is None:
     parser.print_usage()
@@ -158,4 +164,4 @@ else:
 if __name__ == '__main__':
     #logging.getLogger().setLevel(logging.WARNING)
     logging.info(f"Project List: {projectList}")
-    generate_metris(projectList, working_dir)
+    generate_metris(projectList, working_dir, combined)

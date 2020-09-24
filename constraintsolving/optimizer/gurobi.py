@@ -47,12 +47,12 @@ class GenerateModelStep(OrchestrationStep):
         constraints_dir = os.path.join(config.working_dir, "constraints", project_name, optimizer_run_name)
         models_dir = os.path.join(config.working_dir, "models", project_name, optimizer_run_name)
         logs_dir = os.path.join(config.working_dir, "logs", project_name, optimizer_run_name)
-        results_dir = os.path.join(config.results_dir, project_name, optimizer_run_name)
+        #results_dir = os.path.join(config.results_dir, project_name, optimizer_run_name)
 
         ctx[CONSTRAINTS_DIR_KEY] = constraints_dir
         ctx[MODELS_DIR_KEY] = models_dir
         ctx[LOGS_DIR_KEY] = logs_dir
-        ctx[RESULTS_DIR_KEY] = results_dir
+        #ctx[RESULTS_DIR_KEY] = results_dir
 
         # Create directories if needed
         for directory in [constraints_dir, models_dir, logs_dir, results_dir]:
