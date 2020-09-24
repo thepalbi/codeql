@@ -48,8 +48,8 @@ class GenerateScoresStep(OrchestrationStep):
             ctx[SAN_SNK_TUPLES_ENTITIES],
             ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
 
-        createReprPredicate(ctx)
-        
+        createReprPredicate(ctx, self.orchestrator.scores_file)
+                
         self.orchestrator.data_generator.generate_scores(
             self.orchestrator.query_type)
         return ctx
@@ -74,6 +74,7 @@ class GenerateScoresStep(OrchestrationStep):
     def name(self) -> str:
         return "generate_scores"
 
+# This step (not included) just create the tsm_repr_pred.qll file
 class GenerateTSMReprStep(OrchestrationStep):
     def run(self, ctx: Context) -> Context:
         if SOURCE_ENTITIES not in ctx:
@@ -144,7 +145,7 @@ class DataGenerator:
         kind = "snk"
         #capitalized_query_type = query_type.capitalize()
         metrics_file = "metrics_{0}_{1}".format(kind, query_type)
-        self.logger.info("Generating events scores")
+        self.logger.info("Generating events scores.")
         self.codeql.database_analyze(
             self.project_dir,
             self._get_tsm_query_file(metrics_file + ".ql"),

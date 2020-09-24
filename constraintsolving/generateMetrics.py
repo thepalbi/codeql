@@ -35,6 +35,7 @@ def generate_metris(projectList: List[str], working_directory=global_config.work
     # Each DB-tsmworse-ind-avg.prop.csv comes for the query getTSMWorseScoresQuery
     # getTSMWorseScoresSql gets the nodes (sinks, in this case) that are in QueryV0 but not in QueryVWorse
     # So that would be the nodes of the set (QueryV0 - QueryVWorse) intersection QVTSM 
+    print("Threshold, true_predicted/total=recall, predicted_known/total_predicted, true_predicted/total_predicted=precision, F1")
     for version in ['worse']:
         # VWorse is the baseline version of the query  to compare against 
         # V0 is the last version of the query
@@ -47,13 +48,15 @@ def generate_metris(projectList: List[str], working_directory=global_config.work
         # Each DB-tsmworse-filtered-avg.prop.csv comes for the query getTSMWorseFilteredQuery
         # getTSMWorseFilteredQuery...yields nodes (sinks in this case) from QueryVTSM that 
         # are sink candidates, includind info about whether they are known sinks and/or effective sinks 
-        csvFiles = glob.glob("{1}/data/*/*tsm{0}-filtered-avg.prop.csv".format(version, global_config.working_directory), recursive=True)
+        csvFiles = glob.glob("{1}/data/*/*tsm{0}-filtered-avg.prop.csv".format(version, working_directory), recursive=True)
         projectsToAnalyzePrecision = list(filter(lambda projectName: getProjectNameFromFile(projectName, working_dir) in projectList, csvFiles))
 
         logging.info(f"Projects for recall: {projectsToAnalyzeRecall}")
         logging.info(f"Projects for precision: {projectsToAnalyzePrecision}")
 
-        for threshold in [0.26, 0.27,0.28]:
+        thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,0.8, 0.9] 
+        #[0.26, 0.27,0.28]
+        for threshold in thresholds:
             print(threshold, end=",")
             true_predicted=0
             total=0
@@ -75,7 +78,7 @@ def generate_metris(projectList: List[str], working_directory=global_config.work
                     true_predicted += predicted
                     d[projectID] = predicted
                 else:
-                    logging.warning(f"{projectFileName} has cero elements")
+                    logging.warning(f"{projectFileName} has zero elements")
                     d[projectID] = 0
 
                 totalForProject = len(data["URL for node"])
@@ -109,9 +112,12 @@ def generate_metris(projectList: List[str], working_directory=global_config.work
 
                 cur_predicted = len(data[data["score"] > threshold])
                 total_predicted += cur_predicted
-                #unknown += len(data[(data["isKnown"] == False) & (data["filtered"] == False)])
-                predicted_known += len(data[(data["score"] > threshold) &  (data["isKnown"] == True)])
+                unknownProject = len(data[(data["isKnown"] == False) & (data["filtered"] == False)])
+                unknown += unknownProject
+                knownProject = len(data[(data["score"] > threshold) &  (data["isKnown"] == True)])
+                predicted_known += knownProject
                 logging.info("Precision: {0} : {1}/{2}".format(projectID, d[projectID], cur_predicted))
+                logging.info("Known: {0}  Unkown: {1}".format(knownProject, unknownProject))
 
     
             print("{0}/{1}".format(predicted_known, total_predicted), end=',')
@@ -150,6 +156,6 @@ else:
            projectList = pl.read().splitlines() 
         
 if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.WARNING)
+    #logging.getLogger().setLevel(logging.WARNING)
     logging.info(f"Project List: {projectList}")
     generate_metris(projectList, working_dir)
