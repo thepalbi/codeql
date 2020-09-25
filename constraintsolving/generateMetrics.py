@@ -71,7 +71,7 @@ def generate_metris(projectList: List[str], working_directory:str, combined:bool
                 try:
                     data=pd.read_csv(projectFileName)
                 except:
-                    print("Failed to read: ", projectFileName)
+                    logging.warn(f"Failed to read: {projectFileName}")
                     continue
 
                 #projectID = projectFileName.split("/")[1]
@@ -105,7 +105,7 @@ def generate_metris(projectList: List[str], working_directory:str, combined:bool
                 try:
                     data=pd.read_csv(projectFileName, engine='python')
                 except:
-                    print("Failed to read: ", projectFileName)
+                    logging.warn(f"Failed to read: {projectFileName}")
                     continue
                 
                 logging.info(f"Analyzing precision for: {projectFileName} for threshold {threshold}")
@@ -152,7 +152,7 @@ projectListFile =  parsed_arguments.projectListFile
 project =  parsed_arguments.project
 working_dir = parsed_arguments.working_dir
 combined = parsed_arguments.combined
-print(str(combined))
+
 if project is None and projectListFile is None:
     parser.print_usage()
 else:
