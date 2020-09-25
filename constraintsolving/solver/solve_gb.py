@@ -23,13 +23,17 @@ def solve_constraints_combine_model(config: SolverConfig, ctx):
 
     i=0
     with open(modelfile_path, "a") as modelfile:
-        for l in open(os.path.join(constraintsdir, "constraints_flow.txt")).readlines():
-            #parts = l.split("<=")
-            #modelfile.write("R{0}: {1} - {2} <= 0\n".format(i, parts[0], parts[1].replace("+", "-").rstrip()))
-            modelfile.write("R{0}: {1}\n".format(i,l.strip()))
-            i += 1
-        modelfile.flush()
-        print("Done flows")
+        use_flow_constraints= not config.no_flow_constraints
+        if use_flow_constraints:
+            for l in open(os.path.join(constraintsdir, "constraints_flow.txt")).readlines():
+                #parts = l.split("<=")
+                #modelfile.write("R{0}: {1} - {2} <= 0\n".format(i, parts[0], parts[1].replace("+", "-").rstrip()))
+                modelfile.write("R{0}: {1}\n".format(i,l.strip()))
+                i += 1
+            modelfile.flush()
+            print("Done flows")
+        else:
+            print("Ignoring flows")
         try:
             for ltriple in open(os.path.join(constraintsdir, "constraints_known_src.txt")).readlines():
                 for l in ltriple.split(","):

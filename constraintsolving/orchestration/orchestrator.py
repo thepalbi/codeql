@@ -32,13 +32,14 @@ class Orchestrator:
     # ]
 
     def __init__(self, project_dir: str, project_name: str, query_type: str, query_name: str, 
-                 working_dir: str, results_dir: str, scores_file = None):
+                 working_dir: str, results_dir: str, scores_file = None, no_flow: bool = False):
         self.query_type = query_type
         self.query_name = query_name
         self.project_dir = project_dir
         self.project_name = project_name
         self.working_dir = working_dir
         self.results_dir = results_dir
+        self.no_flow = no_flow
         self.scores_file = scores_file
         if scores_file == None: 
             self.combinedScore = False

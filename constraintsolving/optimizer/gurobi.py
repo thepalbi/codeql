@@ -124,9 +124,10 @@ class OptimizeStep(OrchestrationStep):
         results_dir = ctx[RESULTS_DIR_KEY]
         working_dir = ctx[WORKING_DIR_KEY]
 
+        config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type,
+                                working_dir=working_dir, results_dir=results_dir)
+        
         if CONSTRAINTS_DIR_KEY not in ctx:
-            config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type,
-                            working_dir=working_dir, results_dir=results_dir)
 
             constraints_dir, models_dir, logs_dir = self.get_existing_working_directories(config.query_name, config.working_dir)
             #results_dir = os.path.join(config.results_dir, project_name, optimizer_run_name)
@@ -135,10 +136,7 @@ class OptimizeStep(OrchestrationStep):
             ctx[MODELS_DIR_KEY] = models_dir
             ctx[LOGS_DIR_KEY] = logs_dir
 
-      
-        config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type,
-                                 working_dir=working_dir, results_dir=results_dir)
-
+        config.no_flow_constraints = self.orchestrator.no_flow
         # Run solver
         solve_constraints_combine_model(config, ctx)
         # this looks like a more engineered version but didn't work for me
