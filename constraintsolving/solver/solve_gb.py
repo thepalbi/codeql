@@ -110,12 +110,15 @@ def solve_constraints_combine_model(config: SolverConfig, ctx):
         print('Encountered an attribute error')
 
 
-def solve_constraints(projectdir, config:SolverConfig):
-    constraintsdir = '{1}/constraints/{0}'.format(projectdir, config.working_dir)
+def solve_constraints(config: SolverConfig, ctx):
+    constraintsdir = ctx[CONSTRAINTS_DIR_KEY]
+    modelfile_path = os.path.join(ctx[MODELS_DIR_KEY], f"gurobi_model_{config.known_samples_ratio}_{1}.lp")
+    modelfile_mps_path = os.path.join(ctx[MODELS_DIR_KEY], f"gurobi_model_{config.known_samples_ratio}_{1}.mps")
+
     for trial in range(1, config.trials+1):
         try:
             # Create a new model
-            m = gp.Model("mip1")
+            model = gp.Model("mip1")
             vars_to_train=[]
             vars=dict()
             totalvars=0
@@ -128,41 +131,39 @@ def solve_constraints(projectdir, config:SolverConfig):
                     #     vars[parts[0]] = v
                     # else:
                     if "eps" in parts[0]:
-                        v = m.addVar(vtype=GRB.CONTINUOUS, lb=0.0, name=parts[0])
+                        v = model.addVar(vtype=GRB.CONTINUOUS, lb=0.0, name=parts[0])
                         totalvars += 1
                         vars_to_train.append(v)
                         vars[parts[0]] = v
                     else:
-                        v = m.addVar(vtype=GRB.CONTINUOUS, lb=0.0, ub=1.0, name=parts[0])
+                        v = model.addVar(vtype=GRB.CONTINUOUS, lb=0.0, ub=1.0, name=parts[0])
                         totalvars += 1
                         vars_to_train.append(v)
                         vars[parts[0]] = v
 
-            problem=GBTaintSpecConstraints(vars, m, constraintsdir, config)
+            problem=GBTaintSpecConstraints(vars, model, constraintsdir, config)
 
             # create constraints
             problem.add_constraints()
 
             # Set objective
-            m.setObjective(problem.objective(), GRB.MINIMIZE)
+            model.setObjective(problem.objective(), GRB.MINIMIZE)
 
             #if query is None:
-            m.write("{1}/models/{0}/gurobi_model_{2}_{3}.lp".format(projectdir, config.working_dir,  config.known_samples_ratio, trial))
-            m.write("{1}/models/{0}/gurobi_model_{@}_{3}.mps".format(projectdir, config.working_dir, config.known_samples_ratio, trial))
+            model.write(modelfile_path)
+            model.write(modelfile_mps_path)
             # else:
             #     os.makedirs("models/{0}/{1}".format(projectdir, query), exist_ok=True)
             #     m.write("models/{0}/{1}/gurobi_model_{1}_{2}.lp".format(projectdir, query, known_samples_ratio, trial))
             #     m.write("models/{0}/{1}/gurobi_model_{1}_{2}.mps".format(projectdir, query, known_samples_ratio, trial))
 
             # Optimize model
-            m.optimize()
+            model.optimize()
             zero=0
             non_zero=0
             ones=0
-            with open("{1}/models/{0}/results_gb_{2}_{3}_{4}.txt".format(projectdir,
-                                                                    config.working_dir,
-                                                                    config.known_samples_ratio, config.lambda_const, trial), "w") as resultfile:
-                for v in m.getVars():
+            with open(os.path.join(ctx[MODELS_DIR_KEY], f"results_gb_{config.known_samples_ratio}_{config.lambda_const}_{1}.txt"), "w") as resultfile:
+                for v in model.getVars():
                     resultfile.write('%s:%g\n' % (v.varName, v.x))
                     if v.x == 0:
                         zero+=1
