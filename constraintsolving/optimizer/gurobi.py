@@ -17,20 +17,23 @@ from solver.solve_gb import solve_constraints_combine_model, solve_constraints
 
 
 class GenerateModelStep(OrchestrationStep):
+    def populate(self, ctx: Context) -> Context:
+        constraints_dir, models_dir, logs_dir = self.get_new_working_directories(self.orchestrator.query_name, ctx[WORKING_DIR_KEY])
+        ctx[CONSTRAINTS_DIR_KEY] = constraints_dir
+        ctx[MODELS_DIR_KEY] = models_dir
+        ctx[LOGS_DIR_KEY] = logs_dir
+        return ctx
+
     def run(self, ctx: Context) -> Context:
         # TODO: Implement --mode=combined model generation
         # TODO: Extract this as an orchestrator config?
         # TODO: Fix logging
-        if SOURCE_ENTITIES not in ctx:
-            (ctx[SOURCE_ENTITIES],
-            ctx[SINK_ENTITIES],
-            ctx[SANITIZER_ENTITIES],
-            ctx[SRC_SAN_TUPLES_ENTITIES],
-            ctx[SAN_SNK_TUPLES_ENTITIES],
-            ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
-
         results_dir = ctx[RESULTS_DIR_KEY]
         working_dir = ctx[WORKING_DIR_KEY]
+        constraints_dir = ctx[CONSTRAINTS_DIR_KEY]
+        models_dir = ctx[MODELS_DIR_KEY]
+        logs_dir = ctx[LOGS_DIR_KEY]
+
         
         config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type,
                                  working_dir=working_dir, results_dir=results_dir)
@@ -47,13 +50,7 @@ class GenerateModelStep(OrchestrationStep):
         # constraints_dir = os.path.join(config.working_dir, "constraints", project_name, optimizer_run_name)
         # models_dir = os.path.join(config.working_dir, "models", project_name, optimizer_run_name)
         # logs_dir = os.path.join(config.working_dir, "logs", project_name, optimizer_run_name)
-        constraints_dir, models_dir, logs_dir = self.get_new_working_directories(config.query_name, config.working_dir)
-
         #results_dir = os.path.join(config.results_dir, project_name, optimizer_run_name)
-
-        ctx[CONSTRAINTS_DIR_KEY] = constraints_dir
-        ctx[MODELS_DIR_KEY] = models_dir
-        ctx[LOGS_DIR_KEY] = logs_dir
         #ctx[RESULTS_DIR_KEY] = results_dir
 
         # Create directories if needed
@@ -111,30 +108,17 @@ class GenerateModelStep(OrchestrationStep):
 
 
 class OptimizeStep(OrchestrationStep):
+    def populate(self, ctx: Context) -> Context:
+        return ctx
+
     def run(self, ctx: Context) -> Context:
         # TODO: Extract this and share between steps. Maybe add some context passing between steps
         # TODO: Share this in ctx
-        (ctx[SOURCE_ENTITIES],
-         ctx[SINK_ENTITIES],
-         ctx[SANITIZER_ENTITIES],
-         ctx[SRC_SAN_TUPLES_ENTITIES],
-         ctx[SAN_SNK_TUPLES_ENTITIES],
-         ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
-
         results_dir = ctx[RESULTS_DIR_KEY]
         working_dir = ctx[WORKING_DIR_KEY]
 
         config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type,
                                 working_dir=working_dir, results_dir=results_dir)
-        
-        if CONSTRAINTS_DIR_KEY not in ctx:
-
-            constraints_dir, models_dir, logs_dir = self.get_existing_working_directories(config.query_name, config.working_dir)
-            #results_dir = os.path.join(config.results_dir, project_name, optimizer_run_name)
-
-            ctx[CONSTRAINTS_DIR_KEY] = constraints_dir
-            ctx[MODELS_DIR_KEY] = models_dir
-            ctx[LOGS_DIR_KEY] = logs_dir
 
         config.no_flow_constraints = self.orchestrator.no_flow
         # Run solver

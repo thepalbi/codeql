@@ -73,8 +73,6 @@ class DataGenerator:
     a couple of queries (for sources, sinks, sanitizers, and the PG).
     """
 
-    steps = ["entities", "scores"]
-
     def __init__(self, project_dir: str, project_name: str,
                  working_dir: str = global_config.working_directory,
                  results_dir: str = global_config.results_directory,

@@ -90,6 +90,7 @@ class Orchestrator:
                 return
             else:
                 # Make each previous step populate the ctx
+                self.logger.info(f"Step `{step.name()}` is populating context")
                 ctx = step.populate(ctx)
 
         # Step was not found
