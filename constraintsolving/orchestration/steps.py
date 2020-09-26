@@ -24,6 +24,7 @@ MODELS_DIR_KEY = "wd_models_dir"
 LOGS_DIR_KEY = "wd_logs_dir"
 RESULTS_DIR_KEY = "results_dir"
 WORKING_DIR_KEY = "working_dir"
+SINGLE_STEP_NAME = "orchestrator.single_step_name"
 
 
 # The OrchestrationStep class was moved to another file because of circular imports problems

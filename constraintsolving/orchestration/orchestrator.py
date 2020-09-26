@@ -5,7 +5,7 @@ from generation.data import DataGenerator, GenerateEntitiesStep, GenerateScoresS
 from optimizer.gurobi import GenerateModelStep, OptimizeStep
 
 from orchestration import global_config
-from orchestration.steps import Context,  RESULTS_DIR_KEY, WORKING_DIR_KEY
+from orchestration.steps import Context,  RESULTS_DIR_KEY, WORKING_DIR_KEY, SINGLE_STEP_NAME
 
 import os 
 import glob
@@ -83,6 +83,7 @@ class Orchestrator:
     def run_step(self, step_name: str):
         self.logger.info("Running SINGLE orchestration step")
         ctx = self.starting_ctx()
+        ctx[SINGLE_STEP_NAME] = step_name
         for step in self.steps:
             if step.name() == step_name:
                 ctx = step.populate(ctx)
