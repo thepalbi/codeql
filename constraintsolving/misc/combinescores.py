@@ -52,11 +52,16 @@ def combine_scores(query, \
 
     print(len(src_dict), len(snk_dict), len(san_dict))
     with open("allscores_{0}_avg.txt".format(query), "w") as scoresfile:
-        scoresfile.write(" or\n".join(["repr = \"{0}\" and t = \"{1}\" and result = {2}".format(k, "src", np.mean(src_dict[k])) for k in src_dict.keys()]))
-        scoresfile.write("\nor\n")
-        scoresfile.write(" or\n".join(["repr = \"{0}\" and t = \"{1}\" and result = {2}".format(k, "snk", np.mean(snk_dict[k])) for k in snk_dict.keys()]))
-        scoresfile.write("\nor\n")
-        scoresfile.write(" or\n".join(["repr = \"{0}\" and t = \"{1}\" and result = {2}".format(k, "san", np.mean(san_dict[k])) for k in san_dict.keys()]))
+        if len(src_dict)>0:
+            scoresfile.write(" or\n".join(["repr = \"{0}\" and t = \"{1}\" and result = {2}".format(k, "src", np.mean(src_dict[k])) for k in src_dict.keys()]))
+        if len(snk_dict)>0:            
+            if len(src_dict)>0:
+                scoresfile.write("\nor\n")
+            scoresfile.write(" or\n".join(["repr = \"{0}\" and t = \"{1}\" and result = {2}".format(k, "snk", np.mean(snk_dict[k])) for k in snk_dict.keys()]))
+        if len(san_dict)>0:
+            if len(src_dict)>0 or len(snk_dict)>0:
+                scoresfile.write("\nor\n")
+            scoresfile.write(" or\n".join(["repr = \"{0}\" and t = \"{1}\" and result = {2}".format(k, "san", np.mean(san_dict[k])) for k in san_dict.keys()]))
 
 
 

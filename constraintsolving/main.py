@@ -51,11 +51,15 @@ parser.add_argument("--working-dir", dest="working_dir", required=False, type=st
 parser.add_argument("--scores-file", dest="scores_file", required=False, type=str,
                     help="Name of file with the scores for repr (replaces reprScores.txt")
 
+parser.add_argument("--no-flow", dest="no_flow", action='store_true', help='Ignore flow constraints')
+
+
 parsed_arguments = parser.parse_args()
 project_dir = os.path.normpath(parsed_arguments.project_dir)
 results_dir = global_config.results_directory
 working_dir = global_config.working_directory
-scores_file = "reprScores.txt"
+scores_file = None
+no_flow = False
 
 if(parsed_arguments.results_dir is not None):
     results_dir = os.path.normpath(parsed_arguments.results_dir)
@@ -66,6 +70,8 @@ if(parsed_arguments.working_dir is not None):
 if(parsed_arguments.scores_file is not None):
     scores_file = parsed_arguments.scores_file
 
+if(parsed_arguments.no_flow):
+    no_flow = True
 
 logging.info(f"Results folder: {results_dir}")
 
@@ -84,7 +90,7 @@ if __name__ == '__main__':
         project_name = os.path.basename(project)
         orchestrator = Orchestrator(project, project_name, parsed_arguments.query_type,
                             parsed_arguments.query_name, working_dir, results_dir,
-                            scores_file)
+                            scores_file, no_flow)
                             
         if parsed_arguments.single_step == all_steps:
             orchestrator.run()

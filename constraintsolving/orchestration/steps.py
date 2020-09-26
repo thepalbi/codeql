@@ -1,5 +1,9 @@
 import logging
 from typing import Dict, Any, NewType
+from glob import glob
+import os 
+import datetime
+import time
 
 Context = NewType('Context', Dict[str, Any])
 
@@ -35,3 +39,45 @@ class OrchestrationStep:
 
     def name(self) -> str:
         raise NotImplementedError()
+
+    def get_new_working_directories(self, query_name, working_dir):
+        projects_folder = os.path.join(working_dir, "data")
+        projects = glob(os.path.join(projects_folder, self.orchestrator.project_name))
+        self.logger.info("Generating models for projects: %s", projects)
+
+        timestamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
+        optimizer_run_name = f"{query_name}-{timestamp}"
+        project_name = self.orchestrator.project_name
+        self.logger.info(f"Project dir: {project_name}/{optimizer_run_name}")
+
+        constraints_dir = os.path.join(working_dir, "constraints", project_name, optimizer_run_name)
+        models_dir = os.path.join(working_dir, "models", project_name, optimizer_run_name)
+        logs_dir = os.path.join(working_dir, "logs", project_name, optimizer_run_name)
+        #results_dir = os.path.join(config.results_dir, project_name, optimizer_run_name)
+        return constraints_dir, models_dir, logs_dir
+    
+    def get_existing_working_directories(self, query_name, working_dir):
+        projects_folder = os.path.join(working_dir, "data")
+        projects = glob(os.path.join(projects_folder, self.orchestrator.project_name))
+        self.logger.info("Generating models for projects: %s", projects)
+
+        #optimizer_run_name = f"{query_name}-{timestamp}"
+        project_name = self.orchestrator.project_name
+
+        patternToSearch = os.path.join(working_dir, "models", project_name)+ "/{0}-*".format(query_name)
+        candidates = glob(patternToSearch)
+        print(candidates)
+        if len(candidates)>0:
+            candidates.sort()
+            last_dir = candidates[-1]
+            optimizer_run_name = os.path.basename(last_dir)
+            self.logger.info(f"Project dir: {project_name}/{optimizer_run_name}")
+        else:
+            raise ValueError('Cannot find results directory for ' + patternToSearch)
+
+        constraints_dir = os.path.join(working_dir, "constraints", project_name, optimizer_run_name)
+        models_dir = os.path.join(working_dir, "models", project_name, optimizer_run_name)
+        logs_dir = os.path.join(working_dir, "logs", project_name, optimizer_run_name)
+        #results_dir = os.path.join(config.results_dir, project_name, optimizer_run_name)
+        return constraints_dir, models_dir, logs_dir
+     

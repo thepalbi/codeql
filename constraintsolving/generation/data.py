@@ -51,25 +51,8 @@ class GenerateScoresStep(OrchestrationStep):
         createReprPredicate(ctx, self.orchestrator.scores_file)
                 
         self.orchestrator.data_generator.generate_scores(
-            self.orchestrator.query_type)
+            self.orchestrator.query_type,  self.orchestrator.combinedScore)
         return ctx
-
-    def compute_results_dir(self):
-        project_name = self.orchestrator.project_name
-        print(self.orchestrator.query_name)
-        print(self.orchestrator.results_dir)
-        #timestamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
-        patternToSearch = os.path.join(self.orchestrator.results_dir, project_name)+ "/{0}-*".format(self.orchestrator.query_name)
-        print(patternToSearch)
-        results_candidates = glob.glob(patternToSearch)
-        print(results_candidates)
-        if len(results_candidates)>0:
-            results_candidates.sort()
-            result_dir = results_candidates[-1]
-            print(result_dir)
-        else:
-            raise ValueError('Cannot find results directory for' + self.orchestrator.project_name )
-        return result_dir
 
     def name(self) -> str:
         return "generate_scores"
@@ -140,7 +123,7 @@ class DataGenerator:
     def _get_tsm_bqrs_file(self, filename: str) -> str:
         return os.path.join(constaintssolving_dir, self.project_dir, "results", "codeql-javascript", "TSM", filename)
 
-    def generate_scores(self, query_type: str) -> Tuple[str, ...]:
+    def generate_scores(self, query_type: str, combinedScore: bool) -> Tuple[str, ...]:
         # Run metrics-snk query
         kind = "snk"
         #capitalized_query_type = query_type.capitalize()
@@ -153,10 +136,14 @@ class DataGenerator:
 
         # Get results BQRS file
         bqrs_metrics_file = self._get_tsm_bqrs_file(metrics_file + '.bqrs')
+        subfix = ""        
+        if(combinedScore):
+            subfix = "-combined"
+
         tsm_worse_scores_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-tsmworse-ind-avg.prop.csv")
+            self.generated_data_dir, f"{self.project_name}-tsmworse-ind-avg{subfix}.prop.csv")
         tsm_worse_filtered_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-tsmworse-filtered-avg.prop.csv")
+            self.generated_data_dir, f"{self.project_name}-tsmworse-filtered-avg{subfix}.prop.csv")
 
         # Extract result scores
         self.codeql.bqrs_decode(
