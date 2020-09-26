@@ -1,5 +1,6 @@
 import datetime
 import os
+import shutil
 import traceback
 from glob import glob
 
@@ -28,6 +29,11 @@ class GenerateModelStep(OrchestrationStep):
             ctx[MODELS_DIR_KEY],
             ctx[LOGS_DIR_KEY]) = self.get_new_working_directories(self.orchestrator.query_name, ctx[WORKING_DIR_KEY])
         return ctx
+
+    def clean(self, ctx: Context):
+        for dir_to_remove in [ctx[CONSTRAINTS_DIR_KEY], ctx[MODELS_DIR_KEY], ctx[LOGS_DIR_KEY]]:
+            self.logger.info(f"Removing directory `{dir_to_remove}` and its contents")
+            shutil.rmtree(dir_to_remove, onerror=self.clean_error_callback)
 
     def running_just_optimize_step(self, ctx):
         return (SINGLE_STEP_NAME in ctx) and ctx[SINGLE_STEP_NAME] == "optimize"
