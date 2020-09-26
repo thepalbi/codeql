@@ -21,7 +21,8 @@ class UnknownStepException(Exception):
 
 
 class Orchestrator:
-    # It's important to respect the steps order, since each of them populates the context for the incoming ones.
+    # Do not change the order of the steps in this list, its used for populating
+    # the ctx in the order they are passed between them.
     step_templates = [
         GenerateEntitiesStep,
         GenerateModelStep,
