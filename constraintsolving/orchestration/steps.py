@@ -25,6 +25,7 @@ LOGS_DIR_KEY = "wd_logs_dir"
 RESULTS_DIR_KEY = "results_dir"
 WORKING_DIR_KEY = "working_dir"
 SINGLE_STEP_NAME = "orchestrator.single_step_name"
+COMMAND_NAME = "orchestrator.command_name"
 
 
 # The OrchestrationStep class was moved to another file because of circular imports problems
@@ -53,13 +54,12 @@ class OrchestrationStep:
         pass
 
     def clean_error_callback(self, function, path, exec_info):
-        self.logger.error(f"Error cleaning folder: {path}")
+        self.logger.error(f"Error cleaning folder: {path}, exec_info: {exec_info}")
 
 
     def get_new_working_directories(self, query_name, working_dir):
         projects_folder = os.path.join(working_dir, "data")
         projects = glob(os.path.join(projects_folder, self.orchestrator.project_name))
-        self.logger.info("Generating models for projects: %s", projects)
 
         timestamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
         optimizer_run_name = f"{query_name}-{timestamp}"
@@ -75,7 +75,6 @@ class OrchestrationStep:
     def get_existing_working_directories(self, query_name, working_dir):
         projects_folder = os.path.join(working_dir, "data")
         projects = glob(os.path.join(projects_folder, self.orchestrator.project_name))
-        self.logger.info("Generating models for projects: %s", projects)
 
         #optimizer_run_name = f"{query_name}-{timestamp}"
         project_name = self.orchestrator.project_name

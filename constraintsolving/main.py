@@ -53,6 +53,9 @@ parser.add_argument("--scores-file", dest="scores_file", required=False, type=st
 
 parser.add_argument("--no-flow", dest="no_flow", action='store_true', help='Ignore flow constraints')
 
+subparsers = parser.add_subparsers(dest="command", required=True)
+run_parser = subparsers.add_parser("run")
+clean_parser = subparsers.add_parser("clean")
 
 parsed_arguments = parser.parse_args()
 project_dir = os.path.normpath(parsed_arguments.project_dir)
@@ -61,16 +64,16 @@ working_dir = global_config.working_directory
 scores_file = None
 no_flow = False
 
-if(parsed_arguments.results_dir is not None):
+if parsed_arguments.results_dir is not None:
     results_dir = os.path.normpath(parsed_arguments.results_dir)
 
-if(parsed_arguments.working_dir is not None):
+if parsed_arguments.working_dir is not None:
     working_dir = os.path.normpath(parsed_arguments.working_dir)
 
-if(parsed_arguments.scores_file is not None):
+if parsed_arguments.scores_file is not None:
     scores_file = parsed_arguments.scores_file
 
-if(parsed_arguments.no_flow):
+if parsed_arguments.no_flow:
     no_flow = True
 
 logging.info(f"Results folder: {results_dir}")
@@ -86,13 +89,16 @@ else:
 
 if __name__ == '__main__':
     for project in projectList:       
-        print(project)
+        logging.info(f"Running orchestrator-{parsed_arguments.command} on project: {project}")
         project_name = os.path.basename(project)
         orchestrator = Orchestrator(project, project_name, parsed_arguments.query_type,
                             parsed_arguments.query_name, working_dir, results_dir,
                             scores_file, no_flow)
-                            
-        if parsed_arguments.single_step == all_steps:
-            orchestrator.run()
-        else:
-            orchestrator.run_step(parsed_arguments.single_step)
+
+        if parsed_arguments.command == "run":
+            if parsed_arguments.single_step == all_steps:
+                orchestrator.run()
+            else:
+                orchestrator.run_step(parsed_arguments.single_step) 
+        elif parsed_arguments.command == "clean":
+            orchestrator.clean()

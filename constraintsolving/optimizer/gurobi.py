@@ -11,7 +11,7 @@ from compute_metrics import getallmetrics, createReprPredicate
 from orchestration.steps import OrchestrationStep, Context,\
     CONSTRAINTS_DIR_KEY, MODELS_DIR_KEY, RESULTS_DIR_KEY, WORKING_DIR_KEY, LOGS_DIR_KEY, \
     SOURCE_ENTITIES, SANITIZER_ENTITIES,  SINK_ENTITIES,SRC_SAN_TUPLES_ENTITIES,SAN_SNK_TUPLES_ENTITIES, REPR_MAP_ENTITIES, \
-    SINGLE_STEP_NAME
+    SINGLE_STEP_NAME, COMMAND_NAME
 
 from solver.config import SolverConfig
 from solver.get_constraints import ConstraintBuilder
@@ -20,7 +20,7 @@ from solver.solve_gb import solve_constraints_combine_model, solve_constraints
 
 class GenerateModelStep(OrchestrationStep):
     def populate(self, ctx: Context) -> Context:
-        if self.running_just_optimize_step(ctx):
+        if self.should_use_existing_model_dirs(ctx):
             (ctx[CONSTRAINTS_DIR_KEY],
             ctx[MODELS_DIR_KEY],
             ctx[LOGS_DIR_KEY]) = self.get_existing_working_directories(self.orchestrator.query_name, ctx[WORKING_DIR_KEY])
@@ -35,8 +35,12 @@ class GenerateModelStep(OrchestrationStep):
             self.logger.info(f"Removing directory `{dir_to_remove}` and its contents")
             shutil.rmtree(dir_to_remove, onerror=self.clean_error_callback)
 
-    def running_just_optimize_step(self, ctx):
-        return (SINGLE_STEP_NAME in ctx) and ctx[SINGLE_STEP_NAME] == "optimize"
+    def should_use_existing_model_dirs(self, ctx):
+        return \
+            (SINGLE_STEP_NAME in ctx) and ctx[SINGLE_STEP_NAME] == "optimize" or \
+            (COMMAND_NAME in ctx) and ctx[COMMAND_NAME] == "clean"
+            
+
 
     def run(self, ctx: Context) -> Context:
         # TODO: Implement --mode=combined model generation

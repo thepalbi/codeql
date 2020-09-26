@@ -5,7 +5,7 @@ from generation.data import DataGenerator, GenerateEntitiesStep, GenerateScoresS
 from optimizer.gurobi import GenerateModelStep, OptimizeStep
 
 from orchestration import global_config
-from orchestration.steps import Context,  RESULTS_DIR_KEY, WORKING_DIR_KEY, SINGLE_STEP_NAME
+from orchestration.steps import Context,  RESULTS_DIR_KEY, WORKING_DIR_KEY, SINGLE_STEP_NAME, COMMAND_NAME
 
 import os 
 import glob
@@ -73,21 +73,39 @@ class Orchestrator:
             return self.results_dir
 
     def run(self):
-        self.logger.info("Running ALL orchestration steps")
+        self.logger.info("Running ALL orchestration-run steps")
+
         ctx = self.starting_ctx()
+        ctx[COMMAND_NAME] = "run"
         
         for step in self.steps:
+            self.print_step_banner(step, "run")
             ctx = step.populate(ctx)
-            ctx = self.do_run_step(step, ctx)
+            ctx = step.run(ctx)
+
+    def clean(self):
+        self.logger.info("Running ALL orchestration-clean steps")
+
+        ctx = self.starting_ctx()
+        ctx[COMMAND_NAME] = "clean"
+
+        for step in self.steps:
+            self.print_step_banner(step, "clean")
+            ctx = step.populate(ctx)
+            step.clean(ctx)
 
     def run_step(self, step_name: str):
         self.logger.info("Running SINGLE orchestration step")
+
         ctx = self.starting_ctx()
         ctx[SINGLE_STEP_NAME] = step_name
+        ctx[COMMAND_NAME] = "run"
+
         for step in self.steps:
             if step.name() == step_name:
+                self.print_step_banner(step, "run")
                 ctx = step.populate(ctx)
-                self.do_run_step(step, ctx)
+                step.run(ctx)
                 return
             else:
                 # Make each previous step populate the ctx
@@ -97,10 +115,9 @@ class Orchestrator:
         # Step was not found
         raise UnknownStepException(step_name, [step.name() for step in self.steps])
 
-    def do_run_step(self, step, ctx: Context) -> Context:
+    def print_step_banner(self, step, command):
         separator = ">" * 5
-        self.logger.info("%s Running orchestration step: %s %s", separator, step.name(), separator)
-        return step.run(ctx)
+        self.logger.info("%s Running orchestration-%s step: %s %s", separator, command, step.name(), separator)
 
     def starting_ctx(self) -> Context:
         ctx = dict()
