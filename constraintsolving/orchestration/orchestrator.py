@@ -21,15 +21,13 @@ class UnknownStepException(Exception):
 
 
 class Orchestrator:
+    # It's important to respect the steps order, since each of them populates the context for the incoming ones.
     step_templates = [
         GenerateEntitiesStep,
         GenerateModelStep,
         OptimizeStep,
         GenerateScoresStep,
     ]
-    # step_templates = [
-    #     GenerateEntitiesStep
-    # ]
 
     def __init__(self, project_dir: str, project_name: str, query_type: str, query_name: str, 
                  working_dir: str, results_dir: str, scores_file = None, no_flow: bool = False):
@@ -69,29 +67,31 @@ class Orchestrator:
                 result_dir = results_candidates[-1]
                 print(result_dir)
             else:
-                raise ValueError('Cannot find results directory for' + self.project_name )
+                raise ValueError('Cannot find results directory for ' + self.project_name )
             return result_dir
         else:
             return self.results_dir
 
     def run(self):
         self.logger.info("Running ALL orchestration steps")
-        ctx: Context = dict()
-        ctx[RESULTS_DIR_KEY] = self.compute_results_dir()
-        ctx[WORKING_DIR_KEY] = self.working_dir
+        ctx = self.starting_ctx()
         
         for step in self.steps:
+            ctx = step.populate(ctx)
             ctx = self.do_run_step(step, ctx)
 
     def run_step(self, step_name: str):
         self.logger.info("Running SINGLE orchestration step")
+        ctx = self.starting_ctx()
         for step in self.steps:
             if step.name() == step_name:
-                ctx: Context = dict()
-                ctx[RESULTS_DIR_KEY] = self.compute_results_dir()
-                ctx[WORKING_DIR_KEY] = self.working_dir
+                ctx = step.populate(ctx)
                 self.do_run_step(step, ctx)
                 return
+            else:
+                # Make each previous step populate the ctx
+                ctx = step.populate(ctx)
+
         # Step was not found
         raise UnknownStepException(step_name, [step.name() for step in self.steps])
 
@@ -99,3 +99,10 @@ class Orchestrator:
         separator = ">" * 5
         self.logger.info("%s Running orchestration step: %s %s", separator, step.name(), separator)
         return step.run(ctx)
+
+    def starting_ctx(self) -> Context:
+        ctx = dict()
+        ctx[RESULTS_DIR_KEY] = self.compute_results_dir()
+        ctx[WORKING_DIR_KEY] = self.working_dir
+        return ctx
+ 

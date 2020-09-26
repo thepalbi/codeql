@@ -34,10 +34,17 @@ class OrchestrationStep:
         self.orchestrator = orchestrator
         self.logger = logging.getLogger(self.__class__.__name__)
 
+    def populate(self, ctx: Context) -> Context:
+        """Populates ctx with the entries necessary to run this step."""        
+        raise NotImplementedError()
+
     def run(self, ctx: Context) -> Context:
+        """Run this orchestration step, adding entries to the context if necessary, and querying
+        all necessary paths or info from previous steps from it."""        
         raise NotImplementedError()
 
     def name(self) -> str:
+        """Readable name of the step."""
         raise NotImplementedError()
 
     def get_new_working_directories(self, query_name, working_dir):
