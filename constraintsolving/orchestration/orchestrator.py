@@ -5,7 +5,7 @@ from generation.data import DataGenerator, GenerateEntitiesStep, GenerateScoresS
 from optimizer.gurobi import GenerateModelStep, OptimizeStep
 
 from orchestration import global_config
-from orchestration.steps import Context,  RESULTS_DIR_KEY, WORKING_DIR_KEY
+from orchestration.steps import Context,  RESULTS_DIR_KEY, WORKING_DIR_KEY, SINGLE_STEP_NAME, COMMAND_NAME
 
 import os 
 import glob
@@ -21,15 +21,14 @@ class UnknownStepException(Exception):
 
 
 class Orchestrator:
+    # Do not change the order of the steps in this list, its used for populating
+    # the ctx in the order they are passed between them.
     step_templates = [
         GenerateEntitiesStep,
         GenerateModelStep,
         OptimizeStep,
         GenerateScoresStep,
     ]
-    # step_templates = [
-    #     GenerateEntitiesStep
-    # ]
 
     def __init__(self, project_dir: str, project_name: str, query_type: str, query_name: str, 
                  working_dir: str, results_dir: str, scores_file = None, no_flow: bool = False):
@@ -69,33 +68,61 @@ class Orchestrator:
                 result_dir = results_candidates[-1]
                 print(result_dir)
             else:
-                raise ValueError('Cannot find results directory for' + self.project_name )
+                raise ValueError('Cannot find results directory for ' + self.project_name )
             return result_dir
         else:
             return self.results_dir
 
     def run(self):
-        self.logger.info("Running ALL orchestration steps")
-        ctx: Context = dict()
-        ctx[RESULTS_DIR_KEY] = self.compute_results_dir()
-        ctx[WORKING_DIR_KEY] = self.working_dir
+        self.logger.info("Running ALL orchestration-run steps")
+
+        ctx = self.starting_ctx()
+        ctx[COMMAND_NAME] = "run"
         
         for step in self.steps:
-            ctx = self.do_run_step(step, ctx)
+            self.print_step_banner(step, "run")
+            ctx = step.populate(ctx)
+            ctx = step.run(ctx)
+
+    def clean(self):
+        self.logger.info("Running ALL orchestration-clean steps")
+
+        ctx = self.starting_ctx()
+        ctx[COMMAND_NAME] = "clean"
+
+        for step in self.steps:
+            self.print_step_banner(step, "clean")
+            ctx = step.populate(ctx)
+            step.clean(ctx)
 
     def run_step(self, step_name: str):
         self.logger.info("Running SINGLE orchestration step")
+
+        ctx = self.starting_ctx()
+        ctx[SINGLE_STEP_NAME] = step_name
+        ctx[COMMAND_NAME] = "run"
+
         for step in self.steps:
             if step.name() == step_name:
-                ctx: Context = dict()
-                ctx[RESULTS_DIR_KEY] = self.compute_results_dir()
-                ctx[WORKING_DIR_KEY] = self.working_dir
-                self.do_run_step(step, ctx)
+                self.print_step_banner(step, "run")
+                ctx = step.populate(ctx)
+                step.run(ctx)
                 return
+            else:
+                # Make each previous step populate the ctx
+                self.logger.info(f"Step `{step.name()}` is populating context")
+                ctx = step.populate(ctx)
+
         # Step was not found
         raise UnknownStepException(step_name, [step.name() for step in self.steps])
 
-    def do_run_step(self, step, ctx: Context) -> Context:
+    def print_step_banner(self, step, command):
         separator = ">" * 5
-        self.logger.info("%s Running orchestration step: %s %s", separator, step.name(), separator)
-        return step.run(ctx)
+        self.logger.info("%s Running orchestration-%s step: %s %s", separator, command, step.name(), separator)
+
+    def starting_ctx(self) -> Context:
+        ctx = dict()
+        ctx[RESULTS_DIR_KEY] = self.compute_results_dir()
+        ctx[WORKING_DIR_KEY] = self.working_dir
+        return ctx
+ 
