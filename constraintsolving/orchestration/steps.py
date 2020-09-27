@@ -79,7 +79,7 @@ class OrchestrationStep:
         #optimizer_run_name = f"{query_name}-{timestamp}"
         project_name = self.orchestrator.project_name
 
-        patternToSearch = os.path.join(working_dir, "models", project_name)+ "/{0}-*".format(query_name)
+        patternToSearch = os.path.join(working_dir, "constraints", project_name)+ "/{0}-*".format(query_name)
         candidates = glob(patternToSearch)
         print(candidates)
         if len(candidates)>0:
