@@ -8,6 +8,7 @@ import logging
 from orchestration import global_config
 from typing import List
 
+
 def getProjectNameFromFile(f: str, working_dir) -> str:
     """
     Helper funcion that obtains a project name from a project file name
@@ -70,8 +71,9 @@ def generate_metris(projectList: List[str], working_directory:str, combined:bool
                 logging.info(f"Analyzing recall of: {projectFileName} for threshold {threshold}")
                 try:
                     data=pd.read_csv(projectFileName)
-                except:
-                    logging.warn(f"Failed to read: {projectFileName}")
+                    # data=pd.read_csv(projectFileName, encoding='utf8')
+                except Exception as e: 
+                    logging.warning(f"Failed to read: {projectFileName}\n{e}")
                     continue
 
                 #projectID = projectFileName.split("/")[1]
@@ -104,8 +106,9 @@ def generate_metris(projectList: List[str], working_directory:str, combined:bool
             for projectFileName in projectsToAnalyzePrecision:
                 try:
                     data=pd.read_csv(projectFileName, engine='python')
-                except:
-                    logging.warn(f"Failed to read: {projectFileName}")
+                    #data=pd.read_csv(projectFileName, engine='python', encoding='utf8')
+                except Exception as e: 
+                    logging.warning(f"Failed to read: {projectFileName}\n{e}")
                     continue
                 
                 logging.info(f"Analyzing precision for: {projectFileName} for threshold {threshold}")
