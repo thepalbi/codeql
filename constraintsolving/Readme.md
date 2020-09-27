@@ -48,21 +48,32 @@ Then, you can either run a single step of the pipeline:
 
 ```bash
 # Run the whole pipeline:
-python main.py --project-dir output/abhinavkumarl-bidding-system/ --query-type Xss --query-name DomBasedXssWorse --results-dir /results/xss --working-dir /wrk/xss
+python main.py --project-dir output/abhinavkumarl-bidding-system/ --query-type Xss --query-name DomBasedXssWorse --results-dir /results/xss --working-dir /wrk/xss run
 ```
 
 For instance this command will run the `generate_scores` step
 
 ```bash
 # Execute one step: 
-python main.py --project-dir output/abhinavkumarl-bidding-system/ --single-step generate_scores --query-type Xss --query-name DomBasedXssWorse
+python main.py --project-dir output/abhinavkumarl-bidding-system/ --single-step generate_scores --query-type Xss --query-name DomBasedXssWorse run
 ```
 
 Additionally, a set of databases can be processed (either a single step or all steps) by using the option `--projects-list`. For instance:
 
 ```bash
 # Run the whole pipeline on multiple projects:
-python main.py --project-dir output/xss/ --query-type Xss --query-name DomBasedXssWorse --results-dir /results/xss --working-dir /wrk/xss --project-list xss_projects.txt
+python main.py --project-dir output/xss/ --query-type Xss --query-name DomBasedXssWorse --results-dir /results/xss --working-dir /wrk/xss --project-list xss_projects.txt run
+```
+
+Because some of the step generate large intermediary files, we have added a clean step. At the moment (https://github.com/garbervetsky/ql/commit/91b21f301b871dd44213f2b60d27d324c44509c7), this just cleans the following intermediate folders:
+- `models`
+- `constraints`
+- `logs`
+
+To run in clean mode, use the following command:
+
+```bash
+python main.py --project-dir output/abhinavkumarl-bidding-system/ --query-type Xss --query-name DomBasedXssWorse clean
 ```
 
 To see more options or get help from the CLI:

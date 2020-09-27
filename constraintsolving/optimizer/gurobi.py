@@ -52,6 +52,9 @@ class GenerateModelStep(OrchestrationStep):
         models_dir = ctx[MODELS_DIR_KEY]
         logs_dir = ctx[LOGS_DIR_KEY]
 
+        # If we a clean in ran, and each previous step once again (generate_entities and generate_model),
+        # we might need to re-create the model dir, since it was previously deleted.
+        os.makedirs(models_dir, exist_ok=True)
         
         config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type,
                                  working_dir=working_dir, results_dir=results_dir)
