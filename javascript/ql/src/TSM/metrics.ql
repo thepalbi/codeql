@@ -1,7 +1,14 @@
 import javascript
 import PropagationGraphs
 import metrics
+import tsm_worse
 //import scores_nosqlinjection
+
+module ReprScores {
+    float getReprScore(string repr, string t){
+        result = TSMWorse::doGetReprScore(repr, t)
+   }    
+}
 
 query predicate stats(int loc, int functions, int files, int sourceCandidates, int sinkCandidates, int sanitizerCandidates){    
     loc = sum(File f | | f.getNumberOfLinesOfCode())
