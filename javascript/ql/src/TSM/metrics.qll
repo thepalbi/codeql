@@ -101,6 +101,18 @@ module Metrics {
       nd = any(DataFlow::PropWrite pw).getRhs()
   }
 
+  // TODO: Think about a real source property
+  // I just copies and slightly modifty the predicate IsSinkCandidate
+  predicate isSourceCandidate(DataFlow::Node nd){
+    exists(DataFlow::InvokeNode invk |
+        nd = invk.getAnArgument()
+        or
+        nd = invk.(DataFlow::MethodCallNode).getReceiver()
+      )
+      or
+      nd = any(DataFlow::PropRead pw).getALocalSource()
+  }
+
   query predicate allSources(DataFlow::Node nd) {
     (
       nd instanceof ClientSideUrlRedirect::Source or
@@ -214,6 +226,19 @@ predicate isKnownSanitizer(DataFlow::Node node){
     allSanitizers(node)
 }
 
+
+predicate isKnownSqlInjectionSink(DataFlow::Node node){
+  node instanceof SqlInjection::Sink
+}
+predicate isKnownSqlInjectionSource(DataFlow::Node node){
+  node instanceof SqlInjection::Source
+}
+
+predicate isKnownSqlInjectionSanitizer(DataFlow::Node node){
+node instanceof SqlInjection::Sanitizer
+}
+
+
 predicate isKnownNoSqlInjectionSink(DataFlow::Node node){
     node instanceof NosqlInjection::Sink
 }
@@ -228,6 +253,10 @@ predicate isKnownNoSqlInjectionSanitizer(DataFlow::Node node){
 
 predicate isKnownDomBasedXssSink(DataFlow::Node node){
     node instanceof DomBasedXss::Sink
+}
+
+predicate isKnownDomBasedXssSource(DataFlow::Node node){
+  node instanceof DomBasedXss::Source
 }
 
 predicate isKnownDomBasedXssSanitizer(DataFlow::Node node){

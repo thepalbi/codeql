@@ -4,7 +4,6 @@ import PropagationGraphs
 import Metrics
 import metrics_src
 import tsm_xss_worse
-import TSMXssWorse
 import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 
 predicate xssKnownSource(DataFlow::Node node){
@@ -18,7 +17,7 @@ query predicate predictionsSource(DataFlow::Node node, PropagationGraph::Node pn
     and 
     exists(pnode.rep())
     and
-    score = sum(doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
+    score = sum(TSMXssWorse::doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
     and 
     (   (isKnown = true and xssKnownSource(node)) 
         or (isKnown = false and not xssKnownSource(node))
@@ -28,4 +27,23 @@ query predicate predictionsSource(DataFlow::Node node, PropagationGraph::Node pn
     or ((not pnode.isSourceCandidate())  and type = "unknown" and isCandidate = false))
     and
     crep = pnode.getconcatrep()
+}
+
+query predicate getTSMWorseScoresSql(DataFlow::Node node, float score){
+    node instanceof DomBasedXss::Source and
+    not node instanceof DomBasedXssWorse::Source  and
+    TSMXssWorse::isSource(node, score)
+}
+
+query predicate getTSMWorseFilteredSql(DataFlow::Node node, float score, boolean isKnown, string rep) {// , boolean isKnown, boolean filtered, string rep){
+    Metrics::isSourceCandidate(node) and
+    Metrics::isKnownDomBasedXssSource(node) and
+    TSMXssWorse::isSource(node, score) and     
+    rep = PropagationGraph::getconcatrep(node) 
+    and (xssKnownSource(node) and isKnown = true or
+    not xssKnownSource(node) and isKnown = false) 
+    // and filtered = true
+    // // and (Metrics::isEffectiveSource(node) and filtered = true or
+    // // not  Metrics::isEffectiveSource(node) and filtered = false) and
+    and score > 0
 }

@@ -48,7 +48,8 @@ class GenerateScoresStep(OrchestrationStep):
     def run(self, ctx: Context) -> Context:
         createReprPredicate(ctx, self.orchestrator.scores_file)
         self.orchestrator.data_generator.generate_scores(
-            self.orchestrator.query_type,  self.orchestrator.combinedScore)
+            self.orchestrator.query_type,  self.orchestrator.combinedScore, 
+            self.orchestrator.kind)
         return ctx
 
     def name(self) -> str:
@@ -113,9 +114,10 @@ class DataGenerator:
     def _get_tsm_bqrs_file(self, filename: str) -> str:
         return os.path.join(constaintssolving_dir, self.project_dir, "results", "codeql-javascript", "TSM", filename)
 
-    def generate_scores(self, query_type: str, combinedScore: bool) -> Tuple[str, ...]:
+    def generate_scores(self, query_type: str, combinedScore: bool, kind = "snk") -> Tuple[str, ...]:
         # Run metrics-snk query
-        kind = "snk"
+        #kind = "snk"
+
         #capitalized_query_type = query_type.capitalize()
         metrics_file = "metrics_{0}_{1}".format(kind, query_type)
         self.logger.info("Generating events scores.")

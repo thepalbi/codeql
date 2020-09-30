@@ -25,22 +25,6 @@ query predicate stats(int loc, int functions, int files, int sourceCandidates, i
 
 }
 
-predicate predictionsSink(DataFlow::Node node, PropagationGraph::Node pnode, 
-    float score, boolean isKnown, boolean isCandidate, string type, string crep){
-    node = pnode.asDataFlowNode() 
-    and 
-    exists(pnode.rep())
-    and
-    score = sum(ReprScores::getReprScore(pnode.rep(), "snk"))/count(pnode.rep())
-    and 
-    ((isKnown = true and isKnownSink(pnode)) or (isKnown = false and not isKnownSink(pnode))) 
-    and
-    ((pnode.isSinkCandidate() and getSinkType(node) = type and isCandidate = true )
-    or ((not pnode.isSinkCandidate())  and type = "unknown" and isCandidate = false))
-    and
-    crep = pnode.getconcatrep()   
-}
-
 
 predicate predictionsSanitizer(DataFlow::Node node, PropagationGraph::Node pnode, 
     float score, boolean isKnown, boolean isCandidate, string type, string crep){
