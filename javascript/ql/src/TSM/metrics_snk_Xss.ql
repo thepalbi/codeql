@@ -12,6 +12,15 @@ predicate xssKnownSink(DataFlow::Node node){
     (not node instanceof DomBasedXss::Sink and Metrics::isKnownSink(node))
 }
 
+query predicate predictionsXsssnk(DataFlow::Node node, PropagationGraph::Node pnode, 
+    float score, boolean isKnown, boolean isCandidate, string type, string crep){
+    Metrics::predictionsSink(node, pnode, score, isKnown, isCandidate, type, crep)
+    and 
+    (   (isKnown = true and xssKnownSink(node)) 
+        or (isKnown = false and not xssKnownSink(node))
+    )     
+}
+
 query predicate getTSMWorseScoresXss(DataFlow::Node node, float score){
     node instanceof DomBasedXss::Sink and
     not node instanceof DomBasedXssWorse::Sink  and

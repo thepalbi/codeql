@@ -42,8 +42,11 @@ import semmle.javascript.security.dataflow.ZipSlipCustomizations
 import semmle.javascript.dataflow.Portals
 import CoreKnowledge
 import EndpointFilterUtils
+import tsm_worse
+import PropagationGraphs
 
 module Metrics {  
+
 
   predicate allSinks(DataFlow::Node nd) {
     (
@@ -286,6 +289,57 @@ predicate isEffectiveSink(DataFlow::Node node){
             call instanceof DatabaseAccess 
         ))
 }
+
+predicate predictionsSanitizer(DataFlow::Node node, PropagationGraph::Node pnode, 
+  float score, boolean isKnown, boolean isCandidate, string type, string crep){
+  node = pnode.asDataFlowNode() 
+  and 
+  exists(pnode.rep())
+  and
+  score = sum(TSMWorse::doGetReprScore(pnode.rep(), "san"))/count(pnode.rep())
+  and 
+  ((isKnown = true and isKnownSanitizer(node)) or (isKnown = false and not isKnownSanitizer(node))) 
+  and
+  ((pnode.isSanitizerCandidate() and isCandidate = true )
+  or ((not pnode.isSanitizerCandidate()) and isCandidate = false))
+  and
+  type = "call"
+  and
+  crep = pnode.getconcatrep()   
+}
+
+predicate predictionsSource(DataFlow::Node node, PropagationGraph::Node pnode, 
+  float score, boolean isKnown, boolean isCandidate, string type, string crep){
+  node = pnode.asDataFlowNode() 
+  and 
+  exists(pnode.rep())
+  and
+  score = sum(TSMWorse::doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
+  and 
+  ((isKnown = true and isKnownSource(node)) or (isKnown = false and not isKnownSource(node))) 
+  and
+  ((pnode.isSourceCandidate() and getSrcType(node) = type and isCandidate = true )
+  or ((not pnode.isSourceCandidate())  and type = "unknown" and isCandidate = false))
+  and
+  crep = pnode.getconcatrep()
+}
+
+predicate predictionsSink(DataFlow::Node node, PropagationGraph::Node pnode, 
+  float score, boolean isKnown, boolean isCandidate, string type, string crep){
+  node = pnode.asDataFlowNode() 
+  and 
+  exists(pnode.rep())
+  and
+  score = sum(TSMWorse::doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
+  and 
+  ((isKnown = true and isKnownSink(node)) or (isKnown = false and not isKnownSink(node))) 
+  and
+  ((pnode.isSinkCandidate() and getSrcType(node) = type and isCandidate = true )
+  or ((not pnode.isSourceCandidate())  and type = "unknown" and isCandidate = false))
+  and
+  crep = pnode.getconcatrep()
+}
+
 
 class RemoteCommandExecutor2 extends SystemCommandExecution, DataFlow::InvokeNode {
       int cmdArg;

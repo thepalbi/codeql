@@ -137,11 +137,17 @@ class DataGenerator:
         tsm_worse_filtered_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-tsmworse-filtered-avg{subfix}.prop.csv")
 
+        prediction_scores_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-prediction-{kind}-{subfix}.prop.csv")
+
         # Extract result scores
         self.codeql.bqrs_decode(
             bqrs_metrics_file, f"getTSMWorseScores{query_type}", tsm_worse_scores_file)
         self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseFiltered{query_type}",
                                 tsm_worse_filtered_file)
+
+        self.codeql.bqrs_decode(bqrs_metrics_file, f"predictions{query_type}{kind}",
+                                prediction_scores_file)
 
         return tsm_worse_scores_file, tsm_worse_filtered_file
 

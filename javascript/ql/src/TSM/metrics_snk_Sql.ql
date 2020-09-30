@@ -12,7 +12,14 @@ predicate sqlKnownSink(DataFlow::Node node){
     (not node instanceof SqlInjection::Sink and Metrics::isKnownSink(node))
 }
 
-
+query predicate predictionsSqlsnk(DataFlow::Node node, PropagationGraph::Node pnode, 
+    float score, boolean isKnown, boolean isCandidate, string type, string crep){
+    Metrics::predictionsSink(node, pnode, score, isKnown, isCandidate, type, crep)
+    and 
+    (   (isKnown = true and sqlKnownSink(node)) 
+        or (isKnown = false and not sqlKnownSink(node))
+    )     
+}
 query predicate getTSMWorseScoresSql(DataFlow::Node node, float score){
     node instanceof SqlInjection::Sink and
     not node instanceof SqlInjectionWorse::Sink  and

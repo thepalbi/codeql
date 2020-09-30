@@ -12,6 +12,15 @@ predicate nosqlKnownSink(DataFlow::Node node){
     (not node instanceof NosqlInjection::Sink and Metrics::isKnownSink(node))
 }
 
+query predicate predictionsNoSqlsnk(DataFlow::Node node, PropagationGraph::Node pnode, 
+    float score, boolean isKnown, boolean isCandidate, string type, string crep){
+    Metrics::predictionsSink(node, pnode, score, isKnown, isCandidate, type, crep)
+    and 
+    (   (isKnown = true and nosqlKnownSink(node)) 
+        or (isKnown = false and not nosqlKnownSink(node))
+    )     
+}
+
 query predicate getTSMWorseScoresNoSql(DataFlow::Node node, float score){
     node instanceof NosqlInjection::Sink and
     not node instanceof NosqlInjectionWorse::Sink  and

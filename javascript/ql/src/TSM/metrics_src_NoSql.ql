@@ -11,22 +11,23 @@ predicate nosqlKnownSource(DataFlow::Node node){
     (not node instanceof NosqlInjection::Source and Metrics::isKnownSource(node))
 }
 
-query predicate predictionsSource(DataFlow::Node node, PropagationGraph::Node pnode, 
+query predicate predictionsNoSqlsrc(DataFlow::Node node, PropagationGraph::Node pnode, 
     float score, boolean isKnown, boolean isCandidate, string type, string crep){
-    node = pnode.asDataFlowNode() 
-    and 
-    exists(pnode.rep())
-    and
-    score = sum(TSMNosqlWorse::doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
+    Metrics::predictionsSource(node, pnode, score, isKnown, isCandidate, type, crep)
+    // node = pnode.asDataFlowNode() 
+    // and 
+    // exists(pnode.rep())
+    // and
+    // score = sum(TSMNosqlWorse::doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
     and 
     (   (isKnown = true and nosqlKnownSource(node)) 
         or (isKnown = false and not nosqlKnownSource(node))
     ) 
-    and
-    ((pnode.isSourceCandidate() and Metrics::getSrcType(node) = type and isCandidate = true )
-    or ((not pnode.isSourceCandidate())  and type = "unknown" and isCandidate = false))
-    and
-    crep = pnode.getconcatrep()
+    // and
+    // ((pnode.isSourceCandidate() and Metrics::getSrcType(node) = type and isCandidate = true )
+    // or ((not pnode.isSourceCandidate())  and type = "unknown" and isCandidate = false))
+    // and
+    // crep = pnode.getconcatrep()
 }
 
 query predicate getTSMWorseScoresSql(DataFlow::Node node, float score){
