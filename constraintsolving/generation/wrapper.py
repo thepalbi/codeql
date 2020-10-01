@@ -20,11 +20,30 @@ class CodeQLWrapper:
             raise Exception(
                 "'codeql' binary not found. Try setting the $CODEQL environment variable.")
 
+
+    """Runs codeql running a query against the given database, and then interprets the results."""
+    def database_query(self,
+                         project: str,
+                         query_file: str):
+        query_file_name = os.path.basename(query_file)
+        output_file = os.path.join(project, "results", "codeql-javascript", "TSM", os.path.splitext(query_file_name)[0])+'.bqrs'
+        command_and_arguments = [
+            self._code_ql_binary_path,
+            "query", "run",
+            query_file,
+            f"--database={project}",
+            f"--output={output_file}"
+        ]
+        self._logger.info(
+            "Running 'query run' for project=[%s] and query_file=[%s]", project, query_file)
+        self._run_process(command_and_arguments)
+
+
     """Runs codeql running a query against the given database, and then interprets the results."""
     def database_analyze(self,
                          project: str,
                          query_file: str,
-                         output_file: str,
+                         output_file: str, 
                          output_format="csv"):
         command_and_arguments = [
             self._code_ql_binary_path,

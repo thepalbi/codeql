@@ -120,12 +120,12 @@ class DataGenerator:
 
         #capitalized_query_type = query_type.capitalize()
         #
-        metrics_file = "metrics_{0}_{1}".format(kind, query_type)
+        #metrics_file = "metrics_{0}_{1}".format(kind, query_type)
+        metrics_file = "metrics_{0}".format(query_type)
         self.logger.info("Generating events scores.")
-        self.codeql.database_analyze(
+        self.codeql.database_query(
             self.project_dir,
-            self._get_tsm_query_file(metrics_file + ".ql"),
-            f"{logs_folder}/js-results.csv")
+            self._get_tsm_query_file(metrics_file + ".ql"))
 
         # Get results BQRS file
         bqrs_metrics_file = self._get_tsm_bqrs_file(metrics_file + '.bqrs')

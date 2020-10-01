@@ -1,9 +1,10 @@
-
+/**
+ * @kind graph
+ */
 import javascript
 import PropagationGraphs
-import Metrics
-import metrics_src
-import tsm_xss
+import metrics
+//import tsm_xss
 import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 
 predicate xssKnownSource(DataFlow::Node node){
@@ -33,18 +34,18 @@ predicate xssKnownSource(DataFlow::Node node){
 query predicate getTSMWorseScoresSqlsrc(DataFlow::Node node, float score){
     node instanceof DomBasedXss::Source and
     not node instanceof DomBasedXssWorse::Source  and
-    TSMXss::isSource(node, score)
+    TSM::isSource(node, score)
 }
 
 query predicate getTSMWorseFilteredSqlsrc(DataFlow::Node node, float score, boolean isKnown, string rep) {// , boolean isKnown, boolean filtered, string rep){
     Metrics::isSourceCandidate(node) and
     Metrics::isKnownDomBasedXssSource(node) and
-    TSMXss::isSource(node, score) and     
+    TSM::isSource(node, score) and     
     rep = PropagationGraph::getconcatrep(node) 
     and (xssKnownSource(node) and isKnown = true or
     not xssKnownSource(node) and isKnown = false) 
-    // and filtered = true
-    // // and (Metrics::isEffectiveSource(node) and filtered = true or
-    // // not  Metrics::isEffectiveSource(node) and filtered = false) and
+//     // and filtered = true
+//     // // and (Metrics::isEffectiveSource(node) and filtered = true or
+//     // // not  Metrics::isEffectiveSource(node) and filtered = false) and
     and score > 0
 }
