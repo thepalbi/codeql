@@ -1,8 +1,7 @@
 import javascript
 import PropagationGraphs
-import Metrics
-import metrics_san
-import tsm_xss
+import metrics
+import tsm
 import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 
 predicate xssKnownSanitizer(DataFlow::Node node){
@@ -19,16 +18,16 @@ predicate xssKnownSanitizer(DataFlow::Node node){
 // }
 
 
-query predicate getTSMWorseScoresSqlsan(DataFlow::Node node, float score){
+query predicate getTSMWorseScoresXsssan(DataFlow::Node node, float score){
     node instanceof DomBasedXss::Sanitizer and
     not node instanceof DomBasedXssWorse::Sanitizer  and
-    TSMXss::isSanitizer(node, score)
+    TSM::isSanitizer(node, score)
 }
 
-query predicate getTSMWorseFilteredSqlsan(DataFlow::Node node, float score, boolean isKnown, string rep) {// , boolean isKnown, boolean filtered, string rep){
+query predicate getTSMWorseFilteredXsssan(DataFlow::Node node, float score, boolean isKnown, string rep) {// , boolean isKnown, boolean filtered, string rep){
     Metrics::isSanitizerCandidate(node) and
     Metrics::isKnownDomBasedXssSanitizer(node) and
-    TSMXss::isSanitizer(node, score) and     
+    TSM::isSanitizer(node, score) and     
     rep = PropagationGraph::getconcatrep(node) 
     and (xssKnownSanitizer(node) and isKnown = true or
     not xssKnownSanitizer(node) and isKnown = false) 

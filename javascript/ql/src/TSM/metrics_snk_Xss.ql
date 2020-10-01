@@ -3,8 +3,8 @@
  */
 import javascript
 import PropagationGraphs
-import metrics_snk
-import tsm_xss
+import metrics
+import tsm
 import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 
 predicate xssKnownSink(DataFlow::Node node){
@@ -24,12 +24,12 @@ predicate xssKnownSink(DataFlow::Node node){
 query predicate getTSMWorseScoresXsssnk(DataFlow::Node node, float score){
     node instanceof DomBasedXss::Sink and
     not node instanceof DomBasedXssWorse::Sink  and
-    TSMXss::isSink(node, score)
+    TSM::isSink(node, score)
 }
 
 query predicate getTSMWorseFilteredXsssnk(DataFlow::Node node, float score, boolean isKnown, boolean filtered, string rep){
     Metrics::isSinkCandidate(node) and
-    TSMXss::isSink(node, score)  and
+    TSM::isSink(node, score)  and
     (Metrics::isEffectiveSink(node) and filtered = true or
     not  Metrics::isEffectiveSink(node) and filtered = false) and
     (xssKnownSink(node) and isKnown = true or

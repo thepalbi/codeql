@@ -118,10 +118,8 @@ class DataGenerator:
         # Run metrics-snk query
         #kind = "snk"
 
-        #capitalized_query_type = query_type.capitalize()
-        #
-        #metrics_file = "metrics_{0}_{1}".format(kind, query_type)
-        metrics_file = "metrics_{0}".format(query_type)
+        metrics_file = "metrics_{0}_{1}".format(kind, query_type)
+        #metrics_file = "metrics_{0}".format(query_type)
         self.logger.info("Generating events scores.")
         self.codeql.database_query(
             self.project_dir,

@@ -1,9 +1,8 @@
 
 import javascript
 import PropagationGraphs
-import Metrics
-import metrics_src
-import tsm_nosql
+import metrics
+import tsm
 import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 
 predicate nosqlKnownSource(DataFlow::Node node){
@@ -20,16 +19,16 @@ predicate nosqlKnownSource(DataFlow::Node node){
 //     ) 
 // }
 
-query predicate getTSMWorseScoresSqlsrc(DataFlow::Node node, float score){
+query predicate getTSMWorseScoresNoSqlsrc(DataFlow::Node node, float score){
     node instanceof NosqlInjection::Source and
     not node instanceof NosqlInjectionWorse::Source  and
-    TSMNosql::isSource(node, score)
+    TSM::isSource(node, score)
 }
 
-query predicate getTSMWorseFilteredSqlsrc(DataFlow::Node node, float score, boolean isKnown, string rep) {
+query predicate getTSMWorseFilteredNoSqlsrc(DataFlow::Node node, float score, boolean isKnown, string rep) {
     Metrics::isSourceCandidate(node) and
     Metrics::isKnownNoSqlInjectionSource(node) and
-    TSMNosql::isSource(node, score) and     
+    TSM::isSource(node, score) and     
     rep = PropagationGraph::getconcatrep(node) 
     and (nosqlKnownSource(node) and isKnown = true or
     not nosqlKnownSource(node) and isKnown = false) 

@@ -1,8 +1,7 @@
 import javascript
 import PropagationGraphs
-import Metrics
-import metrics_san
-import tsm_nosql
+import metrics
+import tsm
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizationsWorse
 
 predicate nosqlKnownSanitizer(DataFlow::Node node){
@@ -19,16 +18,16 @@ predicate nosqlKnownSanitizer(DataFlow::Node node){
 //     ) 
 // }
 
-query predicate getTSMWorseScoresSqlsan(DataFlow::Node node, float score){
+query predicate getTSMWorseScoresNoSqlsan(DataFlow::Node node, float score){
     node instanceof NosqlInjection::Sanitizer and
     not node instanceof NosqlInjectionWorse::Sanitizer  and
-    TSMNosql::isSanitizer(node, score)
+    TSM::isSanitizer(node, score)
 }
 
-query predicate getTSMWorseFilteredSqlsan(DataFlow::Node node, float score, boolean isKnown, string rep) {// , boolean isKnown, boolean filtered, string rep){
+query predicate getTSMWorseFilteredNoSqlsan(DataFlow::Node node, float score, boolean isKnown, string rep) {// , boolean isKnown, boolean filtered, string rep){
     Metrics::isSanitizerCandidate(node) and
     Metrics::isKnownNoSqlInjectionSanitizer(node) and
-    TSMNosql::isSanitizer(node, score) and     
+    TSM::isSanitizer(node, score) and     
     rep = PropagationGraph::getconcatrep(node) 
     and (nosqlKnownSanitizer(node) and isKnown = true or
     not nosqlKnownSanitizer(node) and isKnown = false) 

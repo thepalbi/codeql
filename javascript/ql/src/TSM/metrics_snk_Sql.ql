@@ -3,8 +3,8 @@
  */
 import javascript
 import PropagationGraphs
-import metrics_snk
-import tsm_sql
+import metrics
+import tsm
 import semmle.javascript.security.dataflow.SqlInjectionCustomizationsWorse
 
 predicate sqlKnownSink(DataFlow::Node node){
@@ -24,12 +24,12 @@ predicate sqlKnownSink(DataFlow::Node node){
 query predicate getTSMWorseScoresSqlsnk(DataFlow::Node node, float score){
     node instanceof SqlInjection::Sink and
     not node instanceof SqlInjectionWorse::Sink  and
-    TSMSql::isSink(node, score)
+    TSM::isSink(node, score)
 }
 
 query  predicate getTSMWorseFilteredSqlsnk(DataFlow::Node node, float score, boolean isKnown, boolean filtered, string rep){
     Metrics::isSinkCandidate(node) and
-    TSMSql::isSink(node, score)  and
+    TSM::isSink(node, score)  and
     (Metrics::isEffectiveSink(node) and filtered = true or
     not  Metrics::isEffectiveSink(node) and filtered = false) and
     (sqlKnownSink(node) and isKnown = true or

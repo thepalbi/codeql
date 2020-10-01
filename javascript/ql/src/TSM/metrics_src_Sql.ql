@@ -3,8 +3,8 @@
  */
 import javascript
 import PropagationGraphs
-import metrics_src
-import tsm_sql
+import metrics
+import tsm
 import semmle.javascript.security.dataflow.SqlInjectionCustomizationsWorse
 
 predicate sqlKnownSource(DataFlow::Node node){
@@ -24,14 +24,14 @@ predicate sqlKnownSource(DataFlow::Node node){
 query predicate getTSMWorseScoresSqlsrc(DataFlow::Node node, float score){
     node instanceof SqlInjection::Source and
     not node instanceof SqlInjectionWorse::Source  and
-    TSMSql::isSource(node, score)
+    TSM::isSource(node, score)
     //and score > 0
 }
 
 query predicate getTSMWorseFilteredSqlsrc(DataFlow::Node node, float score, boolean isKnown, string rep) {// , boolean isKnown, boolean filtered, string rep){
     Metrics::isSourceCandidate(node) and
     Metrics::isKnownSqlInjectionSource(node) and
-    TSMSql::isSource(node, score) and     
+    TSM::isSource(node, score) and     
     rep = PropagationGraph::getconcatrep(node) 
     and (sqlKnownSource(node) and isKnown = true or
     not sqlKnownSource(node) and isKnown = false) 

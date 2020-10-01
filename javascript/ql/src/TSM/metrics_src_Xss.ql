@@ -4,7 +4,7 @@
 import javascript
 import PropagationGraphs
 import metrics
-//import tsm_xss
+import tsm
 import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 
 predicate xssKnownSource(DataFlow::Node node){
@@ -31,13 +31,13 @@ predicate xssKnownSource(DataFlow::Node node){
 //     // crep = pnode.getconcatrep()
 // }
 
-query predicate getTSMWorseScoresSqlsrc(DataFlow::Node node, float score){
+query predicate getTSMWorseScoresXsssrc(DataFlow::Node node, float score){
     node instanceof DomBasedXss::Source and
     not node instanceof DomBasedXssWorse::Source  and
     TSM::isSource(node, score)
 }
 
-query predicate getTSMWorseFilteredSqlsrc(DataFlow::Node node, float score, boolean isKnown, string rep) {// , boolean isKnown, boolean filtered, string rep){
+query predicate getTSMWorseFilteredXsssrc(DataFlow::Node node, float score, boolean isKnown, string rep) {// , boolean isKnown, boolean filtered, string rep){
     Metrics::isSourceCandidate(node) and
     Metrics::isKnownDomBasedXssSource(node) and
     TSM::isSource(node, score) and     
