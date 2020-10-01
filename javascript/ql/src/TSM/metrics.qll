@@ -42,8 +42,11 @@ import semmle.javascript.security.dataflow.ZipSlipCustomizations
 import semmle.javascript.dataflow.Portals
 import CoreKnowledge
 import EndpointFilterUtils
+import tsm
+import PropagationGraphs
 
 module Metrics {  
+
 
   predicate allSinks(DataFlow::Node nd) {
     (
@@ -99,6 +102,22 @@ module Metrics {
       )
       or
       nd = any(DataFlow::PropWrite pw).getRhs()
+  }
+
+  // TO-DO: Think about a real source property
+  // I just copied and slightly modified the predicate IsSinkCandidate
+  predicate isSourceCandidate(DataFlow::Node nd){
+    exists(DataFlow::InvokeNode invk |
+        nd = invk.getAnArgument()
+        or
+        nd = invk.(DataFlow::MethodCallNode).getReceiver()
+      )
+      or
+      nd = any(DataFlow::PropRead pw).getALocalSource()
+  }
+  // TO-DO check and make consistent for source and sink
+  predicate isSanitizerCandidate(DataFlow::Node nd){
+    TSM::isSanitizerCandidate(nd)
   }
 
   query predicate allSources(DataFlow::Node nd) {
@@ -214,6 +233,19 @@ predicate isKnownSanitizer(DataFlow::Node node){
     allSanitizers(node)
 }
 
+
+predicate isKnownSqlInjectionSink(DataFlow::Node node){
+  node instanceof SqlInjection::Sink
+}
+predicate isKnownSqlInjectionSource(DataFlow::Node node){
+  node instanceof SqlInjection::Source
+}
+
+predicate isKnownSqlInjectionSanitizer(DataFlow::Node node){
+node instanceof SqlInjection::Sanitizer
+}
+
+
 predicate isKnownNoSqlInjectionSink(DataFlow::Node node){
     node instanceof NosqlInjection::Sink
 }
@@ -228,6 +260,10 @@ predicate isKnownNoSqlInjectionSanitizer(DataFlow::Node node){
 
 predicate isKnownDomBasedXssSink(DataFlow::Node node){
     node instanceof DomBasedXss::Sink
+}
+
+predicate isKnownDomBasedXssSource(DataFlow::Node node){
+  node instanceof DomBasedXss::Source
 }
 
 predicate isKnownDomBasedXssSanitizer(DataFlow::Node node){
@@ -257,6 +293,57 @@ predicate isEffectiveSink(DataFlow::Node node){
             call instanceof DatabaseAccess 
         ))
 }
+
+predicate predictionsSanitizer(DataFlow::Node node, PropagationGraph::Node pnode, 
+  float score, boolean isKnown, boolean isCandidate, string type, string crep){
+  node = pnode.asDataFlowNode() 
+  and 
+  exists(pnode.rep())
+  and
+  score = sum(TSM::doGetReprScore(pnode.rep(), "san"))/count(pnode.rep())
+  and 
+  ((isKnown = true and isKnownSanitizer(node)) or (isKnown = false and not isKnownSanitizer(node))) 
+  and
+  ((pnode.isSanitizerCandidate() and isCandidate = true )
+  or ((not pnode.isSanitizerCandidate()) and isCandidate = false))
+  and
+  type = "call"
+  and
+  crep = pnode.getconcatrep()   
+}
+
+predicate predictionsSource(DataFlow::Node node, PropagationGraph::Node pnode, 
+  float score, boolean isKnown, boolean isCandidate, string type, string crep){
+  node = pnode.asDataFlowNode() 
+  and 
+  exists(pnode.rep())
+  and
+  score = sum(TSM::doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
+  and 
+  ((isKnown = true and isKnownSource(node)) or (isKnown = false and not isKnownSource(node))) 
+  and
+  ((pnode.isSourceCandidate() and getSrcType(node) = type and isCandidate = true )
+  or ((not pnode.isSourceCandidate())  and type = "unknown" and isCandidate = false))
+  and
+  crep = pnode.getconcatrep()
+}
+
+predicate predictionsSink(DataFlow::Node node, PropagationGraph::Node pnode, 
+  float score, boolean isKnown, boolean isCandidate, string type, string crep){
+  node = pnode.asDataFlowNode() 
+  and 
+  exists(pnode.rep())
+  and
+  score = sum(TSM::doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
+  and 
+  ((isKnown = true and isKnownSink(node)) or (isKnown = false and not isKnownSink(node))) 
+  and
+  ((pnode.isSinkCandidate() and getSrcType(node) = type and isCandidate = true )
+  or ((not pnode.isSourceCandidate())  and type = "unknown" and isCandidate = false))
+  and
+  crep = pnode.getconcatrep()
+}
+
 
 class RemoteCommandExecutor2 extends SystemCommandExecution, DataFlow::InvokeNode {
       int cmdArg;

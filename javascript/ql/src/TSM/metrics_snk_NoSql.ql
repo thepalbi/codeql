@@ -3,8 +3,8 @@
  */
 import javascript
 import PropagationGraphs
-import metrics_snk
-import tsm_nosql_worse
+import metrics
+import tsm
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizationsWorse
 
 predicate nosqlKnownSink(DataFlow::Node node){
@@ -12,15 +12,24 @@ predicate nosqlKnownSink(DataFlow::Node node){
     (not node instanceof NosqlInjection::Sink and Metrics::isKnownSink(node))
 }
 
-query predicate getTSMWorseScoresNoSql(DataFlow::Node node, float score){
+// query predicate predictionsNoSqlsnk(DataFlow::Node node, PropagationGraph::Node pnode, 
+//     float score, boolean isKnown, boolean isCandidate, string type, string crep){
+//     Metrics::predictionsSink(node, pnode, score, isKnown, isCandidate, type, crep)
+//     and 
+//     (   (isKnown = true and nosqlKnownSink(node)) 
+//         or (isKnown = false and not nosqlKnownSink(node))
+//     )     
+// }
+
+query predicate getTSMWorseScoresNoSqlsnk(DataFlow::Node node, float score){
     node instanceof NosqlInjection::Sink and
     not node instanceof NosqlInjectionWorse::Sink  and
-    TSMNosqlWorse::isSink(node, score)
+    TSM::isSink(node, score)
 }
 
-query  predicate getTSMWorseFilteredNoSql(DataFlow::Node node, float score, boolean isKnown, boolean filtered, string rep){
+query  predicate getTSMWorseFilteredNoSqlsnk(DataFlow::Node node, float score, boolean isKnown, boolean filtered, string rep){
     Metrics::isSinkCandidate(node) and
-    TSMNosqlWorse::isSink(node, score)  and
+    TSM::isSink(node, score)  and
     (Metrics::isEffectiveSink(node) and filtered = true or
     not  Metrics::isEffectiveSink(node) and filtered = false) and
     (nosqlKnownSink(node) and isKnown = true or
@@ -30,9 +39,9 @@ query  predicate getTSMWorseFilteredNoSql(DataFlow::Node node, float score, bool
     and rep =  PropagationGraph::getconcatrep(node)
 }
 
-query predicate getTSMWorseFilteredNoSql2(DataFlow::Node node, float score, boolean isKnown, boolean isNoSqlWorse, string rep){
+query predicate getTSMWorseFilteredNoSql2snk(DataFlow::Node node, float score, boolean isKnown, boolean isNoSqlWorse, string rep){
     Metrics::isSinkCandidate(node) and
-    TSMNosqlWorse::isSink(node, score)  and
+    TSM::isSink(node, score)  and
     ( node instanceof NosqlInjection::Sink and not node instanceof NosqlInjectionWorse::Sink and isNoSqlWorse = true or
     not node instanceof NosqlInjection::Sink and isNoSqlWorse = false ) and
     (nosqlKnownSink(node) and isKnown = true or

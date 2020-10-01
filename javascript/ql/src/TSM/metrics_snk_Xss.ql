@@ -3,8 +3,8 @@
  */
 import javascript
 import PropagationGraphs
-import metrics_snk
-import tsm_xss_worse
+import metrics
+import tsm
 import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 
 predicate xssKnownSink(DataFlow::Node node){
@@ -12,15 +12,24 @@ predicate xssKnownSink(DataFlow::Node node){
     (not node instanceof DomBasedXss::Sink and Metrics::isKnownSink(node))
 }
 
-query predicate getTSMWorseScoresXss(DataFlow::Node node, float score){
+// query predicate predictionsXsssnk(DataFlow::Node node, PropagationGraph::Node pnode, 
+//     float score, boolean isKnown, boolean isCandidate, string type, string crep){
+//     Metrics::predictionsSink(node, pnode, score, isKnown, isCandidate, type, crep)
+//     and 
+//     (   (isKnown = true and xssKnownSink(node)) 
+//         or (isKnown = false and not xssKnownSink(node))
+//     )     
+// }
+
+query predicate getTSMWorseScoresXsssnk(DataFlow::Node node, float score){
     node instanceof DomBasedXss::Sink and
     not node instanceof DomBasedXssWorse::Sink  and
-    TSMXssWorse::isSink(node, score)
+    TSM::isSink(node, score)
 }
 
-query predicate getTSMWorseFilteredXss(DataFlow::Node node, float score, boolean isKnown, boolean filtered, string rep){
+query predicate getTSMWorseFilteredXsssnk(DataFlow::Node node, float score, boolean isKnown, boolean filtered, string rep){
     Metrics::isSinkCandidate(node) and
-    TSMXssWorse::isSink(node, score)  and
+    TSM::isSink(node, score)  and
     (Metrics::isEffectiveSink(node) and filtered = true or
     not  Metrics::isEffectiveSink(node) and filtered = false) and
     (xssKnownSink(node) and isKnown = true or

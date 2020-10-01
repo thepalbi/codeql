@@ -1,10 +1,8 @@
 
 import javascript
 import PropagationGraphs
-import Metrics
-import metrics_src
-import tsm_nosql_worse
-import TSMNosqlWorse
+import metrics
+import tsm
 import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 
 predicate nosqlKnownSource(DataFlow::Node node){
@@ -12,20 +10,30 @@ predicate nosqlKnownSource(DataFlow::Node node){
     (not node instanceof NosqlInjection::Source and Metrics::isKnownSource(node))
 }
 
-query predicate predictionsSource(DataFlow::Node node, PropagationGraph::Node pnode, 
-    float score, boolean isKnown, boolean isCandidate, string type, string crep){
-    node = pnode.asDataFlowNode() 
-    and 
-    exists(pnode.rep())
-    and
-    score = sum(doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
-    and 
-    (   (isKnown = true and nosqlKnownSource(node)) 
-        or (isKnown = false and not nosqlKnownSource(node))
-    ) 
-    and
-    ((pnode.isSourceCandidate() and Metrics::getSrcType(node) = type and isCandidate = true )
-    or ((not pnode.isSourceCandidate())  and type = "unknown" and isCandidate = false))
-    and
-    crep = pnode.getconcatrep()
+// query predicate predictionsNoSqlsrc(DataFlow::Node node, PropagationGraph::Node pnode, 
+//     float score, boolean isKnown, boolean isCandidate, string type, string crep){
+//     Metrics::predictionsSource(node, pnode, score, isKnown, isCandidate, type, crep)
+//     and 
+//     (   (isKnown = true and nosqlKnownSource(node)) 
+//         or (isKnown = false and not nosqlKnownSource(node))
+//     ) 
+// }
+
+query predicate getTSMWorseScoresNoSqlsrc(DataFlow::Node node, float score){
+    node instanceof NosqlInjection::Source and
+    not node instanceof NosqlInjectionWorse::Source  and
+    TSM::isSource(node, score)
+}
+
+query predicate getTSMWorseFilteredNoSqlsrc(DataFlow::Node node, float score, boolean isKnown, string rep) {
+    Metrics::isSourceCandidate(node) and
+    Metrics::isKnownNoSqlInjectionSource(node) and
+    TSM::isSource(node, score) and     
+    rep = PropagationGraph::getconcatrep(node) 
+    and (nosqlKnownSource(node) and isKnown = true or
+    not nosqlKnownSource(node) and isKnown = false) 
+    // and filtered = true
+    // // and (Metrics::isEffectiveSource(node) and filtered = true or
+    // // not  Metrics::isEffectiveSource(node) and filtered = false) and
+    and score > 0
 }

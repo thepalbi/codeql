@@ -1,7 +1,10 @@
 import javascript
-import PropagationGraphs
 import metrics
+import tsm
+import PropagationGraphs
+
 //import scores_nosqlinjection
+
 
 query predicate stats(int loc, int functions, int files, int sourceCandidates, int sinkCandidates, int sanitizerCandidates){    
     loc = sum(File f | | f.getNumberOfLinesOfCode())
@@ -17,58 +20,6 @@ query predicate stats(int loc, int functions, int files, int sourceCandidates, i
     sanitizerCandidates = count(PropagationGraph::Node node | node.isSanitizerCandidate())
 
 }
-
-predicate predictionsSink(DataFlow::Node node, PropagationGraph::Node pnode, 
-    float score, boolean isKnown, boolean isCandidate, string type, string crep){
-    node = pnode.asDataFlowNode() 
-    and 
-    exists(pnode.rep())
-    and
-    score = sum(ReprScores::getReprScore(pnode.rep(), "snk"))/count(pnode.rep())
-    and 
-    ((isKnown = true and isKnownSink(pnode)) or (isKnown = false and not isKnownSink(pnode))) 
-    and
-    ((pnode.isSinkCandidate() and getSinkType(node) = type and isCandidate = true )
-    or ((not pnode.isSinkCandidate())  and type = "unknown" and isCandidate = false))
-    and
-    crep = pnode.getconcatrep()   
-}
-
-
-predicate predictionsSanitizer(DataFlow::Node node, PropagationGraph::Node pnode, 
-    float score, boolean isKnown, boolean isCandidate, string type, string crep){
-    node = pnode.asDataFlowNode() 
-    and 
-    exists(pnode.rep())
-    and
-    score = sum(ReprScores::getReprScore(pnode.rep(), "san"))/count(pnode.rep())
-    and 
-    ((isKnown = true and isKnownSanitizer(pnode)) or (isKnown = false and not isKnownSanitizer(pnode))) 
-    and
-    ((pnode.isSanitizerCandidate() and isCandidate = true )
-    or ((not pnode.isSanitizerCandidate()) and isCandidate = false))
-    and
-    type = "call"
-    and
-    crep = pnode.getconcatrep()   
-}
-
-predicate predictionsSource(DataFlow::Node node, PropagationGraph::Node pnode, 
-    float score, boolean isKnown, boolean isCandidate, string type, string crep){
-    node = pnode.asDataFlowNode() 
-    and 
-    exists(pnode.rep())
-    and
-    score = sum(ReprScores::getReprScore(pnode.rep(), "src"))/count(pnode.rep())
-    and 
-    ((isKnown = true and isKnownSource(pnode)) or (isKnown = false and not isKnownSource(pnode))) 
-    and
-    ((pnode.isSourceCandidate() and getSrcType(node) = type and isCandidate = true )
-    or ((not pnode.isSourceCandidate())  and type = "unknown" and isCandidate = false))
-    and
-    crep = pnode.getconcatrep()
-}
-
 
 string getSinkType(DataFlow::Node node){    
     (exists(DataFlow::InvokeNode invk |

@@ -36,7 +36,7 @@ jrgcubano/mongoeduc
 kimeshan/mf-proto
 lgspacil/DojoAssignments
 lianghz/test
-lovelife10000/L-blog
+## killed lovelife10000/L-blog
 microsoft/vscode
 mrlynn/meanstore
 neroneroffy/private-project

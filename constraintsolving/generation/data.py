@@ -23,15 +23,18 @@ SUPPORTED_QUERY_TYPES = ["NoSql", "Sql", "Xss"]
 
 
 class GenerateEntitiesStep(OrchestrationStep):
-    def run(self, ctx: Context) -> Context:
-        # TODO: How to format this appropriately?
+    def populate(self, ctx: Context) -> Context:
         (ctx[SOURCE_ENTITIES],
          ctx[SINK_ENTITIES],
          ctx[SANITIZER_ENTITIES],
          ctx[SRC_SAN_TUPLES_ENTITIES],
          ctx[SAN_SNK_TUPLES_ENTITIES],
-         ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.generate_entities(self.orchestrator.query_type)
-        
+         ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
+        return ctx
+
+    def run(self, ctx: Context) -> Context:
+        self.orchestrator.data_generator.generate_entities(
+            self.orchestrator.query_type, ctx)
         return ctx
 
     def name(self) -> str:
@@ -39,19 +42,14 @@ class GenerateEntitiesStep(OrchestrationStep):
 
 
 class GenerateScoresStep(OrchestrationStep):
-    def run(self, ctx: Context) -> Context:
-        if SOURCE_ENTITIES not in ctx:
-            (ctx[SOURCE_ENTITIES],
-            ctx[SINK_ENTITIES],
-            ctx[SANITIZER_ENTITIES],
-            ctx[SRC_SAN_TUPLES_ENTITIES],
-            ctx[SAN_SNK_TUPLES_ENTITIES],
-            ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
+    def populate(self, ctx: Context) -> Context:
+        return ctx
 
+    def run(self, ctx: Context) -> Context:
         createReprPredicate(ctx, self.orchestrator.scores_file)
-                
         self.orchestrator.data_generator.generate_scores(
-            self.orchestrator.query_type,  self.orchestrator.combinedScore)
+            self.orchestrator.query_type,  self.orchestrator.combinedScore, 
+            self.orchestrator.kind)
         return ctx
 
     def name(self) -> str:
@@ -59,15 +57,10 @@ class GenerateScoresStep(OrchestrationStep):
 
 # This step (not included) just create the tsm_repr_pred.qll file
 class GenerateTSMReprStep(OrchestrationStep):
-    def run(self, ctx: Context) -> Context:
-        if SOURCE_ENTITIES not in ctx:
-            (ctx[SOURCE_ENTITIES],
-            ctx[SINK_ENTITIES],
-            ctx[SANITIZER_ENTITIES],
-            ctx[SRC_SAN_TUPLES_ENTITIES],
-            ctx[SAN_SNK_TUPLES_ENTITIES],
-            ctx[REPR_MAP_ENTITIES]) = self.orchestrator.data_generator.get_entity_files(self.orchestrator.query_type)
+    def populate(self, ctx: Context) -> Context:
+        return ctx
 
+    def run(self, ctx: Context) -> Context:
         createReprPredicate(ctx)
         return ctx
 
@@ -81,12 +74,10 @@ class DataGenerator:
     a couple of queries (for sources, sinks, sanitizers, and the PG).
     """
 
-    steps = ["entities", "scores"]
-
     def __init__(self, project_dir: str, project_name: str,
                  working_dir: str = global_config.working_directory,
                  results_dir: str = global_config.results_directory,
-                ):
+                 ):
         """Creates a new DataGenerator for the given project
 
         Args:
@@ -123,37 +114,43 @@ class DataGenerator:
     def _get_tsm_bqrs_file(self, filename: str) -> str:
         return os.path.join(constaintssolving_dir, self.project_dir, "results", "codeql-javascript", "TSM", filename)
 
-    def generate_scores(self, query_type: str, combinedScore: bool) -> Tuple[str, ...]:
+    def generate_scores(self, query_type: str, combinedScore: bool, kind = "snk") -> Tuple[str, ...]:
         # Run metrics-snk query
-        kind = "snk"
-        #capitalized_query_type = query_type.capitalize()
+        #kind = "snk"
+
         metrics_file = "metrics_{0}_{1}".format(kind, query_type)
+        #metrics_file = "metrics_{0}".format(query_type)
         self.logger.info("Generating events scores.")
-        self.codeql.database_analyze(
+        self.codeql.database_query(
             self.project_dir,
-            self._get_tsm_query_file(metrics_file + ".ql"),
-            f"{logs_folder}/js-results.csv")
+            self._get_tsm_query_file(metrics_file + ".ql"))
 
         # Get results BQRS file
         bqrs_metrics_file = self._get_tsm_bqrs_file(metrics_file + '.bqrs')
-        subfix = ""        
-        if(combinedScore):
+        subfix = ""
+        if combinedScore:
             subfix = "-combined"
 
         tsm_worse_scores_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-tsmworse-ind-avg{subfix}.prop.csv")
+            self.generated_data_dir, f"{self.project_name}-tsmworse-ind-avg{subfix}-{kind}.prop.csv")
         tsm_worse_filtered_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-tsmworse-filtered-avg{subfix}.prop.csv")
+            self.generated_data_dir, f"{self.project_name}-tsmworse-filtered-avg{subfix}-{kind}.prop.csv")
+
+        prediction_scores_file = os.path.join(
+            self.generated_data_dir, f"{self.project_name}-prediction-{subfix}-{kind}.prop.csv")
 
         # Extract result scores
         self.codeql.bqrs_decode(
-            bqrs_metrics_file, f"getTSMWorseScores{query_type}", tsm_worse_scores_file)
-        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseFiltered{query_type}",
+            bqrs_metrics_file, f"getTSMWorseScores{query_type}{kind}", tsm_worse_scores_file)
+        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseFiltered{query_type}{kind}",
                                 tsm_worse_filtered_file)
+
+        # self.codeql.bqrs_decode(bqrs_metrics_file, f"predictions{query_type}{kind}",
+        #                         prediction_scores_file)
 
         return tsm_worse_scores_file, tsm_worse_filtered_file
 
-    def generate_entities(self, query_type: str) -> Tuple[str, ...]:
+    def generate_entities(self, query_type: str, ctx: Context) -> Tuple[str, ...]:
         """Main data generation method, that orchestrates the process.
 
         Args:
@@ -162,21 +159,15 @@ class DataGenerator:
         if not query_type in SUPPORTED_QUERY_TYPES:
             raise Exception(
                 "{0} is not a supported query type. Currently supports {1}".format(query_type, SUPPORTED_QUERY_TYPES))
-        sources_output_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-sources-{query_type}.prop.csv")
-        sinks_output_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-sinks-{query_type}.prop.csv")
-        sanitizers_output_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-sanitizers-{query_type}.prop.csv")
         # sources
         self._generate_for_entity(
-            query_type, SOURCES, f"source{query_type}Classes", sources_output_file)
+            query_type, SOURCES, f"source{query_type}Classes", ctx[SOURCE_ENTITIES])
         # sinks
         self._generate_for_entity(
-            query_type, SINKS, f"sink{query_type}Classes", sinks_output_file)
+            query_type, SINKS, f"sink{query_type}Classes", ctx[SINK_ENTITIES])
         # sanitizers
         self._generate_for_entity(
-            query_type, SANITIZERS, f"sanitizer{query_type}Classes", sanitizers_output_file)
+            query_type, SANITIZERS, f"sanitizer{query_type}Classes", ctx[SANITIZER_ENTITIES])
 
         # running propagation graph queries
         try:
@@ -184,44 +175,29 @@ class DataGenerator:
                 self.project_dir,
                 self._get_tsm_query_file("PropagationGraph.ql"),
                 f"{logs_folder}/js-results.csv")
-        except Exception as error:
+        except Exception:
             self.logger.info("Error Analyzing PropagationGraph.ql")
 
         self.logger.info("Generating propagation graph data")
 
         # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-src-san.prop.csv
-        src_san_output_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-src-san-small.prop.csv")
         self.codeql.bqrs_decode(
             self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
             "pairSrcSan",
-            src_san_output_file)
+            ctx[SRC_SAN_TUPLES_ENTITIES])
 
         # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-san-snk.prop.csv
-        san_snk_output_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-san-snk-small.prop.csv")
         self.codeql.bqrs_decode(
             self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
             "pairSanSnk",
-            san_snk_output_file)
+            ctx[SAN_SNK_TUPLES_ENTITIES])
 
         # repr
         # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-eventToConcatRep-small.prop.csv
-        repr_mapping_output_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-eventToConcatRep-small.prop.csv")
-
         self.codeql.bqrs_decode(
             self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
             "eventToConcatRep",
-            repr_mapping_output_file)
-        return (
-            sources_output_file,
-            sinks_output_file,
-            sanitizers_output_file,
-            src_san_output_file,
-            san_snk_output_file,
-            repr_mapping_output_file
-        )
+            ctx[REPR_MAP_ENTITIES])
 
     def get_entity_files(self, query_type: str) -> Tuple[str, ...]:
         if not query_type in SUPPORTED_QUERY_TYPES:
@@ -233,7 +209,7 @@ class DataGenerator:
             self.generated_data_dir, f"{self.project_name}-sinks-{query_type}.prop.csv")
         sanitizers_output_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-sanitizers-{query_type}.prop.csv")
-        
+
         src_san_output_file = os.path.join(
             self.generated_data_dir, f"{self.project_name}-src-san-small.prop.csv")
         san_snk_output_file = os.path.join(
@@ -250,8 +226,8 @@ class DataGenerator:
             repr_mapping_output_file
         )
 
-
     def _generate_for_entity(self, query_type: str, entity_type: str, result_set: str, output_file: str):
+        """Runs the query for a given entity, and extracts the results into a csv file."""
         self.logger.info(
             "Generating %s data in file=[%s]", entity_type, output_file)
         self.codeql.database_analyze(

@@ -1,0 +1,14 @@
+{
+  "name": "seldon-paper",
+  "version": "1.0.0",
+  "description": "Seldon Paper examples transribed to NodeJS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
