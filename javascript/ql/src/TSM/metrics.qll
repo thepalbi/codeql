@@ -42,7 +42,7 @@ import semmle.javascript.security.dataflow.ZipSlipCustomizations
 import semmle.javascript.dataflow.Portals
 import CoreKnowledge
 import EndpointFilterUtils
-import tsm_worse
+import tsm
 import PropagationGraphs
 
 module Metrics {  
@@ -104,8 +104,8 @@ module Metrics {
       nd = any(DataFlow::PropWrite pw).getRhs()
   }
 
-  // TODO: Think about a real source property
-  // I just copies and slightly modifty the predicate IsSinkCandidate
+  // TO-DO: Think about a real source property
+  // I just copied and slightly modified the predicate IsSinkCandidate
   predicate isSourceCandidate(DataFlow::Node nd){
     exists(DataFlow::InvokeNode invk |
         nd = invk.getAnArgument()
@@ -114,6 +114,10 @@ module Metrics {
       )
       or
       nd = any(DataFlow::PropRead pw).getALocalSource()
+  }
+  // TO-DO check and make consistent for source and sink
+  predicate isSanitizerCandidate(DataFlow::Node nd){
+    TSM::isSanitizerCandidate(nd)
   }
 
   query predicate allSources(DataFlow::Node nd) {
@@ -296,7 +300,7 @@ predicate predictionsSanitizer(DataFlow::Node node, PropagationGraph::Node pnode
   and 
   exists(pnode.rep())
   and
-  score = sum(TSMWorse::doGetReprScore(pnode.rep(), "san"))/count(pnode.rep())
+  score = sum(TSM::doGetReprScore(pnode.rep(), "san"))/count(pnode.rep())
   and 
   ((isKnown = true and isKnownSanitizer(node)) or (isKnown = false and not isKnownSanitizer(node))) 
   and
@@ -314,7 +318,7 @@ predicate predictionsSource(DataFlow::Node node, PropagationGraph::Node pnode,
   and 
   exists(pnode.rep())
   and
-  score = sum(TSMWorse::doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
+  score = sum(TSM::doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
   and 
   ((isKnown = true and isKnownSource(node)) or (isKnown = false and not isKnownSource(node))) 
   and
@@ -330,7 +334,7 @@ predicate predictionsSink(DataFlow::Node node, PropagationGraph::Node pnode,
   and 
   exists(pnode.rep())
   and
-  score = sum(TSMWorse::doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
+  score = sum(TSM::doGetReprScore(pnode.rep(), "src"))/count(pnode.rep())
   and 
   ((isKnown = true and isKnownSink(node)) or (isKnown = false and not isKnownSink(node))) 
   and

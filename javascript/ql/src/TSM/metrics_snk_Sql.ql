@@ -4,7 +4,7 @@
 import javascript
 import PropagationGraphs
 import metrics_snk
-import tsm_sql_worse
+import tsm_sql
 import semmle.javascript.security.dataflow.SqlInjectionCustomizationsWorse
 
 predicate sqlKnownSink(DataFlow::Node node){
@@ -12,23 +12,24 @@ predicate sqlKnownSink(DataFlow::Node node){
     (not node instanceof SqlInjection::Sink and Metrics::isKnownSink(node))
 }
 
-query predicate predictionsSqlsnk(DataFlow::Node node, PropagationGraph::Node pnode, 
-    float score, boolean isKnown, boolean isCandidate, string type, string crep){
-    Metrics::predictionsSink(node, pnode, score, isKnown, isCandidate, type, crep)
-    and 
-    (   (isKnown = true and sqlKnownSink(node)) 
-        or (isKnown = false and not sqlKnownSink(node))
-    )     
-}
-query predicate getTSMWorseScoresSql(DataFlow::Node node, float score){
+// query predicate predictionsSqlsnk(DataFlow::Node node, PropagationGraph::Node pnode, 
+//     float score, boolean isKnown, boolean isCandidate, string type, string crep){
+//     Metrics::predictionsSink(node, pnode, score, isKnown, isCandidate, type, crep)
+//     and 
+//     (   (isKnown = true and sqlKnownSink(node)) 
+//         or (isKnown = false and not sqlKnownSink(node))
+//     )     
+// }
+
+query predicate getTSMWorseScoresSqlsnk(DataFlow::Node node, float score){
     node instanceof SqlInjection::Sink and
     not node instanceof SqlInjectionWorse::Sink  and
-    TSMSqlWorse::isSink(node, score)
+    TSMSql::isSink(node, score)
 }
 
-query  predicate getTSMWorseFilteredSql(DataFlow::Node node, float score, boolean isKnown, boolean filtered, string rep){
+query  predicate getTSMWorseFilteredSqlsnk(DataFlow::Node node, float score, boolean isKnown, boolean filtered, string rep){
     Metrics::isSinkCandidate(node) and
-    TSMSqlWorse::isSink(node, score)  and
+    TSMSql::isSink(node, score)  and
     (Metrics::isEffectiveSink(node) and filtered = true or
     not  Metrics::isEffectiveSink(node) and filtered = false) and
     (sqlKnownSink(node) and isKnown = true or

@@ -40,11 +40,11 @@ netbeast/dashboard
 nharraud2/juice-shop
 palok86/NodeJS
 qantik/twenty
-raghavraman/20YearsofVideoGames
+## killed raghavraman/20YearsofVideoGames
 shlokmehrotra/todo
 shoaib30/traffic-violation-detection-fi
 sidorares/node-mysql2
-slayermass/intranet
+## killed slayermass/intranet
 starikan/SQLiteTilerSasPlanet
 stefmichielsen99/Eindopdracht-Programmeren-4
 supabase/pg-api

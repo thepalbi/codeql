@@ -1,6 +1,6 @@
 LondonMaeCompany/ldpproto
 PascalPrecht/slides
-adobe/chromium
+# killed adobe/chromium
 apache/netbeans-website-cleanup
 boost-ext/di
 claudefauconnet/souslesens
@@ -17,9 +17,9 @@ kaltura/mwEmbed
 mayankmandloi/Amit-Amitesh
 mitro-co/mitro
 montaga/montaga.github.io
-muaz-khan/WebRTC-Experiment
+# killed muaz-khan/WebRTC-Experiment
 pbernasconi/cordova-progressIndicator
-rapidpro/rapidpro
+# killed rapidpro/rapidpro
 saimon24/devdactic-ionic_login
 testem/testem
 th-koeln/wba1-2015

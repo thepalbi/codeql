@@ -1,27 +1,26 @@
-
 import javascript
 
 import NodeRepresentation
 
-module TSMSqlWorse{
-    import tsm_worse
+module TSMXss{
+    import tsm
     string rep(DataFlow::Node node){
-        result = TSMWorse::rep(node)
+        result = TSM::rep(node)
     }
 
     predicate isSink(DataFlow::Node node, float score){
-        TSMWorse::isSink(node, score)
+        TSM::isSink(node, score)
     }
 
     predicate isSource(DataFlow::Node node, float score){
-        TSMWorse::isSource(node, score)
+        TSM::isSource(node, score)
     }
 
     predicate isSanitizer(DataFlow::Node node, float score){
-        TSMWorse::isSanitizer(node, score)
+        TSM::isSanitizer(node, score)
     }
 
     float doGetReprScore(string repr, string t){
-        result = TSMWorse::doGetReprScore(repr, t)
+        result = TSM::doGetReprScore(repr, t)
    }    
 }

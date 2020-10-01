@@ -21,12 +21,12 @@ def getProjectNameFromFile(f: str, working_dir) -> str:
     #print(projectName)
     return projectName
 
-def generate_metris(projectList: List[str], working_directory:str, combined:bool):
+def generate_metris(projectList: List[str], working_directory:str, combined:bool, kind:str = ""):
     """
     Given a list of project names, produces the recall and precision metrics 
     To compute recall it uses as ground trought the different between and old (Vworse) and current query (V0)
     Lets call that difference 'new_nodes'. The recall is computed by checking how many of the new_nodes appear
-    in the nodes computed by the TSM query. 
+    in the nodes computed by the TSMWorseScores{query_type}. 
     A threshold is used to filter infered nodes with low score.
     Let's call this set TP. Recall is #TP/#new_nodes 
     To compute presicion TP is compared against the set of nodes predicted using TSM (getTSMWorseFilteredQuery)   
@@ -46,15 +46,15 @@ def generate_metris(projectList: List[str], working_directory:str, combined:bool
             logging.info('Using combined file')
             suffix = "-combined"
         
-        csvFiles = glob.glob("{1}/data/*/*tsm{0}-ind-avg{2}.prop.csv".format(version, working_directory, suffix), recursive=True)
+        csvFiles = glob.glob("{1}/data/*/*tsm{0}-ind-avg{2}{3}.prop.csv".format(version, working_directory, suffix, kind), recursive=True)
         #print("CVSs", csvFiles)
         projectsToAnalyzeRecall = list(filter(lambda projectName: getProjectNameFromFile(projectName, working_dir) in projectList, csvFiles))
         #print("Projects to analyze:", projectsToAnalyzeRecall)
         # Get the list of nodes (csv files) from the analyzed projects 
         # Each DB-tsmworse-filtered-avg.prop.csv comes for the query getTSMWorseFilteredQuery
         # getTSMWorseFilteredQuery...yields nodes (sinks in this case) from QueryVTSM that 
-        # are sink candidates, includind info about whether they are known sinks and/or effective sinks 
-        csvFiles = glob.glob("{1}/data/*/*tsm{0}-filtered-avg{2}.prop.csv".format(version, working_directory, suffix), recursive=True)
+        # are sink candidates, including info about whether they are known sinks and/or effective sinks 
+        csvFiles = glob.glob("{1}/data/*/*tsm{0}-filtered-avg{2}{3}.prop.csv".format(version, working_directory, suffix, kind), recursive=True)
         projectsToAnalyzePrecision = list(filter(lambda projectName: getProjectNameFromFile(projectName, working_dir) in projectList, csvFiles))
 
         logging.info(f"Projects for recall: {projectsToAnalyzeRecall}")
@@ -120,12 +120,13 @@ def generate_metris(projectList: List[str], working_directory:str, combined:bool
 
                 cur_predicted = len(data[data["score"] > threshold])
                 total_predicted += cur_predicted
-                unknownProject = len(data[(data["isKnown"] == False) & (data["filtered"] == False)])
-                unknown += unknownProject
+                # unknownProject = len(data[(data["isKnown"] == False) & (data["filtered"] == False)])
+                # unknown += unknownProject
                 knownProject = len(data[(data["score"] > threshold) &  (data["isKnown"] == True)])
                 predicted_known += knownProject
                 logging.info("Precision: {0} : {1}/{2}".format(projectID, d[projectID], cur_predicted))
-                logging.info("Known: {0}  Unkown: {1}".format(knownProject, unknownProject))
+                logging.info("Known: {0}".format(knownProject))
+                # logging.info("Known: {0}  Unkown: {1}".format(knownProject, unknownProject))
 
     
             print("{0}/{1}".format(predicted_known, total_predicted), end=',')

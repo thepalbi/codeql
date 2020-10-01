@@ -119,6 +119,7 @@ class DataGenerator:
         #kind = "snk"
 
         #capitalized_query_type = query_type.capitalize()
+        #
         metrics_file = "metrics_{0}_{1}".format(kind, query_type)
         self.logger.info("Generating events scores.")
         self.codeql.database_analyze(
@@ -133,21 +134,21 @@ class DataGenerator:
             subfix = "-combined"
 
         tsm_worse_scores_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-tsmworse-ind-avg{subfix}.prop.csv")
+            self.generated_data_dir, f"{self.project_name}-tsmworse-ind-avg{subfix}-{kind}.prop.csv")
         tsm_worse_filtered_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-tsmworse-filtered-avg{subfix}.prop.csv")
+            self.generated_data_dir, f"{self.project_name}-tsmworse-filtered-avg{subfix}-{kind}.prop.csv")
 
         prediction_scores_file = os.path.join(
-            self.generated_data_dir, f"{self.project_name}-prediction-{kind}-{subfix}.prop.csv")
+            self.generated_data_dir, f"{self.project_name}-prediction-{subfix}-{kind}.prop.csv")
 
         # Extract result scores
         self.codeql.bqrs_decode(
-            bqrs_metrics_file, f"getTSMWorseScores{query_type}", tsm_worse_scores_file)
-        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseFiltered{query_type}",
+            bqrs_metrics_file, f"getTSMWorseScores{query_type}{kind}", tsm_worse_scores_file)
+        self.codeql.bqrs_decode(bqrs_metrics_file, f"getTSMWorseFiltered{query_type}{kind}",
                                 tsm_worse_filtered_file)
 
-        self.codeql.bqrs_decode(bqrs_metrics_file, f"predictions{query_type}{kind}",
-                                prediction_scores_file)
+        # self.codeql.bqrs_decode(bqrs_metrics_file, f"predictions{query_type}{kind}",
+        #                         prediction_scores_file)
 
         return tsm_worse_scores_file, tsm_worse_filtered_file
 
