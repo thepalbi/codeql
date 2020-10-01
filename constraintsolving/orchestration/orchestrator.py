@@ -7,6 +7,9 @@ from optimizer.gurobi import GenerateModelStep, OptimizeStep
 from orchestration import global_config
 from orchestration.steps import Context,  RESULTS_DIR_KEY, WORKING_DIR_KEY, SINGLE_STEP_NAME, COMMAND_NAME
 
+import time
+import datetime
+
 import os 
 import glob
 
@@ -62,18 +65,21 @@ class Orchestrator:
             project_name = self.project_name
             #print(self.query_name)
             #print(self.results_dir)
-            #timestamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
             patternToSearch = os.path.join(self.results_dir, project_name)+ "/{0}-*".format(self.query_name)
             #print(patternToSearch)
             results_candidates = glob.glob(patternToSearch)
             print(results_candidates)
             if len(results_candidates)>0:
                 results_candidates.sort()
-                result_dir = results_candidates[-1]
-                print(result_dir)
+                results_dir = results_candidates[-1]
+                print(results_dir)
             else:
-                raise ValueError('Cannot find results directory for ' + self.project_name )
-            return result_dir
+                #raise ValueError('Cannot find results directory for ' + self.project_name )           
+                timestamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
+                optimizer_run_name = f"{self.query_name}-{timestamp}"
+                results_dir = os.path.join(self.results_dir, project_name, optimizer_run_name)
+
+            return results_dir
         else:
             return self.results_dir
 

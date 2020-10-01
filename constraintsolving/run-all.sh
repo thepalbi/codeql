@@ -5,19 +5,19 @@ sh ./cleanMetrics.sh
 
 # invoke all steps Sql, NoSql, Xss for individual projects
 echo Calling Optimize  on Sql projects
-sh ./run-Sql.sh --single-step optimize 
+sh ./run-Sql.sh --single-step optimize $* 
 echo Calling generate_scores on Sql projects
-sh ./run-Sql.sh --single-step generate_scores 
+sh ./run-Sql.sh --single-step generate_scores $* 
 
-echo Calling Optimize on NoSql projects
-sh ./run-NoSql.sh --single-step optimize 
+echo Calling Optimize on NoSql projects 
+sh ./run-NoSql.sh --single-step optimize $* 
 echo Calling generate_scores on NoSql projects
-sh ./run-NoSql.sh --single-step generate_scores 
+sh ./run-NoSql.sh --single-step generate_scores $* 
 
 echo Calling Optimize --no-flow on Xss projects
-sh ./run-Xss.sh --single-step optimize 
+sh ./run-Xss.sh --single-step optimize $*
 echo Calling generate_scores on Xss projects
-sh ./run-Xss.sh --single-step generate_scores 
+sh ./run-Xss.sh --single-step generate_scores $* 
 
 
 # now compute the stats 
