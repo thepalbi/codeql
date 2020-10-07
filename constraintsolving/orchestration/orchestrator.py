@@ -60,7 +60,7 @@ class Orchestrator:
         for step_template in Orchestrator.step_templates:
             self.steps.append(step_template(self))
 
-    def compute_results_dir(self):
+    def compute_results_dir(self, new_directory=False):
         if(not self.combinedScore):
             project_name = self.project_name
             #print(self.query_name)
@@ -69,7 +69,7 @@ class Orchestrator:
             #print(patternToSearch)
             results_candidates = glob.glob(patternToSearch)
             print(results_candidates)
-            if len(results_candidates)>0:
+            if len(results_candidates)>0 and not new_directory:
                 results_candidates.sort()
                 results_dir = results_candidates[-1]
                 print(results_dir)
