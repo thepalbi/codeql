@@ -22,14 +22,6 @@ module SqlInjectionWorse {
    */
   abstract class Sanitizer extends DataFlow::Node { }
 
-  // Hack: This add as a Sink candidate the `fs` module calls, for running
-  // the Seldon paper's Fig 2.a example.
-  class PathFileSystemArgument extends Sink {
-    PathFileSystemArgument() {
-        exists(FileSystemWriteAccess fsa | fsa.getAPathArgument() = this)
-    }
-  }
-
   /** A source of remote user input, considered as a flow source for SQL injection. */
   class RemoteFlowSourceAsSource extends Source {
     RemoteFlowSourceAsSource() { this instanceof RemoteFlowSource }
