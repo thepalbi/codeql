@@ -143,6 +143,9 @@ def printmetrics(trainingsize, config: SolverConfig, ctx):
             if reprToWrite is not None:
                 repConstraints.append(reprToWrite)
 
+        self.
+
+
         repr_scores_file_path = os.path.join(ctx[RESULTS_DIR_KEY], "reprScores.txt")
         with open(repr_scores_file_path, "w", encoding='utf-8') as reprscores:
             sizeReprSet = len(repConstraints) 
@@ -171,6 +174,7 @@ def printmetrics(trainingsize, config: SolverConfig, ctx):
 
 
 def getallmetrics(config: SolverConfig, ctx):
+
     metrics_file_path = os.path.join(ctx[RESULTS_DIR_KEY], "metrics.txt")
     with open(metrics_file_path, "w") as metricsfile:
         for trainingsize in config.trainingsizes:

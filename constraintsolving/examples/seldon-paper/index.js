@@ -42,6 +42,7 @@ app.post('/sanitized', (req, res) => {
     });
 });
 
+
 // Dummy method to mark as known sanitizer in the query
 function sanitizePath(path) {
     return path;

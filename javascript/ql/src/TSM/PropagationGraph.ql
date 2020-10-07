@@ -62,6 +62,12 @@ predicate tripleWRepID(string ssrc, string ssan, string ssnk) {
     // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
 }
 
+query predicate allCalls(PropagationGraph::Node callNode, string lineDescription, string reprs) {
+  callNode.asDataFlowNode() instanceof DataFlow::CallNode and
+  lineDescription = callNode.asDataFlowNode().getFile().getAbsolutePath() +
+  ":" + callNode.asDataFlowNode().getStartLine() and
+  reprs = concat(callNode.rep(), " - ")
+}
 
 query predicate pairSrcSan(string ssrc, string ssan){
     exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
