@@ -1,12 +1,11 @@
 /**
- * Provides default sources, sinks and sanitizers for reasoning about
- * SQL injection vulnerabilities, as well as extension points for
- * adding your own.
+ * Example property based on SqlInjection but incluing one PathInjection Sink 
+ * It is used for the Seldon Example
  */
 
 import javascript
 
-module SqlInjectionWorse {
+module SeldonWorse {
   /**
    * A data flow source for SQL-injection vulnerabilities.
    */
@@ -21,6 +20,14 @@ module SqlInjectionWorse {
    * A sanitizer for SQL-injection vulnerabilities.
    */
   abstract class Sanitizer extends DataFlow::Node { }
+
+  // Hack for Seldon example: This add as a Sink candidate the `fs` module calls, for running
+  // the Seldon paper's Fig 2.a example.
+  class PathFileSystemArgument extends Sink {
+    PathFileSystemArgument() {
+        exists(FileSystemWriteAccess fsa | fsa.getAPathArgument() = this)
+    }
+  }
 
   /** A source of remote user input, considered as a flow source for SQL injection. */
   class RemoteFlowSourceAsSource extends Source {
