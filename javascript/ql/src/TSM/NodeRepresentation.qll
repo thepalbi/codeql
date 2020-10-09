@@ -45,6 +45,14 @@ private DataFlow::Node getAnExport(string pkgName, string prop) {
  * Gets a candidate representation of `nd` as a (suffix of an) access path.
  */
 string candidateRep(DataFlow::Node nd, int depth) {
+  // static invoke in the same file
+  (
+    isRelevant(nd) and 
+    nd instanceof DataFlow::CallNode and
+    nd.(DataFlow::CallNode).getACallee().getFile()=nd.getFile()
+    and depth=1 
+    and result = "(return " + nd.(DataFlow::CallNode).getACallee().getName() + ")"
+  ) or
   // the global object
   isRelevant(nd) and
   nd = DataFlow::globalObjectRef() and

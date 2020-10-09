@@ -34,10 +34,10 @@ parser.add_argument("--single-step", dest="single_step", type=str, default=all_s
 
 parser.add_argument("--project-dir", dest="project_dir", required=True, type=str,
                     help="Directory of the CodeQL database")
-parser.add_argument("--query-type", dest="query_type", required=True, type=str, choices=["Xss", "NoSql", "Sql"],
+parser.add_argument("--query-type", dest="query_type", required=True, type=str, choices=["Xss", "NoSql", "Sql", "Sel"],
                     help="Type of the query to solve")
 parser.add_argument("--query-name", dest="query_name", required=True, type=str,
-                    choices=["NosqlInjectionWorse", "SqlInjectionWorse", "DomBasedXssWorse"],
+                    choices=["NosqlInjectionWorse", "SqlInjectionWorse", "DomBasedXssWorse", "SeldonWorse"],
                     help="Name of the query to solve")
 parser.add_argument("--project-list", dest="projectListFile", required=False, type=str, 
                     help="Run all steps on the project passed on this list")

@@ -33,6 +33,8 @@ import semmle.javascript.security.dataflow.ServerSideUrlRedirectCustomizations
 import semmle.javascript.security.dataflow.ShellCommandInjectionFromEnvironmentCustomizations
 import semmle.javascript.security.dataflow.SqlInjectionCustomizations
 import semmle.javascript.security.dataflow.SqlInjectionCustomizationsWorse
+import semmle.javascript.security.dataflow.SeldonCustomizations
+import semmle.javascript.security.dataflow.SeldonCustomizationsWorse
 import semmle.javascript.security.dataflow.StackTraceExposureCustomizations
 import semmle.javascript.security.dataflow.TaintedFormatStringCustomizations
 import semmle.javascript.security.dataflow.TaintedPathCustomizations

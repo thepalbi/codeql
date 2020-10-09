@@ -30,8 +30,10 @@ query predicate getTSMWorseFilteredSqlsan(DataFlow::Node node, float score, bool
     Metrics::isKnownSqlInjectionSanitizer(node) and
     TSM::isSanitizer(node, score) and     
     rep = PropagationGraph::getconcatrep(node) 
-    and (sqlKnownSanitizer(node) and isKnown = true or
-    not sqlKnownSanitizer(node) and isKnown = false) 
+    and (
+        sqlKnownSanitizer(node) and isKnown = true or
+        not sqlKnownSanitizer(node) and isKnown = false
+        ) 
     // and filtered = true
     // // and (Metrics::isEffectiveSource(node) and filtered = true or
     // // not  Metrics::isEffectiveSource(node) and filtered = false) and

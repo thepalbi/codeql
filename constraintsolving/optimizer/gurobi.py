@@ -131,6 +131,8 @@ class OptimizeStep(OrchestrationStep):
     def run(self, ctx: Context) -> Context:
         # TODO: Extract this and share between steps. Maybe add some context passing between steps
         # TODO: Share this in ctx
+        ctx[RESULTS_DIR_KEY] = self.orchestrator.compute_results_dir(new_directory=True)
+        os.makedirs(ctx[RESULTS_DIR_KEY])
         results_dir = ctx[RESULTS_DIR_KEY]
         working_dir = ctx[WORKING_DIR_KEY]
 

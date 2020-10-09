@@ -60,7 +60,7 @@ def generate_metris(projectList: List[str], working_directory:str, combined:bool
         logging.info(f"Projects for recall: {projectsToAnalyzeRecall}")
         logging.info(f"Projects for precision: {projectsToAnalyzePrecision}")
 
-        thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,0.8, 0.9] 
+        thresholds = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,0.8, 0.9] 
         #[0.26, 0.27,0.28]
         for threshold in thresholds:
             print(threshold, end=",")
@@ -149,6 +149,7 @@ parser.add_argument("--project-list", dest="projectListFile", required=False, ty
 parser.add_argument("--project-name", dest="project", required=False, type=str)
 parser.add_argument("--working-dir", dest="working_dir", required=False, type=str)
 parser.add_argument("--combined",  action='store_true', help='Use combined scores')
+parser.add_argument("--kind",  dest="kind", required=False, default="snk", help='Use combined scores')
 
 parsed_arguments = parser.parse_args()
 
@@ -156,6 +157,7 @@ projectListFile =  parsed_arguments.projectListFile
 project =  parsed_arguments.project
 working_dir = parsed_arguments.working_dir
 combined = parsed_arguments.combined
+kind = '-'+parsed_arguments.kind
 
 if project is None and projectListFile is None:
     parser.print_usage()
@@ -169,4 +171,4 @@ else:
 if __name__ == '__main__':
     #logging.getLogger().setLevel(logging.WARNING)
     logging.info(f"Project List: {projectList}")
-    generate_metris(projectList, working_dir, combined)
+    generate_metris(projectList, working_dir, combined, kind)
