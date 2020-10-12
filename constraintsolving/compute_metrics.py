@@ -124,7 +124,7 @@ def printmetrics(trainingsize, config: SolverConfig, ctx):
             if repr.find(":n")>=0:
                 repid=repr.split(":")[-1].strip()
                 rep=":".join(repr.split(":")[0:-1])
-                #print(vars[repid+_src],' ', vars[repid+_snk], ' ', vars[repid+_san] )
+                #print(repid, vars[repid+_src],' ', vars[repid+_snk], ' ', vars[repid+_san] )
                 reprToWrite = None
                 #print("rep,", repr)
                 #print("repid,", repid)
@@ -143,7 +143,10 @@ def printmetrics(trainingsize, config: SolverConfig, ctx):
             if reprToWrite is not None:
                 repConstraints.append(reprToWrite)
 
+        
         repr_scores_file_path = os.path.join(ctx[RESULTS_DIR_KEY], "reprScores.txt")
+        logging.info("Writing reprScores: {0}".format(repr_scores_file_path))
+
         with open(repr_scores_file_path, "w", encoding='utf-8') as reprscores:
             sizeReprSet = len(repConstraints) 
             countRepr = 0     
