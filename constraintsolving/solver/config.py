@@ -19,7 +19,7 @@ class SolverConfig:
         self.use_all_sanitizers = False
 
         # solve config
-        self.lambda_const = 0.1
+        self.lambda_const = 0.5
         self.trials = 1
         self.known_samples_ratio = 1.0
         self.no_flow_constraints = False

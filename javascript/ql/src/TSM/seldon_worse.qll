@@ -4,15 +4,16 @@
  */
 
 import javascript
+import semmle.javascript.security.dataflow.SeldonCustomizationsWorse::SeldonWorse
 
-module SqlInjectionWorse {  
-    import SqlInjectionCustomizationsWorse::SqlInjectionWorse
+
+module SeldonWorse {  
 
   /**
    * A taint-tracking configuration for reasoning about SQL-injection vulnerabilities.
    */
   class Configuration extends TaintTracking::Configuration {
-    Configuration() { this = "Seldon" }
+    Configuration() { this = "SeldonWorse" }
 
     override predicate isSource(DataFlow::Node source) {
       source instanceof Source
@@ -29,4 +30,5 @@ module SqlInjectionWorse {
   }
  
 }
+
 

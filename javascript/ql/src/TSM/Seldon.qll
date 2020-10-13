@@ -5,8 +5,9 @@
 
 import javascript
 
-module SqlInjectionWorse {  
-    import SqlInjectionCustomizationsWorse::SqlInjectionWorse
+
+module Seldon {  
+    import semmle.javascript.security.dataflow.SeldonCustomizations::Seldon
 
   /**
    * A taint-tracking configuration for reasoning about SQL-injection vulnerabilities.
@@ -29,4 +30,5 @@ module SqlInjectionWorse {
   }
  
 }
+
 
