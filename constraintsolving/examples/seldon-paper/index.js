@@ -1,5 +1,12 @@
-// Based on Fib 2.a of Seldon paper
-// Adapted for using express library
+/**
+ * Toy sample based on Fib 2.a of Seldon paper
+ * Translated from python to javascript and adapted for using express library
+ * There is SeldonCustimization.qll includes a class to include arguments to fs.write as sinks
+ * The query Seldon.ql doesn't recognize any sanitizer
+ * The boosted query SeldonTSM.ql recognizes sanitizePath as sanitizer and remove one false positive
+ * TO-DO: See if the sinks could be also boosted 
+ */
+
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -12,6 +19,7 @@ app.use(express.json());
 const appDir = process.env.APP_PATH;
 console.log(`Using appDir=[${appDir}]`);
 
+// Should report warning 
 app.post('/unsanitized', (req, res) => {
     console.log(req.body);
     // line 12 Fig 2.a req.body.path is pretending `request.files['f'].filename` on paper
@@ -26,6 +34,7 @@ app.post('/unsanitized', (req, res) => {
     });
 });
 
+// Should not report warning 
 app.post('/sanitized', (req, res) => {
     console.log(req.body);
     // line 12 Fig 2.a req.body.path is pretending `request.files['f'].filename` on paper
