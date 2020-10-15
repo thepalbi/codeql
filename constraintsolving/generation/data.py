@@ -103,10 +103,13 @@ class DataGenerator:
         return generated_data_dir
 
     def _get_tsm_query_file_for_entity(self, queried_entity: str, query_type: str) -> str:
-        return self._get_tsm_query_file(f"{queried_entity}-{query_type}.ql")
+        return self._get_tsm_query_file(query_type, f"{queried_entity}-{query_type}.ql")
 
-    def _get_tsm_query_file(self, filename: str) -> str:
-        return os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM",  filename)
+    def _get_tsm_query_file(self, query_type: str, filename: str) -> str:
+        if query_type is None:
+            return os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", filename)
+        else: 
+            return os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", query_type, filename)
 
     def _get_tsm_bqrs_file_for_entity(self, queried_entity: str, query_type: str) -> str:
         return self._get_tsm_bqrs_file(f"{queried_entity}-{query_type}.bqrs")
@@ -123,7 +126,7 @@ class DataGenerator:
         self.logger.info("Generating events scores.")
         self.codeql.database_query(
             self.project_dir,
-            self._get_tsm_query_file(metrics_file + ".ql"))
+            self._get_tsm_query_file(query_type, metrics_file + ".ql"))
 
         # Get results BQRS file
         bqrs_metrics_file = self._get_tsm_bqrs_file(metrics_file + '.bqrs')
@@ -173,7 +176,7 @@ class DataGenerator:
         try:
             self.codeql.database_analyze(
                 self.project_dir,
-                self._get_tsm_query_file("PropagationGraph.ql"),
+                self._get_tsm_query_file(None, "PropagationGraph.ql"),
                 f"{logs_folder}/js-results.csv")
         except Exception:
             self.logger.info("Error Analyzing PropagationGraph.ql")

@@ -42,8 +42,8 @@ import semmle.javascript.security.dataflow.ZipSlipCustomizations
 import semmle.javascript.dataflow.Portals
 import CoreKnowledge
 import EndpointFilterUtils
-import tsm
-import PropagationGraphs
+import TSM.query.tsm
+import TSM.PropagationGraphs
 
 module Metrics {  
 
