@@ -191,7 +191,7 @@ def getallmetrics(config: SolverConfig, ctx):
             metricsfile.write(sanstr+"\\\\\n")
             metricsfile.write(snkstr+"\\\\\n")
 
-def createReprPredicate(ctx, query_type:str, reprScoresFiles = "reprScores.txt"):
+def createReprPredicate(ctx, project_name:str, query_type:str, reprScoresFiles = "reprScores.txt"):
     tsm_query_folder = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", "query")
     tsm_repr_pred_file = os.path.join(tsm_query_folder, "tsm_repr_pred.qll")
     repr_scores_path = os.path.join(ctx[RESULTS_DIR_KEY], reprScoresFiles)
@@ -210,16 +210,16 @@ def createReprPredicate(ctx, query_type:str, reprScoresFiles = "reprScores.txt")
                 reprPrFile.write('\t result = 0 and (t = "src" or t = "snk" or t = "san") and repr = ""\n')
             reprPrFile.writelines(["}","}"])
     # create a TSM query in the results dir
-    createTSMQuery(ctx, query_type)
+    createTSMQuery(ctx, project_name, query_type)
 
-def createTSMQuery(ctx, query_type: str):
+def createTSMQuery(ctx, project_name: str, query_type: str):
     tsm_query_folder = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", "query")
     tsm_repr_pred_file = os.path.join(tsm_query_folder, "tsm_repr_pred.qll")
     tsm_query = os.path.join(tsm_query_folder, "TSM.ql")
     tsm_query_qll = os.path.join(tsm_query_folder, "tsm.qll")
     tsm_config = os.path.join(tsm_query_folder, "tsm_config.qll")
 
-    query_dir = os.path.join(tsm_query_folder, query_type, os.path.basename(ctx[RESULTS_DIR_KEY]))
+    query_dir = os.path.join(tsm_query_folder, query_type, project_name, os.path.basename(ctx[RESULTS_DIR_KEY]))
     print(query_dir)
     if not os.path.exists(query_dir):
         os.makedirs(query_dir)

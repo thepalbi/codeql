@@ -46,7 +46,7 @@ class GenerateScoresStep(OrchestrationStep):
         return ctx
 
     def run(self, ctx: Context) -> Context:
-        createReprPredicate(ctx, self.orchestrator.query_type, self.orchestrator.scores_file)
+        createReprPredicate(ctx, self.project_dir,  self.orchestrator.query_type, self.orchestrator.scores_file)
         self.orchestrator.data_generator.generate_scores(
             self.orchestrator.query_type,  self.orchestrator.combinedScore, 
             self.orchestrator.kind)
@@ -61,7 +61,7 @@ class GenerateTSMQueryStep(OrchestrationStep):
         return ctx
 
     def run(self, ctx: Context) -> Context:
-        createReprPredicate(ctx, self.orchestrator.query_type, self.orchestrator.scores_file)
+        createReprPredicate(ctx, self.orchestrator.project_name, self.orchestrator.query_type, self.orchestrator.scores_file)
         return ctx
 
     def name(self) -> str:
