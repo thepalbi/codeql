@@ -46,7 +46,7 @@ class GenerateScoresStep(OrchestrationStep):
         return ctx
 
     def run(self, ctx: Context) -> Context:
-        createReprPredicate(ctx, self.orchestrator.scores_file)
+        createReprPredicate(ctx, self.orchestrator.query_type, self.orchestrator.scores_file)
         self.orchestrator.data_generator.generate_scores(
             self.orchestrator.query_type,  self.orchestrator.combinedScore, 
             self.orchestrator.kind)
@@ -56,16 +56,16 @@ class GenerateScoresStep(OrchestrationStep):
         return "generate_scores"
 
 # This step (not included) just create the tsm_repr_pred.qll file
-class GenerateTSMReprStep(OrchestrationStep):
+class GenerateTSMQueryStep(OrchestrationStep):
     def populate(self, ctx: Context) -> Context:
         return ctx
 
     def run(self, ctx: Context) -> Context:
-        createReprPredicate(ctx)
+        createReprPredicate(ctx, self.orchestrator.query_type, self.orchestrator.scores_file)
         return ctx
 
     def name(self) -> str:
-        return "generate_tsm_repr"
+        return "generate_tsm_query"
 
 
 class DataGenerator:

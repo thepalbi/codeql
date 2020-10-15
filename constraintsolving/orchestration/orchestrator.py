@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from generation.data import DataGenerator, GenerateEntitiesStep, GenerateScoresStep
+from generation.data import DataGenerator, GenerateEntitiesStep, GenerateScoresStep, GenerateTSMQueryStep
 from optimizer.gurobi import GenerateModelStep, OptimizeStep
 
 from orchestration import global_config
@@ -32,6 +32,13 @@ class Orchestrator:
         OptimizeStep,
         GenerateScoresStep,
     ]
+    possible_steps = [
+        GenerateEntitiesStep,
+        GenerateModelStep,
+        OptimizeStep,
+        GenerateScoresStep,
+        GenerateTSMQueryStep
+    ]
 
     def __init__(self, project_dir: str, project_name: str, 
                 query_type: str, query_name: str, kind: str,  
@@ -59,6 +66,9 @@ class Orchestrator:
         self.steps = []
         for step_template in Orchestrator.step_templates:
             self.steps.append(step_template(self))
+        self.possible_steps = []
+        for possible_step in Orchestrator.possible_steps:
+            self.possible_steps.append(possible_step(self))
 
     def compute_results_dir(self, new_directory=False):
         if(not self.combinedScore):
@@ -112,7 +122,7 @@ class Orchestrator:
         ctx[SINGLE_STEP_NAME] = step_name
         ctx[COMMAND_NAME] = "run"
 
-        for step in self.steps:
+        for step in self.possible_steps:
             if step.name() == step_name:
                 self.print_step_banner(step, "run")
                 ctx = step.populate(ctx)
@@ -124,7 +134,7 @@ class Orchestrator:
                 ctx = step.populate(ctx)
 
         # Step was not found
-        raise UnknownStepException(step_name, [step.name() for step in self.steps])
+        raise UnknownStepException(step_name, [step.name() for step in self.possible_steps])
 
     def print_step_banner(self, step, command):
         separator = ">" * 5

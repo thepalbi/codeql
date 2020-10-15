@@ -151,7 +151,6 @@ class OptimizeStep(OrchestrationStep):
 
         # Compute metrics
         getallmetrics(config, ctx)
-        #createReprPredicate(ctx)
 
         return ctx
 

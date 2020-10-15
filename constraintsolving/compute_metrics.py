@@ -7,6 +7,7 @@ from orchestration import global_config
 from orchestration.steps import RESULTS_DIR_KEY, CONSTRAINTS_DIR_KEY, MODELS_DIR_KEY, RESULTS_DIR_KEY
 import os
 import logging
+import shutil
 
 def getmetrics(actual, predicted, c):
     # Precision
@@ -190,14 +191,15 @@ def getallmetrics(config: SolverConfig, ctx):
             metricsfile.write(sanstr+"\\\\\n")
             metricsfile.write(snkstr+"\\\\\n")
 
-def createReprPredicate(ctx, reprScoresFiles = "reprScores.txt"):
-    output_path = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", "tsm_repr_pred.qll")
+def createReprPredicate(ctx, query_type:str, reprScoresFiles = "reprScores.txt"):
+    tsm_query_folder = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", "query")
+    tsm_repr_pred_file = os.path.join(tsm_query_folder, "tsm_repr_pred.qll")
     repr_scores_path = os.path.join(ctx[RESULTS_DIR_KEY], reprScoresFiles)
 
-    print(output_path)
+    print(tsm_repr_pred_file)
     print(repr_scores_path)
     with open(repr_scores_path, "r", encoding='utf-8') as reprscores:
-        with open(output_path , "w", encoding='utf-8') as reprPrFile:
+        with open(tsm_repr_pred_file , "w", encoding='utf-8') as reprPrFile:
             reprPrFile.writelines([
                 "module TsmRepr {",
                 "float getReprScore(string repr, string t){\n"])
@@ -207,7 +209,25 @@ def createReprPredicate(ctx, reprScoresFiles = "reprScores.txt"):
             else:
                 reprPrFile.write('\t result = 0 and (t = "src" or t = "snk" or t = "san") and repr = ""\n')
             reprPrFile.writelines(["}","}"])
+    # create a TSM query in the results dir
+    createTSMQuery(ctx, query_type)
 
+def createTSMQuery(ctx, query_type: str):
+    tsm_query_folder = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", "query")
+    tsm_repr_pred_file = os.path.join(tsm_query_folder, "tsm_repr_pred.qll")
+    tsm_query = os.path.join(tsm_query_folder, "TSM.ql")
+    tsm_query_qll = os.path.join(tsm_query_folder, "tsm.qll")
+    tsm_config = os.path.join(tsm_query_folder, "tsm_config.qll")
+
+    query_dir = os.path.join(tsm_query_folder, query_type, os.path.basename(ctx[RESULTS_DIR_KEY]))
+    print(query_dir)
+    if not os.path.exists(query_dir):
+        os.makedirs(query_dir)
+    shutil.copy(tsm_repr_pred_file,query_dir )
+    shutil.copy(tsm_query,query_dir )
+    shutil.copy(tsm_query_qll, query_dir)
+    shutil.copy(tsm_config, query_dir)
+    
 
 
         

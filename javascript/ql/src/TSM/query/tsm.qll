@@ -1,7 +1,7 @@
 import javascript
 
 import TSM.NodeRepresentation
-import TSM.query.tsm_repr_pred
+import tsm_repr_pred
 
 module TSM {
     private import TsmRepr
