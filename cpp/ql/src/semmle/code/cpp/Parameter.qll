@@ -1,3 +1,7 @@
+/**
+ * Provides a class that models parameters to functions.
+ */
+
 import semmle.code.cpp.Location
 import semmle.code.cpp.Declaration
 private import semmle.code.cpp.internal.ResolveClass
@@ -45,7 +49,7 @@ class Parameter extends LocalScopeVariable, @parameter {
     result = "p#" + this.getIndex().toString()
   }
 
-  override string getCanonicalQLClass() { result = "Parameter" }
+  override string getAPrimaryQlClass() { result = "Parameter" }
 
   /**
    * Gets the name of this parameter, including it's type.
@@ -94,7 +98,7 @@ class Parameter extends LocalScopeVariable, @parameter {
    * DEPRECATED: this method was used in a previous implementation of
    * getName, but is no longer in use.
    */
-  deprecated string getNameInBlock(Block b) {
+  deprecated string getNameInBlock(BlockStmt b) {
     exists(ParameterDeclarationEntry pde |
       pde.getFunctionDeclarationEntry().getBlock() = b and
       this.getFunction().getBlock() = b and
@@ -123,7 +127,7 @@ class Parameter extends LocalScopeVariable, @parameter {
    * Gets the catch block to which this parameter belongs, if it is a catch
    * block parameter.
    */
-  Block getCatchBlock() { params(underlyingElement(this), unresolveElement(result), _, _) }
+  BlockStmt getCatchBlock() { params(underlyingElement(this), unresolveElement(result), _, _) }
 
   /**
    * Gets the zero-based index of this parameter.
@@ -165,6 +169,7 @@ class Parameter extends LocalScopeVariable, @parameter {
 class ParameterIndex extends int {
   ParameterIndex() {
     exists(Parameter p | this = p.getIndex()) or
-    exists(Call c | exists(c.getArgument(this))) // permit indexing varargs
+    exists(Call c | exists(c.getArgument(this))) or // permit indexing varargs
+    this = -1 // used for `this`
   }
 }
