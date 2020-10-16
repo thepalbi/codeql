@@ -198,19 +198,22 @@ def createReprPredicate(ctx, project_name:str, query_type:str, reprScoresFiles =
 
     print(tsm_repr_pred_file)
     print(repr_scores_path)
-    with open(repr_scores_path, "r", encoding='utf-8') as reprscores:
-        with open(tsm_repr_pred_file , "w", encoding='utf-8') as reprPrFile:
-            reprPrFile.writelines([
-                "module TsmRepr {",
-                "float getReprScore(string repr, string t){\n"])
-            reprscores = reprscores.readlines()
-            if len(reprscores)>0:
-                reprPrFile.writelines(reprscores)
-            else:
-                reprPrFile.write('\t result = 0 and (t = "src" or t = "snk" or t = "san") and repr = ""\n')
-            reprPrFile.writelines(["}","}"])
-    # create a TSM query in the results dir
-    createTSMQuery(ctx, project_name, query_type)
+    try:
+        with open(repr_scores_path, "r", encoding='utf-8') as reprscores:
+            with open(tsm_repr_pred_file , "w", encoding='utf-8') as reprPrFile:
+                reprPrFile.writelines([
+                    "module TsmRepr {",
+                    "float getReprScore(string repr, string t){\n"])
+                reprscores = reprscores.readlines()
+                if len(reprscores)>0:
+                    reprPrFile.writelines(reprscores)
+                else:
+                    reprPrFile.write('\t result = 0 and (t = "src" or t = "snk" or t = "san") and repr = ""\n')
+                reprPrFile.writelines(["}","}"])
+        # create a TSM query in the results dir
+        createTSMQuery(ctx, project_name, query_type)
+    except Exception as e:
+        print(e)
 
 def createTSMQuery(ctx, project_name: str, query_type: str):
     tsm_folder = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM")

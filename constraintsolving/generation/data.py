@@ -19,7 +19,7 @@ SOURCES = "Sources"
 SINKS = "Sinks"
 SANITIZERS = "Sanitizers"
 
-SUPPORTED_QUERY_TYPES = ["NoSql", "Sql", "Xss", "Sel"]
+SUPPORTED_QUERY_TYPES = ["NoSql", "Sql", "Xss", "Sel", "Path"]
 
 
 class GenerateEntitiesStep(OrchestrationStep):

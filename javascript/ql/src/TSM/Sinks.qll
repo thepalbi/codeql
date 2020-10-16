@@ -38,6 +38,7 @@ import semmle.javascript.security.dataflow.SeldonCustomizationsWorse
 import semmle.javascript.security.dataflow.StackTraceExposureCustomizations
 import semmle.javascript.security.dataflow.TaintedFormatStringCustomizations
 import semmle.javascript.security.dataflow.TaintedPathCustomizations
+import semmle.javascript.security.dataflow.TaintedPathCustomizationsWorse
 import semmle.javascript.security.dataflow.TypeConfusionThroughParameterTamperingCustomizations
 import semmle.javascript.security.dataflow.UnsafeDeserializationCustomizations
 import semmle.javascript.security.dataflow.UnsafeDynamicMethodAccessCustomizations
