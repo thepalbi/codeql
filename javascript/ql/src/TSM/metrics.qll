@@ -245,6 +245,13 @@ predicate isKnownSqlInjectionSanitizer(DataFlow::Node node){
 node instanceof SqlInjection::Sanitizer
 }
 
+predicate isKnownTaintedPathSanitizer(DataFlow::Node node){
+  node instanceof TaintedPath::Sanitizer
+}
+
+predicate isKnownTaintedPathSource(DataFlow::Node node){
+  node instanceof TaintedPath::Source
+}
 
 predicate isKnownNoSqlInjectionSink(DataFlow::Node node){
     node instanceof NosqlInjection::Sink

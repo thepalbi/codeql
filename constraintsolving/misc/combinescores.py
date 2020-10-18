@@ -74,7 +74,7 @@ logging.basicConfig(level=logging.INFO, format="[%(levelname)s\t%(asctime)s] %(n
 parser.add_argument("--project-dir", dest="project_dir", required=True, type=str,
                     help="Directory of the results score")
 parser.add_argument("--query-name", dest="query_name", required=True, type=str,
-                    choices=["NosqlInjectionWorse", "SqlInjectionWorse", "DomBasedXssWorse"],
+                    choices=["NosqlInjectionWorse", "SqlInjectionWorse", "DomBasedXssWorse","TaintedPathWorse"],
                     help="Name of the query to solve")
 
 parsed_arguments = parser.parse_args()

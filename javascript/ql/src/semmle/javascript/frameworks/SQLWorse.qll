@@ -79,7 +79,7 @@ private module MySql {
   }
 
   /** A call to the `escape` or `escapeId` method that performs SQL sanitization. */
-  class EscapingSanitizer extends SQLWorse::SqlSanitizer, @callexpr {
+  class EscapingSanitizer extends SQLWorse::SqlSanitizer /*, @callexpr */ {
     EscapingSanitizer() {
       exists (string esc | esc = "escape" or esc = "escapeId" |
         exists (DataFlow::SourceNode escape, MethodCallExpr mce |

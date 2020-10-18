@@ -112,7 +112,11 @@ class DataGenerator:
             return os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM", query_type, filename)
 
     def _get_tsm_bqrs_file_for_entity(self, queried_entity: str, query_type: str) -> str:
-        return self._get_tsm_bqrs_file(f"{queried_entity}-{query_type}.bqrs")
+        # Add query_type as prefix folder since database analyze 
+        # reads the ql file from query_type/file.ql and generates the same route
+        # this will change if we replace database analyze with database query   
+        return self._get_tsm_bqrs_file( f"{query_type}/{queried_entity}-{query_type}.bqrs")
+        
 
     def _get_tsm_bqrs_file(self, filename: str) -> str:
         return os.path.join(constaintssolving_dir, self.project_dir, "results", "codeql-javascript", "TSM", filename)

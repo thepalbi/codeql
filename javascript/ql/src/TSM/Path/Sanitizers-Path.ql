@@ -4,7 +4,7 @@
 import javascript
 import TSM.TSM
 
-query predicate sanitizerSqlClasses(DataFlow::Node nd, string q, string repr){
+query predicate sanitizerPathClasses(DataFlow::Node nd, string q, string repr){
     (           
         nd instanceof TaintedPath::Sanitizer and q="TaintedPath" or
         nd instanceof TaintedPathWorse::Sanitizer and q="TaintedPathWorse"       
