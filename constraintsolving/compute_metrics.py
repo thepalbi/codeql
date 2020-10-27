@@ -199,6 +199,8 @@ def createReprPredicate(ctx, project_name:str, query_type:str, reprScoresFiles =
     print(tsm_repr_pred_file)
     print(repr_scores_path)
     try:
+        logging.info("Writing: {0}".format(repr_scores_path))
+
         with open(repr_scores_path, "r", encoding='utf-8') as reprscores:
             with open(tsm_repr_pred_file , "w", encoding='utf-8') as reprPrFile:
                 reprPrFile.writelines([

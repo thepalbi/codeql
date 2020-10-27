@@ -30,7 +30,8 @@ class Orchestrator:
         GenerateEntitiesStep,
         GenerateModelStep,
         OptimizeStep,
-        GenerateScoresStep,
+        #GenerateScoresStep,
+        GenerateTSMQueryStep
     ]
     possible_steps = [
         GenerateEntitiesStep,

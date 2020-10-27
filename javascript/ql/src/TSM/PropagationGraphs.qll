@@ -33,8 +33,9 @@ private int minOcurrences() { result = 1 }
         nd instanceof DataFlow::InvokeNode and
         taintStep(nd, _)
         or
-        nd instanceof DataFlow::PropRead and
-        taintStep(nd, _)
+        // A property read is allways a event
+        nd instanceof DataFlow::PropRead // and
+        // taintStep(nd, _)
         or
         nd instanceof DataFlow::ParameterNode and
         taintStep(nd, _)
@@ -44,7 +45,8 @@ private int minOcurrences() { result = 1 }
           or
           nd = invk.(DataFlow::MethodCallNode).getReceiver()
         ) and
-        taintStep(_, nd)
+        // A property read is allways a event
+        (taintStep(_, nd) or nd instanceof DataFlow::PropRead)
       ) and
       isRelevant(nd)
     }

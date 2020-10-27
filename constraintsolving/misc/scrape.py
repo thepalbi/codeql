@@ -19,6 +19,7 @@ def download_project(slug, dbdir):
         lgtm_session = requests.Session()
         lgtm_session.headers.update({'authorization': 'bearer ' + LGTM_ACCESS_TOKEN})
         dbpath = "{0}/{1}.zip".format(dbdir, slugify(slug))
+        print(dbpath)
         if os.path.exists(dbpath):
             print("Exists already")
             return True
