@@ -31,11 +31,13 @@ private int minOcurrences() { result = 1 }
     MkNode(DataFlow::Node nd) {
       (
         nd instanceof DataFlow::InvokeNode and
-        taintStep(nd, _)
+        (
+          taintStep(nd, _)
+          or
+          guard(nd, _)
+        )
         or
-        // A property read is allways a event
-        nd instanceof DataFlow::PropRead // and
-        // taintStep(nd, _)
+        nd instanceof DataFlow::PropRead
         or
         nd instanceof DataFlow::ParameterNode and
         taintStep(nd, _)
@@ -45,11 +47,25 @@ private int minOcurrences() { result = 1 }
           or
           nd = invk.(DataFlow::MethodCallNode).getReceiver()
         ) and
-        // A property read is allways a event
         (taintStep(_, nd) or nd instanceof DataFlow::PropRead)
       ) and
       isRelevant(nd)
     }
+
+  /**
+   * Holds if `pred` is a call of the form `f(..., x, ...)` and `succ` is a subsequent
+   * use of `x` where the result of the call is either known to be true or known to be
+   * false.
+   */
+  private predicate guard(DataFlow::CallNode pred, DataFlow::Node succ) {
+    exists(ConditionGuardNode g, SsaVariable v |
+      g.getTest() = pred.asExpr() and
+      pred.getAnArgument().asExpr() = v.getAUse() and
+      succ.asExpr() = v.getAUse() and
+      exists(MkNode(succ)) and
+      g.dominates(succ.getBasicBlock())
+    )
+  }
 
   /**
    * A propagation-graph node, or "event" in Merlin terminology (cf Section 5.1 of
@@ -61,7 +77,7 @@ private int minOcurrences() { result = 1 }
     Node() { this = MkNode(nd) }
 
     predicate isSourceCandidate() {
-      exists(candidateRep()) and
+      exists(candidateRep(_)) and
       (
         nd instanceof DataFlow::CallNode or
         nd instanceof DataFlow::PropRead or
@@ -70,11 +86,11 @@ private int minOcurrences() { result = 1 }
     }
 
     predicate isSanitizerCandidate() {
-      exists(candidateRep()) and nd instanceof DataFlow::CallNode
+      exists(candidateRep(_)) and nd instanceof DataFlow::CallNode
     }
 
     predicate isSinkCandidate() {
-      exists(candidateRep()) and
+      exists(candidateRep(_)) and
       (
         exists(DataFlow::InvokeNode invk |
           nd = invk.getAnArgument()
@@ -86,23 +102,43 @@ private int minOcurrences() { result = 1 }
       )
     }
 
-    private string candidateRep() { result = candidateRep(nd, _) }
+    string candidateRep(boolean asRhs) { result = candidateRep(nd, _, asRhs) }
+
+    string rep(){
+        result = candidateRep(_) and 
+        // Eliminate rare representations
+        count(Node n | n.candidateRep(_) = result) >= minOcurrences()
+    }
 
     string rep1(){
-        result = candidateRep()
+        result = candidateRep(_)
     }
     /**
      * Gets an abstract representation of this node, corresponding to the REP function
      * in the Seldon paper.
+     *
+     * If `asRhs` is true, then this node is represented as the right-hand side of a definition,
+     * otherwise as a use.
+     *
+     * For example, the call `foo()` in `bar(foo())` can be represented either as the first argument
+     * to function `bar`, or as the result of function `foo`. If `asRhs` is true, this predicate
+     * chooses the former representation, if it is false the latter.
      */
-    string rep() {
-      result = candidateRep() and
+    string rep(boolean asRhs) {
+      result = candidateRep(asRhs) and
       // eliminate rare representations
-      count(Node n | n.candidateRep() = result) >= minOcurrences()
+      count(Node n | n.candidateRep(_) = result) >= minOcurrences()
     }
 
-    string getconcatrep(){
-        result = strictconcat(string r | r = this.rep() | r, "::")
+    /**
+     * Gets an abstract representation of this node, filtering out generic representations that
+     * are uninteresting for inferring sources and sinks.
+     *
+     * See `rep` for an explanation of the `asRhs` parameter.
+     */
+    string preciseRep(boolean asRhs) {
+      result = rep(asRhs) and
+      not result.matches(genericMemberPattern())
     }
 
     /**
@@ -111,7 +147,7 @@ private int minOcurrences() { result = 1 }
      * This can happen, for instance, for dynamic property reads where we
      * cannot tell the name of the property being accessed.
      */
-    predicate unrepresentable() { not exists(candidateRep()) }
+    predicate unrepresentable() { not exists(candidateRep(_)) }
 
     predicate hasLocationInfo(
       string filepath, int startline, int startcolumn, int endline, int endcolumn
@@ -157,6 +193,55 @@ private int minOcurrences() { result = 1 }
     DataFlow::Node asDataFlowNode() { result = nd }
   }
 
+  class SourceCandidate extends Node {
+    SourceCandidate() {
+      exists(candidateRep(false)) and
+      (
+        nd instanceof DataFlow::InvokeNode or
+        nd instanceof DataFlow::PropRead or
+        nd instanceof DataFlow::ParameterNode
+      )
+    }
+
+    string rep() { result = rep(false) }
+
+    string preciseRep() { result = preciseRep(false) }
+  }
+
+  class SanitizerCandidate extends Node {
+    SanitizerCandidate() { exists(candidateRep(false)) and nd instanceof DataFlow::InvokeNode }
+
+    string rep() { result = rep(false) }
+
+    string preciseRep() { result = preciseRep(false) }
+  }
+
+  class SinkCandidate extends Node {
+    SinkCandidate() {
+      exists(candidateRep(true)) and
+      (
+        exists(DataFlow::InvokeNode invk |
+          nd = invk.getAnArgument()
+          or
+          nd = invk.(DataFlow::MethodCallNode).getReceiver()
+        )
+        or
+        nd = any(DataFlow::PropWrite pw).getRhs()
+      )
+    }
+
+    string rep() { result = rep(true) }
+
+    string preciseRep() { result = preciseRep(true) }
+  }
+
+  private string genericMemberPattern() {
+    exists(ExternalType tp |
+      tp.getName() in ["Array", "Function", "Object", "Promise", "String"] and
+      result = "%(member " + tp.getAMember().getName() + " *)%"
+    )
+  }
+
   /**
    * Holds if there is an edge between `pred` and `succ` in the propagation graph
    * (cf Section 5.2 of Seldon paper).
@@ -164,19 +249,26 @@ private int minOcurrences() { result = 1 }
   predicate edge(Node pred, Node succ) {
     exists(DataFlow::CallNode c | not calls(c, _) and c = succ.asDataFlowNode() |
       pred.flowsTo(c.getAnArgument())
+      or
+      pred.flowsTo(c.getReceiver())
     )
     or
     pred.flowsTo(succ.asDataFlowNode()) and
     pred != succ
     or
-    exists(ObjectExpr obj | obj.flow() = succ.asDataFlowNode() |
-      pred.flowsTo(obj.getAProperty().getInit().flow())
-    )
-    or
-    pred.flowsTo(succ.asDataFlowNode().(DataFlow::ArrayLiteralNode).getAnElement())
-    or
     pointsTo(_, pred.asDataFlowNode()) = pointsTo(_, succ.asDataFlowNode()) and
     pred != succ
+    or
+    // edge capturing indirect flow; for example, in the code snippet
+    // `if(path.isAbsolute(p)) use(p)` this adds an edge between the call to `isAbsolute`
+    // and the argument `p` to `use`
+    guard(pred.asDataFlowNode(), succ.asDataFlowNode())
+  }
+
+  pragma[noinline]
+  private predicate callInFile(DataFlow::CallNode call, DataFlow::FunctionNode callee, File f) {
+    call.getFile() = f and
+    callee.getFunction() = call.getACallee(_)
   }
 
   /**
@@ -186,18 +278,22 @@ private int minOcurrences() { result = 1 }
    * not considered.
    */
   private predicate calls(DataFlow::CallNode call, DataFlow::FunctionNode callee) {
-    callee = call.getACallee(_).flow() and
-    callee.getFile() = call.getFile()
+    callInFile(call, callee, callee.getFile())
   }
 
   /**
    * An allocation site as tracked by the points-to analysis, that is,
-   * an unresolvable call.
+   * an unresolvable call, or a parameter to a callback function passed as an argument
+   * to an unresolvable function
    */
-  private class AllocationSite extends DataFlow::InvokeNode {
+  private class AllocationSite extends DataFlow::Node {
     AllocationSite() {
       getBasicBlock() instanceof ReachableBasicBlock and
-      not calls(this, _)
+      exists(DataFlow::InvokeNode invk | not calls(invk, _) |
+        this = invk
+        or
+        this = invk.getABoundCallbackParameter(_, _)
+      )
     }
   }
 
@@ -280,6 +376,6 @@ private int minOcurrences() { result = 1 }
   }
 
   string getconcatrep(DataFlow::Node n){
-    result = strictconcat(string r | r = candidateRep(n, _) and exists(PropagationGraph::Node nd | nd.rep() = r)  | r, "::")
+    result = strictconcat(string r | r = candidateRep(n, _, _) and exists(PropagationGraph::Node nd | nd.rep() = r)  | r, "::")
   }
 }
