@@ -28,7 +28,8 @@ private DataFlow::Node getAnExport(string pkgName) {
       apw.writes(m.(AnalyzedModule).getModuleObject(), "exports", result)
     )
     or
-    m.(ES2015Module).exports("default", result.(DataFlow::ValueNode).getAstNode())
+    m.(ES2015Module).getAnExportedValue("default") = result 
+    // m.(ES2015Module).exports("default", result.(DataFlow::ValueNode).getAstNode())
   )
 }
 
@@ -44,6 +45,9 @@ private DataFlow::Node getAnExport(string pkgName, string prop) {
 /**
  * Gets a candidate representation of `nd` as a (suffix of an) access path.
  */
+string candidateRep(DataFlow::Node nd, int depth) {
+  result = candidateRep(nd, depth, _)
+}
 string candidateRep(DataFlow::Node nd, int depth, boolean asRhs) {
   // static invoke in the same file
   (
@@ -174,3 +178,17 @@ string candidateRep(DataFlow::Node nd, int depth, boolean asRhs) {
     result = candidateRep(base, depth, asRhs)
   )
 }
+
+string preciseRep(DataFlow::Node nd, int depth, boolean asRhs) {
+  result = candidateRep(nd, depth, asRhs) and
+  not result.matches(genericMemberPattern())
+}
+
+string genericMemberPattern() {
+  exists(ExternalType tp |
+    tp.getName() in ["Array", "Function", "Object", "Promise", "String"] and
+    result = "%(member " + tp.getAMember().getName() + " *)%"
+  )
+}
+
+

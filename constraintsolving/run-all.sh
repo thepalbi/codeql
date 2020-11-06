@@ -4,32 +4,38 @@
 sh ./cleanMetrics.sh
 
 # invoke all steps Sql, NoSql, Xss for individual projects
-echo Calling Optimize  on Sql projects
-sh ./run-Sql.sh --single-step optimize $* 
+#echo Calling Optimize  on Sql projects
+#sh ./run-Sql.sh --single-step optimize $* 
 echo Calling generate_scores on Sql projects
 sh ./run-Sql.sh --single-step generate_scores --kind snk $* 
 sh ./run-Sql.sh --single-step generate_scores --kind src $* 
 sh ./run-Sql.sh --single-step generate_scores --kind san $* 
 
-echo Calling Optimize on NoSql projects 
-sh ./run-NoSql.sh --single-step optimize $* 
+#echo Calling Optimize on NoSql projects 
+#sh ./run-NoSql.sh --single-step optimize $* 
 echo Calling generate_scores on NoSql projects
 sh ./run-NoSql.sh --single-step generate_scores --kind snk $* 
 sh ./run-NoSql.sh --single-step generate_scores --kind src $* 
 sh ./run-NoSql.sh --single-step generate_scores --kind san $* 
 
-echo Calling Optimize --no-flow on Xss projects
-sh ./run-Xss.sh --single-step optimize $*
+#echo Calling Optimize --no-flow on Xss projects
+#sh ./run-Xss.sh --single-step optimize $*
 echo Calling generate_scores on Xss projects
 sh ./run-Xss.sh --single-step generate_scores --kind snk $* 
 sh ./run-Xss.sh --single-step generate_scores --kind src $* 
 sh ./run-Xss.sh --single-step generate_scores --kind san $* 
+
+echo Calling generate_scores on Path projects
+sh ./run-Path.sh --single-step generate_scores --kind snk $* 
+sh ./run-Path.sh --single-step generate_scores --kind src $* 
+sh ./run-Path.sh --single-step generate_scores --kind san $* 
 
 
 # now compute the stats 
 python3 generateMetrics.py --project-list sqlinjection_projects.txt --working-dir /mnt/wrk/sql/  > sql-stats-ind.txt 
 python3 generateMetrics.py --project-list nosqlinjection_projects.txt --working-dir /mnt/wrk/nosql/  > nosql-stats-ind.txt 
 python3 generateMetrics.py --project-list xss_projects.txt --working-dir /mnt/wrk/xss/  > xss-stats-ind.txt 
+python3 generateMetrics.py --project-list taintedpath_projects.txt --working-dir /mnt/wrk/path/  > path-stats-ind.txt 
 
 ## same procedure with combined scores
 # compute combined scores
@@ -50,8 +56,12 @@ sh ./cleanMetrics.sh
 ./run-Xss-combined.sh- -kind snk $*
 ./run-Xss-combined.sh- -kind src $*
 ./run-Xss-combined.sh- -kind san $*
+./run-Path-combined.sh- -kind snk $*
+./run-Path-combined.sh- -kind src $*
+./run-Path-combined.sh- -kind san $*
 
 # now compute generate combined  stats 
 python3 generateMetrics.py --project-list sqlinjection_projects.txt --working-dir /mnt/wrk/sql/ --combined > sql-stats-combined.txt 
 python3 generateMetrics.py --project-list nosqlinjection_projects.txt --working-dir /mnt/wrk/nosql/ --combined > nosql-stats-combined.txt 
 python3 generateMetrics.py --project-list xss_projects.txt --working-dir /mnt/wrk/xss/ --combined > xss-stats-combined.txt 
+python3 generateMetrics.py --project-list taintedpath_projects.txt --working-dir /mnt/wrk/path/ --combined > path-stats-combined.txt 

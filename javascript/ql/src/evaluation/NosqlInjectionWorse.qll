@@ -3,7 +3,7 @@
  */
 
 import semmle.javascript.security.TaintedObject
-import NoSQLWorse
+//import NoSQLWorse
 
 module NosqlInjectionWorse {
   import NosqlInjectionWorseCustomizations::NosqlInjectionWorse

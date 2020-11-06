@@ -6,7 +6,7 @@
 
 import javascript
 import semmle.javascript.security.TaintedObject
-import NoSQLWorse
+//import NoSQLWorse
 
 module NosqlInjectionWorse {
   /**

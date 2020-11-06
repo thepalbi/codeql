@@ -109,6 +109,10 @@ private int minOcurrences() { result = 1 }
         // Eliminate rare representations
         count(Node n | n.candidateRep(_) = result) >= minOcurrences()
     }
+  
+    string getconcatrep(){
+      result = strictconcat(string r | r = this.rep() | r, "::")
+    }
 
     string rep1(){
         result = candidateRep(_)
@@ -203,7 +207,7 @@ private int minOcurrences() { result = 1 }
       )
     }
 
-    string rep() { result = rep(false) }
+    override string rep() { result = rep(false) }
 
     string preciseRep() { result = preciseRep(false) }
   }
@@ -211,7 +215,7 @@ private int minOcurrences() { result = 1 }
   class SanitizerCandidate extends Node {
     SanitizerCandidate() { exists(candidateRep(false)) and nd instanceof DataFlow::InvokeNode }
 
-    string rep() { result = rep(false) }
+    override string rep() { result = rep(false) }
 
     string preciseRep() { result = preciseRep(false) }
   }
@@ -230,17 +234,11 @@ private int minOcurrences() { result = 1 }
       )
     }
 
-    string rep() { result = rep(true) }
+    override string rep() { result = rep(true) }
 
     string preciseRep() { result = preciseRep(true) }
   }
 
-  private string genericMemberPattern() {
-    exists(ExternalType tp |
-      tp.getName() in ["Array", "Function", "Object", "Promise", "String"] and
-      result = "%(member " + tp.getAMember().getName() + " *)%"
-    )
-  }
 
   /**
    * Holds if there is an edge between `pred` and `succ` in the propagation graph
