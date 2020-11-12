@@ -333,6 +333,10 @@ private int minOcurrences() { result = 1 }
     )
   }
 
+  AllocationSite allPointedBy(Node nd) {    
+    result = pointsTo(_, nd.asDataFlowNode())
+  }
+
   /** Gets the allocation sites `nd` may refer to in context `ctxt`. */
   private AllocationSite pointsTo(Context ctxt, DataFlow::Node nd) {
     viableContext(ctxt, nd) and
