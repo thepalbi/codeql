@@ -38,12 +38,20 @@ predicate propagationGraphReachable(
   )
 }
 
-query predicate allPropgraphNodes(PropagationGraph::Node nd) {
-  nd = nd
+query predicate allPropgraphNodes(PropagationGraph::Node nd, string concatRepr) {
+  nd = nd and concatRepr = concat(nd.rep(), "::")
 }
 
-query predicate allPointsTo(PropagationGraph::Node frm, PropagationGraph::Node to) {
-    PropagationGraph::allPointedBy(frm).(DataFlow::Node) = to.asDataFlowNode()
+query predicate allPointsTo(PropagationGraph::Node frm, PropagationGraph::Node to, string reason) {
+  PropagationGraph::pointsTo(_, frm.asDataFlowNode(), reason).(DataFlow::Node) = to.asDataFlowNode()
+}
+
+query predicate allAllocationSites(PropagationGraph::AllocationSite allocationSite) {
+  allocationSite = allocationSite
+}
+
+query predicate reprTest(PropagationGraph::Node nd) {
+  nd.rep() = "(parameter -1 *)"
 }
 
 from PropagationGraph::Node src, PropagationGraph::Node snk 
