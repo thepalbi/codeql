@@ -89,7 +89,8 @@ private predicate isCallBackArgument(DataFlow::Node callBack, DataFlow::InvokeNo
    * A taint-tracking configuration for reasoning about NoSQL-injection vulnerabilities.
    */
   class ExpandedConfiguration extends TaintTracking::Configuration {
-    ExpandedConfiguration() { this = "ExpandedConfiguration" }
+    ExpandedConfiguration() { this = "ExpandedConfiguration" or 
+                              this = "BoostedConfigFilter"}
 
     override predicate isSource(DataFlow::Node source) { 
       // isCandidateSource(source) 

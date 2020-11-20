@@ -5,9 +5,12 @@
 
 import javascript
 import PropagationGraphs
+import semmle.javascript.security.dataflow.NosqlInjectionCustomizationsWorse
 
-predicate reachableFromSourceCandidate(PropagationGraph::Node src, PropagationGraph::Node nd) {
-  src.isSourceCandidate() and
+
+predicate reachableFromSourceCandidate(
+  PropagationGraph::SourceCandidate src, PropagationGraph::Node nd
+) {
   PropagationGraph::edge(src, nd)
   or
   exists(PropagationGraph::Node mid |
@@ -16,8 +19,9 @@ predicate reachableFromSourceCandidate(PropagationGraph::Node src, PropagationGr
   )
 }
 
-predicate reachableFromSanitizerCandidate(PropagationGraph::Node san, PropagationGraph::Node nd) {
-    san.isSanitizerCandidate() and
+predicate reachableFromSanitizerCandidate(
+  PropagationGraph::SanitizerCandidate san, PropagationGraph::Node nd
+) {
   PropagationGraph::edge(san, nd)
   or
   exists(PropagationGraph::Node mid |
@@ -27,12 +31,13 @@ predicate reachableFromSanitizerCandidate(PropagationGraph::Node san, Propagatio
 }
 
 // print the set of connected triples
-predicate triple(PropagationGraph::Node src, PropagationGraph::Node san, PropagationGraph::Node snk) {
+predicate triple(
+  PropagationGraph::SourceCandidate src, PropagationGraph::SanitizerCandidate san, 
+  PropagationGraph::SinkCandidate snk) {
   reachableFromSourceCandidate(src, san) and
-  san.isSanitizerCandidate() and
   src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
-  reachableFromSanitizerCandidate(san, snk) and
-  snk.isSinkCandidate()  
+  reachableFromSanitizerCandidate(san, snk) 
+  //snk.isSinkCandidate()  
   // NB: we do not require `san` and `snk` to be different, since we might have a situation like
   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
 }
@@ -68,33 +73,58 @@ query predicate allCalls(PropagationGraph::Node callNode, int lineNumber, string
   and repr = concat(callNode.rep(),"::")
 }
 
-query predicate pairSrcSan(string ssrc, string ssan){
-    exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
-        reachableFromSourceCandidate(src, san) and
-        san.isSanitizerCandidate() and
-        src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
-        reachableFromSanitizerCandidate(san, snk) and
-        snk.isSinkCandidate() and 
-        ssrc = src.getconcatrep() and 
-        ssan = san.getconcatrep()  
-        //ssnk = snk.getconcatrep()    
-        //ssrc = getconcatrep(src) and 
-        //ssan = getconcatrep(san) 
-        )
+query predicate pairSrcSanFew(string ssrc, string ssan){
+  exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
+      reachableFromSourceCandidate(src, san) and
+      san.isSanitizerCandidate() and
+      src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
+      reachableFromSanitizerCandidate(san, snk) and
+      snk.isSinkCandidate() and 
+      ssrc = src.getconcatrep() and 
+      ssan = san.getconcatrep()  
+      //ssnk = snk.getconcatrep()    
+      //ssrc = getconcatrep(src) and 
+      //ssan = getconcatrep(san) 
+      )
 }
 
 query predicate pairSanSnk(string ssan, string ssnk){
+  exists(PropagationGraph::SourceCandidate src, 
+    PropagationGraph::SanitizerCandidate san, 
+    PropagationGraph::SinkCandidate snk |
+    reachableFromSourceCandidate(src, san) and
+      src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
+      reachableFromSanitizerCandidate(san, snk) and
+      // We keep only sinks that are candidates
+      // (parameters of library functions)
+      isCandidateSink(snk.asDataFlowNode(), _) and
+      ssan = san.getconcatrep() and 
+      ssnk = snk.getconcatrep()    
+      )
+}
+
+
+query predicate pairSrcSan(string ssrc, string ssan){
+    exists(PropagationGraph::SourceCandidate src, 
+      PropagationGraph::SanitizerCandidate san, 
+      PropagationGraph::SinkCandidate snk |
+        reachableFromSourceCandidate(src, san) and
+        src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
+        reachableFromSanitizerCandidate(san, snk) and
+        ssrc = src.getconcatrep() and 
+        ssan = san.getconcatrep()  
+        )
+}
+
+query predicate pairSanSnkFew(string ssan, string ssnk){
     exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
         reachableFromSourceCandidate(src, san) and
         san.isSanitizerCandidate() and
         src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
         reachableFromSanitizerCandidate(san, snk) and
         snk.isSinkCandidate() and         
-        //ssrc = src.getconcatrep() and 
         ssan = san.getconcatrep() and 
         ssnk = snk.getconcatrep()    
-        // ssan = getconcatrep(san) and
-        // ssnk = getconcatrep(snk)
         )
 }
 

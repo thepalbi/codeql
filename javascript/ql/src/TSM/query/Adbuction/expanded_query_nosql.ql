@@ -39,6 +39,49 @@ predicate sameLocationInfo(DataFlow::PathNode n1,DataFlow::PathNode n2) {
   )
 }
 
+query predicate compareVWorsevsExpanded(int new, int missing, int same) {
+  new = count(
+      DataFlow::PathNode source, DataFlow::PathNode sink |
+      exists(ExpandedConfiguration::ExpandedConfiguration cfg| 
+             cfg.hasFlowPath(source, sink)
+             and not exists(NosqlInjectionWorse::Configuration cfgVW,
+                  DataFlow::PathNode source2, DataFlow::PathNode sink2 |
+                cfgVW.hasFlowPath(source2, sink2)
+                and sameLocationInfo(source, source2)
+                and sameLocationInfo(sink, sink2)
+              )
+      )
+     )
+  and 
+  missing = count(
+    DataFlow::PathNode source, DataFlow::PathNode sink |
+    exists(NosqlInjectionWorse::Configuration cfgVW| 
+           cfgVW.hasFlowPath(source, sink)
+           and not exists(ExpandedConfiguration::ExpandedConfiguration cfg,
+                DataFlow::PathNode source2, DataFlow::PathNode sink2 |
+              cfg.hasFlowPath(source2, sink2)
+              and sameLocationInfo(source, source2)
+              and sameLocationInfo(sink, sink2)
+            )
+    )
+   )
+   and
+   same = count(
+    DataFlow::PathNode source, DataFlow::PathNode sink |
+    exists(ExpandedConfiguration::ExpandedConfiguration cfg| 
+           cfg.hasFlowPath(source, sink)
+           and exists(NosqlInjectionWorse::Configuration cfgVW,
+                DataFlow::PathNode source2, DataFlow::PathNode sink2 |
+              cfgVW.hasFlowPath(source2, sink2)
+              and sameLocationInfo(source, source2)
+              and sameLocationInfo(sink, sink2)
+            )
+    )
+   )
+
+
+}
+
 query predicate compareV0vsExpanded(int new, int missing, int same) {
   new = count(
       DataFlow::PathNode source, DataFlow::PathNode sink |
@@ -106,7 +149,38 @@ query predicate sinksToBlameFiltered(DataFlow::PathNode sink, int repetitions, s
                   exists(DataFlow::PathNode sink2 | 
                       sameLocationInfo(sink, sink2 ) 
                     and exists(string rep2  |   
-                      candidateRep(sink.getNode(), d) = rep2 )
+                      candidateRep(sink.getNode(), d, true) = rep2 )
+                  ) 
+        )
+    )
+}
+
+
+predicate sinksToBlameWorse(DataFlow::PathNode sink, int repetitions) {
+  repetitions = count(
+      DataFlow::PathNode source |
+      exists(ExpandedConfiguration::ExpandedConfiguration cfg| 
+             cfg.hasFlowPath(source, sink)
+             and not exists(NosqlInjectionWorse::Configuration cfgVW,
+                  DataFlow::PathNode source2, DataFlow::PathNode sink2 |
+                cfgVW.hasFlowPath(source2, sink2)
+                and sameLocationInfo(source, source2)
+                and sameLocationInfo(sink, sink2)
+              )
+      )
+     )
+    and repetitions>0
+}
+
+query predicate sinksToBlameFilteredWorse(DataFlow::PathNode sink, int repetitions, string rep) {
+  sinksToBlameWorse(sink, repetitions)   
+  and exists( int maxDepth |  maxDepth > 0
+        and rep =  candidateRep(sink.getNode(), maxDepth) 
+        and maxDepth = max( int d | 
+                  exists(DataFlow::PathNode sink2 | 
+                      sameLocationInfo(sink, sink2 ) 
+                    and exists(string rep2  |   
+                      candidateRep(sink.getNode(), d, true) = rep2 )
                   ) 
         )
     )
