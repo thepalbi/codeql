@@ -54,10 +54,6 @@ query predicate reprTest(PropagationGraph::Node nd) {
   nd.rep() = "(parameter -1 *)"
 }
 
-query predicate allObjectExpressions(DataFlow::Node nd, string className) {
-  exists(ObjectExpr expr | nd.asExpr() = expr) and nd.getAQlClass() = className
-}
-
 from PropagationGraph::Node src, PropagationGraph::Node snk 
 where 
   src.asDataFlowNode() instanceof RemoteFlowSource and
