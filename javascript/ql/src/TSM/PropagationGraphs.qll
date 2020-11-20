@@ -120,6 +120,19 @@ private int minOcurrences() { result = 1 }
           | rep order by score, depth, rep) 
       }
 
+      string selectBestRep(DataFlow::Node sink, boolean asRhs) {
+        exists(string rep, int score, int depth |
+        result = rep and rep  = candidateRep(sink, depth, asRhs) 
+          and score = count (  rep.indexOf("member"))*4
+          +  count (  rep.indexOf("return"))*2
+          +  count (  rep.indexOf("parameter"))*3
+          // Penalizes the receivers againts members
+          -  count (  rep.indexOf("parameter -1"))*4
+          and score > 3 and depth>=2
+        )
+      }
+
+
     string rep(){
       result = this.rep(_)
         // result = candidateRep(_) and 
@@ -152,11 +165,17 @@ private int minOcurrences() { result = 1 }
      */
     string rep(boolean asRhs) {
       // Diego: Force only one "canonical" Repr
-      // result = chooseBestRep(nd, asRhs) and
-      result = candidateRep(asRhs) and
-      // eliminate rare representations
-      count(Node n | n.candidateRep(_) = result) >= minOcurrences()
-    }
+      //result = chooseBestRep(nd, asRhs) and
+      // result = candidateRep(asRhs) and
+      exists(string rep | rep  = selectBestRep(nd, asRhs) 
+        and result = rep
+      )
+      or (
+        not exists(string rep | rep  = selectBestRep(nd, asRhs))
+        and result = candidateRep(asRhs) and
+        count(Node n | n.candidateRep(asRhs) = result) >= minOcurrences()
+        )
+     }
 
     /**
      * Gets an abstract representation of this node, filtering out generic representations that
@@ -423,7 +442,11 @@ private int minOcurrences() { result = 1 }
     f = pw.getPropertyName()
   }
 
+  string getconcatrep(DataFlow::Node n, boolean asRhs){
+    result = strictconcat(string r | r = candidateRep(n, _, asRhs) and exists(PropagationGraph::Node nd | nd.rep(asRhs) = r)  | r, "::")
+  }
+
   string getconcatrep(DataFlow::Node n){
-    result = strictconcat(string r | r = candidateRep(n, _, _) and exists(PropagationGraph::Node nd | nd.rep() = r)  | r, "::")
+    result = getconcatrep(n, _)
   }
 }

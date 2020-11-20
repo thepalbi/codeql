@@ -14,5 +14,5 @@ query predicate sinkNoSqlClasses(DataFlow::Node nd, string q, string repr){
     nd instanceof NosqlInjection6::Sink and q="NosqlInjection6" or
     nd instanceof NosqlInjectionWorse::Sink and q="NosqlInjectionWorse"
     ) and   
-    repr = PropagationGraph::getconcatrep(nd)
+    repr = PropagationGraph::getconcatrep(nd, true)
 }

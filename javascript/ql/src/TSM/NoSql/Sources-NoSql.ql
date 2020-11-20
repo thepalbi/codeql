@@ -14,5 +14,5 @@ query predicate sourceNoSqlClasses(DataFlow::Node nd, string q, string repr){
     nd instanceof NosqlInjection6::Source and q="NosqlInjection6" or
     nd instanceof NosqlInjectionWorse::Source and q="NosqlInjectionWorse" 
     ) and   
-    repr = PropagationGraph::getconcatrep(nd)
+    repr = PropagationGraph::getconcatrep(nd, false)
 }

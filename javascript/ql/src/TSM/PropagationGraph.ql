@@ -73,58 +73,69 @@ query predicate allCalls(PropagationGraph::Node callNode, int lineNumber, string
   and repr = concat(callNode.rep(),"::")
 }
 
-query predicate pairSrcSanFew(string ssrc, string ssan){
+query predicate pairSanSnk(string ssan, string ssnk){
+  exists(PropagationGraph::SourceCandidate src, 
+      PropagationGraph::SanitizerCandidate san, 
+      PropagationGraph::SinkCandidate snk |
+      reachableFromSourceCandidate(src, san) and
+      src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
+      reachableFromSanitizerCandidate(san, snk) and
+      // We keep only sinks that are candidates
+      // (parameters of library functions)
+      isCandidateSink(snk.asDataFlowNode(), _) and
+      ssan = san.getconcatrep(false) and 
+      ssnk = snk.getconcatrep(true)    
+      )
+}
+
+
+query predicate pairSrcSan(string ssrc, string ssan){
+  exists(PropagationGraph::SourceCandidate src, 
+    PropagationGraph::SanitizerCandidate san, 
+    PropagationGraph::SinkCandidate snk |
+    reachableFromSourceCandidate(src, san) and
+    src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
+    reachableFromSanitizerCandidate(san, snk) and
+    // We keep only sinks that are candidates
+    // (parameters of library functions)
+    isCandidateSink(snk.asDataFlowNode(), _) and
+    ssan = san.getconcatrep(false) and 
+    ssrc = src.getconcatrep(false)  
+    )
+  }
+
+
+
+predicate pairSrcSanFew(string ssrc, string ssan){
   exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
       reachableFromSourceCandidate(src, san) and
       san.isSanitizerCandidate() and
       src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
       reachableFromSanitizerCandidate(san, snk) and
       snk.isSinkCandidate() and 
-      ssrc = src.getconcatrep() and 
-      ssan = san.getconcatrep()  
+      // We keep only sinks that are candidates
+      // (parameters of library functions)
+      isCandidateSink(snk.asDataFlowNode(), _) and
+      ssrc = src.getconcatrep(false) and 
+      ssan = san.getconcatrep(false)  
       //ssnk = snk.getconcatrep()    
       //ssrc = getconcatrep(src) and 
       //ssan = getconcatrep(san) 
       )
 }
 
-query predicate pairSanSnk(string ssan, string ssnk){
-  exists(PropagationGraph::SourceCandidate src, 
-    PropagationGraph::SanitizerCandidate san, 
-    PropagationGraph::SinkCandidate snk |
-    reachableFromSourceCandidate(src, san) and
-      src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
-      reachableFromSanitizerCandidate(san, snk) and
-      // We keep only sinks that are candidates
-      // (parameters of library functions)
-      isCandidateSink(snk.asDataFlowNode(), _) and
-      ssan = san.getconcatrep() and 
-      ssnk = snk.getconcatrep()    
-      )
-}
-
-
-query predicate pairSrcSan(string ssrc, string ssan){
-    exists(PropagationGraph::SourceCandidate src, 
-      PropagationGraph::SanitizerCandidate san, 
-      PropagationGraph::SinkCandidate snk |
-        reachableFromSourceCandidate(src, san) and
-        src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
-        reachableFromSanitizerCandidate(san, snk) and
-        ssrc = src.getconcatrep() and 
-        ssan = san.getconcatrep()  
-        )
-}
-
-query predicate pairSanSnkFew(string ssan, string ssnk){
+predicate pairSanSnkFew(string ssan, string ssnk){
     exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
         reachableFromSourceCandidate(src, san) and
         san.isSanitizerCandidate() and
         src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
         reachableFromSanitizerCandidate(san, snk) and
         snk.isSinkCandidate() and         
-        ssan = san.getconcatrep() and 
-        ssnk = snk.getconcatrep()    
+        // We keep only sinks that are candidates
+        // (parameters of library functions)
+        isCandidateSink(snk.asDataFlowNode(), _) and
+        ssan = san.getconcatrep(false) and 
+        ssnk = snk.getconcatrep(true)    
         )
 }
 

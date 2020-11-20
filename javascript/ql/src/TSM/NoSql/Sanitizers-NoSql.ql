@@ -12,6 +12,6 @@ query predicate sanitizerNoSqlClasses(DataFlow::Node nd, string q, string repr){
         nd instanceof NosqlInjection::Sanitizer and q="NosqlInjection" or
         nd instanceof NosqlInjectionWorse::Sanitizer and q="NosqlInjectionWorse"       
     ) and
-    repr = PropagationGraph::getconcatrep(nd)
+    repr = PropagationGraph::getconcatrep(nd, false)
 }
 
