@@ -49,6 +49,32 @@ app.post('/object-field-aliasing', (req, res) => {
     });
 });
 
+app.post('/object-field-aliasing-with-custom-new-object-from-method', (req, res) => {
+    var resolvedPath =  path.join(appDir, req.body.path);
+    var containerObject = createNewEmptyObject();
+    containerObject.taintedField = resolvedPath;
+    fs.writeFile(containerObject.taintedField, req.body.contents, (err) => {
+        if (err) {
+            res.sendStatus(500);
+        } else {
+            res.sendStatus(200);
+        }
+    });
+});
+
+app.post('/object-field-aliasing-with-new-object-from-method', (req, res) => {
+    var resolvedPath =  path.join(appDir, req.body.path);
+    var containerObject = new Object();
+    containerObject.taintedField = resolvedPath;
+    fs.writeFile(containerObject.taintedField, req.body.contents, (err) => {
+        if (err) {
+            res.sendStatus(500);
+        } else {
+            res.sendStatus(200);
+        }
+    });
+});
+
 app.post('/object-field-aliasing-on-init', (req, res) => {
     var resolvedPath =  path.join(appDir, req.body.path);
     var containerObject = {
@@ -94,3 +120,6 @@ app.listen(port, () => {
     console.log(`Application listenting on port ${port}...`);
 });
 
+function createNewEmptyObject() {
+    return {};
+}
