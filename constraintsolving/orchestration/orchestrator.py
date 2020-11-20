@@ -5,7 +5,7 @@ from generation.data import DataGenerator, GenerateEntitiesStep, GenerateScoresS
 from optimizer.gurobi import GenerateModelStep, OptimizeStep
 
 from orchestration import global_config
-from orchestration.steps import Context,  RESULTS_DIR_KEY, WORKING_DIR_KEY, SINGLE_STEP_NAME, COMMAND_NAME
+from orchestration.steps import Context,  RESULTS_DIR_KEY, WORKING_DIR_KEY, SINGLE_STEP_NAME, COMMAND_NAME, STEP_NAMES
 
 import time
 import datetime
@@ -105,6 +105,23 @@ class Orchestrator:
             ctx = step.populate(ctx)
             ctx = step.run(ctx)
 
+    def run_steps(self, steps: List[str]):
+        self.logger.info(f"Running orchestration-run steps: {', '.join(steps)}")
+
+        ctx = self.starting_ctx()
+        ctx[COMMAND_NAME] = "run"
+        ctx[STEP_NAMES] = steps
+        
+        for step in self.steps:
+            if step.name() in steps:
+                self.print_step_banner(step, "run")
+                ctx = step.populate(ctx)
+                step.run(ctx)
+            else:
+                # Make each previous step populate the ctx
+                self.logger.info(f"Step `{step.name()}` is populating context")
+                ctx = step.populate(ctx)
+
     def clean(self):
         self.logger.info("Running ALL orchestration-clean steps")
 
@@ -116,6 +133,7 @@ class Orchestrator:
             ctx = step.populate(ctx)
             step.clean(ctx)
 
+    """Deprecated"""
     def run_step(self, step_name: str):
         self.logger.info("Running SINGLE orchestration step")
 

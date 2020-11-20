@@ -11,7 +11,7 @@ from compute_metrics import getallmetrics, createReprPredicate
 from orchestration.steps import OrchestrationStep, Context,\
     CONSTRAINTS_DIR_KEY, MODELS_DIR_KEY, RESULTS_DIR_KEY, WORKING_DIR_KEY, LOGS_DIR_KEY, \
     SOURCE_ENTITIES, SANITIZER_ENTITIES,  SINK_ENTITIES,SRC_SAN_TUPLES_ENTITIES,SAN_SNK_TUPLES_ENTITIES, REPR_MAP_ENTITIES, \
-    SINGLE_STEP_NAME, COMMAND_NAME
+    SINGLE_STEP_NAME, COMMAND_NAME, STEP_NAMES
 
 from solver.config import SolverConfig
 from solver.get_constraints import ConstraintBuilder
@@ -36,9 +36,15 @@ class GenerateModelStep(OrchestrationStep):
             shutil.rmtree(dir_to_remove, onerror=self.clean_error_callback)
 
     def should_use_existing_model_dirs(self, ctx):
+        """This step should use existing model_dirs in the following cases:
+        1. Just running optimize step, should use existing model dirs
+        2. When cleaning, delete the existing model dirs
+        3. If running multiple steps, but this step is not included, reuse existing model dirs
+        """
         return \
             (SINGLE_STEP_NAME in ctx) and ctx[SINGLE_STEP_NAME] == "optimize" or \
-            (COMMAND_NAME in ctx) and ctx[COMMAND_NAME] == "clean"
+            (COMMAND_NAME in ctx) and ctx[COMMAND_NAME] == "clean" or \
+            (STEP_NAMES in ctx) and not self.name() in ctx[STEP_NAMES]
             
 
 

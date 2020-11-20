@@ -25,6 +25,7 @@ LOGS_DIR_KEY = "wd_logs_dir"
 RESULTS_DIR_KEY = "results_dir"
 WORKING_DIR_KEY = "working_dir"
 SINGLE_STEP_NAME = "orchestrator.single_step_name"
+STEP_NAMES = "orchestrator.steps_to_run"
 COMMAND_NAME = "orchestrator.command_name"
 
 

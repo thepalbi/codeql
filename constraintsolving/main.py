@@ -30,7 +30,10 @@ parser = argparse.ArgumentParser()
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s\t%(asctime)s] %(name)s\t%(message)s")
 
 parser.add_argument("--single-step", dest="single_step", type=str, default=all_steps, metavar="STEP",
-                    help="Runs a single step of the orchestrator named STEP")
+                    help="DEPRECATED. USE --steps. Runs a single step of the orchestrator named STEP")
+
+parser.add_argument("--steps", dest="steps", type=str, default=all_steps, metavar="STEPS",
+                    help="Runs all orchestrator steps in the comma-separated list STEPS")
 
 parser.add_argument("--project-dir", dest="project_dir", required=True, type=str,
                     help="Directory of the CodeQL database")
@@ -105,7 +108,11 @@ if __name__ == '__main__':
                             scores_file, no_flow)
 
         if parsed_arguments.command == "run":
-            if parsed_arguments.single_step == all_steps:
+            if parsed_arguments.steps != "":
+                # This should be the new `--steps` argument. --single-step should be deprecated
+                steps_to_run = parsed_arguments.steps.split(",")
+                orchestrator.run_steps(steps_to_run)
+            elif parsed_arguments.single_step == all_steps:
                 orchestrator.run()
             else:
                 orchestrator.run_step(parsed_arguments.single_step) 

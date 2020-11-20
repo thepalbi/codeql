@@ -58,6 +58,13 @@ For instance this command will run the `generate_scores` step
 python main.py --project-dir output/abhinavkumarl-bidding-system/ --single-step generate_scores --query-type Xss --query-name DomBasedXssWorse run
 ```
 
+Also, you can run multiple steps at once with the following command:
+
+```bash
+# Execute multiple steps (also works for just one):
+python main.py --project-dir output/abhinavkumarl-bidding-system/ --steps optimize,generate_scores --query-type Xss --query-name DomBasedXssWorse run
+```
+
 Additionally, a set of databases can be processed (either a single step or all steps) by using the option `--projects-list`. For instance:
 
 ```bash
