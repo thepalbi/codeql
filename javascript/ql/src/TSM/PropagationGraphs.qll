@@ -293,6 +293,7 @@ private int minOcurrences() { result = 1 }
   pragma[noinline]
   private predicate callInFile(DataFlow::CallNode call, DataFlow::FunctionNode callee, File f) {
     call.getFile() = f and
+    // TODO: This can be improved with TASER info. The `getACallee` candidates
     callee.getFunction() = call.getACallee(_)
   }
 
@@ -311,14 +312,27 @@ private int minOcurrences() { result = 1 }
    * an unresolvable call, or a parameter to a callback function passed as an argument
    * to an unresolvable function
    */
-  private class AllocationSite extends DataFlow::Node {
+  class AllocationSite extends DataFlow::Node {
     AllocationSite() {
       getBasicBlock() instanceof ReachableBasicBlock and
-      exists(DataFlow::InvokeNode invk | not calls(invk, _) |
+      exists(DataFlow::InvokeNode invk |
         this = invk
         or
         this = invk.getABoundCallbackParameter(_, _)
-      )
+      ) or
+      this instanceof LiteralObjectNode
+    }
+  }
+
+  /**
+   * A DataFlow::Node that matches a literal object declaration, such as:
+   * ```javascript
+   * const a = {};
+   * ```
+   */
+  private class LiteralObjectNode extends DataFlow::Node {
+    LiteralObjectNode() {
+      this.asExpr() instanceof ObjectExpr
     }
   }
 
@@ -358,29 +372,38 @@ private int minOcurrences() { result = 1 }
     )
   }
 
+  AllocationSite allPointedBy(Node nd) {    
+    result = pointsTo(_, nd.asDataFlowNode())
+  }
+
   /** Gets the allocation sites `nd` may refer to in context `ctxt`. */
   private AllocationSite pointsTo(Context ctxt, DataFlow::Node nd) {
+    result = pointsTo(ctxt, nd, _)
+  }
+
+  /** Gets the allocation sites `nd` may refer to in context `ctxt`. */
+  AllocationSite pointsTo(Context ctxt, DataFlow::Node nd, string reason) {
     viableContext(ctxt, nd) and
-    result = nd
+    result = nd and reason = "circular"
     or
-    result = pointsTo(ctxt, nd.getAPredecessor())
+    result = pointsTo(ctxt, nd.getAPredecessor()) and reason = "predecessor"
     or
     exists(DataFlow::PropRead pr | nd = pr |
-      result = fieldPointsTo(pointsTo(ctxt, pr.getBase()), pr.getPropertyName())
+      result = fieldPointsTo(pointsTo(ctxt, pr.getBase()), pr.getPropertyName()) and reason = "field"
     )
     or
     // flow from the `i`th argument of a call to the corresponding parameter
     exists(DataFlow::CallNode call, DataFlow::Node arg, Context base |
       argumentPassing(call, arg, nd) and
       ctxt = push(call, base) and
-      result = pointsTo(base, arg)
+      result = pointsTo(base, arg) and reason = "arguement passing"
     )
     or
     // flow from a returned value to a call to the function
     exists(DataFlow::FunctionNode callee |
       calls(nd, callee) and
       viableContext(ctxt, nd) and
-      result = pointsTo(push(nd, ctxt), callee.getAReturn())
+      result = pointsTo(push(nd, ctxt), callee.getAReturn()) and reason = "return"
     )
   }
 
