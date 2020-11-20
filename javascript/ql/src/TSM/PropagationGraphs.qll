@@ -290,11 +290,24 @@ private int minOcurrences() { result = 1 }
   class AllocationSite extends DataFlow::Node {
     AllocationSite() {
       getBasicBlock() instanceof ReachableBasicBlock and
-      exists(DataFlow::InvokeNode invk | not calls(invk, _) |
+      exists(DataFlow::InvokeNode invk |
         this = invk
         or
         this = invk.getABoundCallbackParameter(_, _)
-      )
+      ) or
+      this instanceof LiteralObjectNode
+    }
+  }
+
+  /**
+   * A DataFlow::Node that matches a literal object declaration, such as:
+   * ```javascript
+   * const a = {};
+   * ```
+   */
+  private class LiteralObjectNode extends DataFlow::Node {
+    LiteralObjectNode() {
+      this.asExpr() instanceof ObjectExpr
     }
   }
 
