@@ -29,9 +29,9 @@ module TSMConfig {
   
     override predicate isSink(DataFlow::Node sink, DataFlow::FlowLabel label) {
       exists (float score | TSM::isSink(sink, score) and score>=minScore_snk())
-      or 
-      super.isSink(sink, label)
-      or  sink instanceof NosqlInjectionWorse::Sink 
+      // or 
+      // super.isSink(sink, label)
+      or  sink.(NosqlInjectionWorse::Sink).getAFlowLabel()=label 
     }
 
     override predicate isSanitizer(DataFlow::Node node) {
