@@ -4,7 +4,7 @@
  */
 
 import javascript
-import PropagationGraphs
+import TSM.PropagationGraphs
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizationsWorse
 
 
@@ -34,6 +34,7 @@ predicate reachableFromSanitizerCandidate(
 predicate triple(
   PropagationGraph::SourceCandidate src, PropagationGraph::SanitizerCandidate san, 
   PropagationGraph::SinkCandidate snk) {
+  src.asDataFlowNode() instanceof NosqlInjectionWorse::Source and
   reachableFromSourceCandidate(src, san) and
   src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
   isCandidateSink(snk.asDataFlowNode(), _) and
@@ -78,6 +79,7 @@ query predicate pairSanSnk(string ssan, string ssnk){
   exists(PropagationGraph::SourceCandidate src, 
       PropagationGraph::SanitizerCandidate san, 
       PropagationGraph::SinkCandidate snk |
+      src.asDataFlowNode() instanceof NosqlInjectionWorse::Source and
       reachableFromSourceCandidate(src, san) and
       src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
       reachableFromSanitizerCandidate(san, snk) and
@@ -94,6 +96,7 @@ query predicate pairSrcSan(string ssrc, string ssan){
   exists(PropagationGraph::SourceCandidate src, 
     PropagationGraph::SanitizerCandidate san, 
     PropagationGraph::SinkCandidate snk |
+    src.asDataFlowNode() instanceof NosqlInjectionWorse::Source and
     reachableFromSourceCandidate(src, san) and
     src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
     reachableFromSanitizerCandidate(san, snk) and
@@ -109,6 +112,7 @@ query predicate pairSrcSan(string ssrc, string ssan){
 
 predicate pairSrcSanFew(string ssrc, string ssan){
   exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
+    src.asDataFlowNode() instanceof NosqlInjectionWorse::Source and
       reachableFromSourceCandidate(src, san) and
       san.isSanitizerCandidate() and
       src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
@@ -127,7 +131,8 @@ predicate pairSrcSanFew(string ssrc, string ssan){
 
 predicate pairSanSnkFew(string ssan, string ssnk){
     exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
-        reachableFromSourceCandidate(src, san) and
+      src.asDataFlowNode() instanceof NosqlInjectionWorse::Source and
+      reachableFromSourceCandidate(src, san) and
         san.isSanitizerCandidate() and
         src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
         reachableFromSanitizerCandidate(san, snk) and

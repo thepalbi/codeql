@@ -15,9 +15,11 @@ constaintssolving_dir = os.path.join(
     global_config.sources_root, "constraintsolving/")
 logs_folder = os.path.join(constaintssolving_dir, "logs/")
 
-SOURCES = "Sources"
-SINKS = "Sinks"
-SANITIZERS = "Sanitizers"
+# SOURCES = "Sources"
+# SINKS = "Sinks"
+# SANITIZERS = "Sanitizers"
+
+SOURCES = SINKS = SANITIZERS = "Known"
 
 SUPPORTED_QUERY_TYPES = ["NoSql", "Sql", "Xss", "Sel", "Path"]
 
@@ -180,29 +182,30 @@ class DataGenerator:
         try:
             self.codeql.database_analyze(
                 self.project_dir,
-                self._get_tsm_query_file(None, "PropagationGraph.ql"),
+                self._get_tsm_query_file(query_type, f"PropagationGraph-{query_type}.ql"),
                 f"{logs_folder}/js-results.csv")
         except Exception:
             self.logger.info("Error Analyzing PropagationGraph.ql")
 
         self.logger.info("Generating propagation graph data")
-
+        bqrs_propgraph = self._get_tsm_bqrs_file_for_entity("PropagationGraph", query_type)
         # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-src-san.prop.csv
         self.codeql.bqrs_decode(
-            self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
+            bqrs_propgraph,
+            # self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
             "pairSrcSan",
             ctx[SRC_SAN_TUPLES_ENTITIES])
 
         # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-san-snk.prop.csv
         self.codeql.bqrs_decode(
-            self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
+            bqrs_propgraph,
             "pairSanSnk",
             ctx[SAN_SNK_TUPLES_ENTITIES])
 
         # repr
         # data/1046224544_fontend_19c10c3/1046224544_fontend_19c10c3-eventToConcatRep-small.prop.csv
         self.codeql.bqrs_decode(
-            self._get_tsm_bqrs_file("PropagationGraph.bqrs"),
+            bqrs_propgraph,
             "eventToConcatRep",
             ctx[REPR_MAP_ENTITIES])
 
@@ -233,17 +236,23 @@ class DataGenerator:
             repr_mapping_output_file
         )
 
-    def _generate_for_entity(self, query_type: str, entity_type: str, result_set: str, output_file: str):
+    def _generate_for_entity(self, query_type: str, entity_type: str, result_set: str, output_file: str, 
+                             force_query: bool = False):
         """Runs the query for a given entity, and extracts the results into a csv file."""
         self.logger.info(
             "Generating %s data in file=[%s]", entity_type, output_file)
-        self.codeql.database_analyze(
-            self.project_dir,
-            self._get_tsm_query_file_for_entity(
+        query_path = self._get_tsm_query_file_for_entity(
                 entity_type,
-                query_type),
-            f"{logs_folder}/js-results.csv")
+                query_type) 
+        bqrs_file = self._get_tsm_bqrs_file_for_entity(entity_type, query_type)
+        # print(query_path)
+        # print(bqrs_file)
+        if not os.path.exists(bqrs_file) or force_query: 
+            self.codeql.database_analyze(
+                self.project_dir,
+                query_path,
+                f"{logs_folder}/js-results.csv")
         self.codeql.bqrs_decode(
-            self._get_tsm_bqrs_file_for_entity(entity_type, query_type),
+            bqrs_file,
             result_set,
             output_file)

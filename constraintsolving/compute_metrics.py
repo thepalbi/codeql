@@ -221,10 +221,10 @@ def createTSMQuery(ctx, project_name: str, query_type: str):
     tsm_folder = os.path.join(global_config.sources_root, "javascript", "ql", "src", "TSM")
     tsm_query_folder = os.path.join(tsm_folder, "query")
     tsm_repr_pred_file = os.path.join(tsm_query_folder, "tsm_repr_pred.qll")
-    tsm_query = os.path.join(tsm_query_folder, "TSM.ql")
     tsm_query_qll = os.path.join(tsm_query_folder, "tsm.qll")
-    # for tsm_config we use one query tailed for query_type
-    # this is essentially because we currently filter sanitizers by query and not by score  
+    # for tsm_config and tsm we use one query tailored for query_type
+    # this allows to compare against worse version
+    tsm_query = os.path.join(tsm_folder, query_type, "TSM.ql")
     tsm_config = os.path.join(tsm_folder, query_type, "tsm_config.qll")
 
     query_dir = os.path.join(tsm_query_folder, query_type, project_name, os.path.basename(ctx[RESULTS_DIR_KEY]))

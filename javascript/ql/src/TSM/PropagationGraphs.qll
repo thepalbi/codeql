@@ -113,22 +113,22 @@ private int minOcurrences() { result = 1 }
         result = max(string rep, int depth, int score | 
           rep = candidateRep(sink, depth, asRhs) 
           and score = count (  rep.indexOf("member"))*4
-          +  count (  rep.indexOf("return"))*2
-          +  count (  rep.indexOf("parameter"))*3
+          +  count (  rep.indexOf("return"))*3
+          +  count (  rep.indexOf("parameter"))*5
           // Penalizes the receivers againts members
-          -  count (  rep.indexOf("parameter -1"))*4
+          -  count (  rep.indexOf("parameter -1"))*8
           | rep order by score, depth, rep) 
       }
 
       string selectBestRep(DataFlow::Node sink, boolean asRhs) {
         exists(string rep, int score, int depth |
         result = rep and rep  = candidateRep(sink, depth, asRhs) 
-          and score = count (  rep.indexOf("member"))*4
-          +  count (  rep.indexOf("return"))*2
-          +  count (  rep.indexOf("parameter"))*3
+          and score = count (  rep.indexOf("member"))*6
+          +  count (  rep.indexOf("return"))*3
+          +  count (  rep.indexOf("parameter"))*5
           // Penalizes the receivers againts members
-          -  count (  rep.indexOf("parameter -1"))*4
-          and score > 3 and depth>=2
+          -  count (  rep.indexOf("parameter -1"))*9
+          and score > 3 and depth>=1
         )
       }
 
@@ -165,16 +165,17 @@ private int minOcurrences() { result = 1 }
      */
     string rep(boolean asRhs) {
       // Diego: Force only one "canonical" Repr
-      //result = chooseBestRep(nd, asRhs) and
+      result = chooseBestRep(nd, asRhs) 
+      // and
       // result = candidateRep(asRhs) and
-      exists(string rep | rep  = selectBestRep(nd, asRhs) 
-        and result = rep
-      )
-      or (
-        not exists(string rep | rep  = selectBestRep(nd, asRhs))
-        and result = candidateRep(asRhs) and
-        count(Node n | n.candidateRep(asRhs) = result) >= minOcurrences()
-        )
+      // exists(string rep | rep  = selectBestRep(nd, asRhs) 
+      //   and result = rep
+      // )
+      // or (
+      //   not exists(string rep | rep  = selectBestRep(nd, asRhs))
+      //   and result = candidateRep(asRhs) and
+      //   count(Node n | n.candidateRep(asRhs) = result) >= minOcurrences()
+      //   )
      }
 
     /**

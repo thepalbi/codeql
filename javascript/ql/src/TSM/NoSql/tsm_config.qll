@@ -4,7 +4,7 @@
  */
 
 import javascript
-import semmle.javascript.security.dataflow.NosqlInjection
+//import semmle.javascript.security.dataflow.NosqlInjection
 import semmle.javascript.security.dataflow.NosqlInjectionCustomizationsWorse
 private float minScore_snk() { result = 0.01}
 private float minScore_src() { result = 1.1}
