@@ -1,5 +1,5 @@
 import javascript
-import NodeRepresentation
+import tsm.NodeRepresentation
 
 module PropagationGraph {
 /**
@@ -105,32 +105,7 @@ private int minOcurrences() { result = 1 }
     string candidateRep(boolean asRhs) { result = candidateRep(nd, _, asRhs) }
 
 
-      /**
-      * Choose one repr for a sink
-      * Prioritizes the use of member instead of receivers
-      */
-      string chooseBestRep(DataFlow::Node sink, boolean asRhs) {
-        result = max(string rep, int depth, int score | 
-          rep = candidateRep(sink, depth, asRhs) 
-          and score = count (  rep.indexOf("member"))*4
-          +  count (  rep.indexOf("return"))*3
-          +  count (  rep.indexOf("parameter"))*5
-          // Penalizes the receivers againts members
-          -  count (  rep.indexOf("parameter -1"))*8
-          | rep order by score, depth, rep) 
-      }
-
-      string selectBestRep(DataFlow::Node sink, boolean asRhs) {
-        exists(string rep, int score, int depth |
-        result = rep and rep  = candidateRep(sink, depth, asRhs) 
-          and score = count (  rep.indexOf("member"))*6
-          +  count (  rep.indexOf("return"))*3
-          +  count (  rep.indexOf("parameter"))*5
-          // Penalizes the receivers againts members
-          -  count (  rep.indexOf("parameter -1"))*9
-          and score > 3 and depth>=1
-        )
-      }
+      
 
 
     string rep(){
@@ -444,7 +419,10 @@ private int minOcurrences() { result = 1 }
   }
 
   string getconcatrep(DataFlow::Node n, boolean asRhs){
-    result = strictconcat(string r | r = candidateRep(n, _, asRhs) and exists(PropagationGraph::Node nd | nd.rep(asRhs) = r)  | r, "::")
+    // result = strictconcat(string r | r = candidateRep(n, _, asRhs) 
+    // and exists(PropagationGraph::Node nd | candidateRep(nd.asDataFlowNode(), _, asRhs) = r)  | r, "::")
+    result = strictconcat(string r | r = chooseBestRep(n, asRhs) 
+      and exists(PropagationGraph::Node nd | nd.rep(asRhs) = r)  | r, "::")
   }
 
   string getconcatrep(DataFlow::Node n){

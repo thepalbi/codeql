@@ -12,7 +12,7 @@ query predicate sanitizerNoSqlClasses(DataFlow::Node nd, string q, string repr){
         nd instanceof NosqlInjection::Sanitizer and q="NosqlInjection" or
         nd instanceof NosqlInjectionWorse::Sanitizer and q="NosqlInjectionWorse"       
     ) and
-    repr = PropagationGraph::getconcatrep(nd)
+    repr = PropagationGraph::getconcatrep(nd, false)
 }
 
 query predicate sourceNoSqlClasses(DataFlow::Node nd, string q, string repr){
@@ -25,7 +25,7 @@ query predicate sourceNoSqlClasses(DataFlow::Node nd, string q, string repr){
     nd instanceof NosqlInjection6::Source and q="NosqlInjection6" or
     nd instanceof NosqlInjectionWorse::Source and q="NosqlInjectionWorse" 
     ) and   
-    repr = PropagationGraph::getconcatrep(nd)
+    repr = PropagationGraph::getconcatrep(nd, false)
 }
 query predicate sinkNoSqlClasses(DataFlow::Node nd, string q, string repr){
     (nd instanceof NosqlInjection::Sink and q="NosqlInjection" or
@@ -37,7 +37,7 @@ query predicate sinkNoSqlClasses(DataFlow::Node nd, string q, string repr){
     nd instanceof NosqlInjection6::Sink and q="NosqlInjection6" or
     nd instanceof NosqlInjectionWorse::Sink and q="NosqlInjectionWorse"
     ) and   
-    repr = PropagationGraph::getconcatrep(nd)
+    repr = PropagationGraph::getconcatrep(nd, true)
 }
 
 

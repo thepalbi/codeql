@@ -12,8 +12,23 @@ def combine_scores(query, \
                     project_dir=os.path.dirname(os.path.dirname(os.path.realpath(__file__)))):
     print(project_dir)
     files=glob.glob(os.path.join(project_dir) + "/*/{0}-*/reprScores.txt".format(query))
-    print(files)
+    files.sort()
+    #print(files)
+    last_files = list()
+    projectsFiles = dict()
+    for file in files:
+        timestamp = os.path.basename(os.path.dirname(file))
+        project = os.path.basename(os.path.dirname(os.path.dirname(file)))
+        if project not in projectsFiles.keys():
+            projectsFiles[project] = list()
+        projectsFiles[project].append(file)
+    
+    for project in projectsFiles.keys():
+        projectsFiles[project].sort(key=os.path.getmtime)
+        last_files.append(projectsFiles[project][-1])
 
+    files = last_files
+    print(files)
     files.sort(key=os.path.getmtime)
     n=0
     allreps=[]

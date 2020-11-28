@@ -5,20 +5,20 @@
 
 import javascript
 import TSM.PropagationGraphs
-import semmle.javascript.security.dataflow.NosqlInjectionCustomizationsWorse
+import semmle.javascript.security.dataflow.TaintedPathCustomizationsWorse
 
 private string targetLibrary() { 
-  result = "mongodb" 
-  or result = "mongoose"
-  // exists(API::Node imp | 
-  //     imp = API::moduleImport(result)
-  // )
+  // result = "jquey" 
+  // or result = "angular"
+  // or result = "XRegExp"
+  exists(API::Node imp | 
+      imp = API::moduleImport(result)
+  )
 }
 
 predicate isSourceWorse(DataFlow::Node source) {
-  source instanceof NosqlInjectionWorse::Source
+  source instanceof TaintedPathWorse::Source
 }
-
 
 predicate reachableFromSourceCandidate(
   PropagationGraph::SourceCandidate src, PropagationGraph::Node nd
