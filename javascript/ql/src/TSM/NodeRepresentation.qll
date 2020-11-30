@@ -28,7 +28,7 @@ predicate isCandidateSink(DataFlow::Node sink, string library) {
   library =  targetLibrary() and
   exists (DataFlow::InvokeNode call, DataFlow::Node arg  |
   isRelevant(call) and callFromImport(library, call) and
-  (arg = call.getAnArgument() or arg = call.(DataFlow::CallNode).getReceiver())
+  (arg = call.getAnArgument() or arg = call.(DataFlow::MethodCallNode).getReceiver())
   and not (isCallBackArgument(arg, call)) and
   sink = arg  
   )
