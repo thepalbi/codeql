@@ -8,7 +8,10 @@ import TSM.PropagationGraphsAlt
 import semmle.javascript.security.dataflow.SqlInjectionCustomizationsWorse
 
 private string targetLibrary() { 
-  result in ["mssql", "mysql","sequelize", "sqlite3", "knex", "postgres", "oracledb"] 
+  result in ["sql", "sql.js", "sqlstring", "mssql", "mysql", 
+            "sequelize", "sqlite3", "better-sqlite3", 
+            "knex", "postgres", "oracledb",
+            "tedious", "pretty-data", "db-migrate"] 
   // exists(API::Node imp | 
   //     imp = API::moduleImport(result)
   // )

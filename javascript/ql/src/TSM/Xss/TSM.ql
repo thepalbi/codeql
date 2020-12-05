@@ -10,7 +10,7 @@
 import tsm_config
 import DataFlow::PathGraph
 import tsm.NodeRepresentation
-import semmle.javascript.security.dataflow.SqlInjection
+import semmle.javascript.security.dataflow.DomBasedXss::DomBasedXss
 import tsm_repr_pred
 
 
@@ -27,7 +27,7 @@ query predicate compareV0vsWorseBoosted(int new, int missing, int same) {
       DataFlow::PathNode source, DataFlow::PathNode sink |
       exists(TSMConfig::Configuration cfg| 
              cfg.hasFlowPath(source, sink)
-             and not exists(SqlInjection::Configuration cfgV0,
+             and not exists(Configuration cfgV0,
                   DataFlow::PathNode source2, DataFlow::PathNode sink2 |
                 cfgV0.hasFlowPath(source2, sink2)
                 and sameLocationInfo(source, source2)
@@ -38,7 +38,7 @@ query predicate compareV0vsWorseBoosted(int new, int missing, int same) {
   and 
   missing = count(
     DataFlow::PathNode source, DataFlow::PathNode sink |
-    exists(SqlInjection::Configuration cfgV0| 
+    exists(Configuration cfgV0| 
            cfgV0.hasFlowPath(source, sink)
            and not exists(TSMConfig::Configuration cfg,
                 DataFlow::PathNode source2, DataFlow::PathNode sink2 |
@@ -53,7 +53,7 @@ query predicate compareV0vsWorseBoosted(int new, int missing, int same) {
     DataFlow::PathNode source, DataFlow::PathNode sink |
     exists(TSMConfig::Configuration cfg| 
            cfg.hasFlowPath(source, sink)
-           and exists(SqlInjection::Configuration cfgV0,
+           and exists(Configuration cfgV0,
                 DataFlow::PathNode source2, DataFlow::PathNode sink2 |
               cfgV0.hasFlowPath(source2, sink2)
               and sameLocationInfo(source, source2)
@@ -68,7 +68,7 @@ query predicate compareNewV0vsWorseBoostedSinks(DataFlow::PathNode sinkNew, stri
       DataFlow::PathNode source, DataFlow::PathNode sink |
       exists(TSMConfig::Configuration cfg| 
              cfg.hasFlowPath(source, sink)
-             and not exists(SqlInjection::Configuration cfgV0,
+             and not exists(Configuration cfgV0,
                   DataFlow::PathNode source2, DataFlow::PathNode sink2 |
                 cfgV0.hasFlowPath(source2, sink2)
                 and sameLocationInfo(source, source2)
@@ -84,7 +84,7 @@ query predicate compareNewV0vsWorseBoostedSinks(DataFlow::PathNode sinkNew, stri
 query predicate compareMissedVWvsWorseBoostedSinks(DataFlow::PathNode sinkNew, 
               string rep, string library) {
   exists(
-    SqlInjection::Configuration cfgV0,
+    Configuration cfgV0,
     DataFlow::PathNode source2, DataFlow::PathNode sink2 |
       cfgV0.hasFlowPath(source2, sink2)
       and not exists(

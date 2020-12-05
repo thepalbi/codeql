@@ -7,8 +7,8 @@ import javascript
 import semmle.javascript.security.dataflow.DomBasedXssCustomizations
 import semmle.javascript.security.TaintedObject
 
-private float minScore_snk() { result = 0.1}
-private float minScore_src() { result = 0.1}
+private float minScore_snk() { result = 0.001}
+private float minScore_src() { result = 1.1}
 // Score>1 to ignore sanitizers
 private float minScore_san() { result = 1.1}
 
@@ -32,11 +32,27 @@ module TSMConfig {
       super.isSink(sink, label)
     }
 
+
     override predicate isSanitizer(DataFlow::Node node) {
       exists (float score | TSM::isSanitizer(node, score) and score>=minScore_san()) 
       or
       node instanceof DomBasedXss::Sanitizer
+      or
+      exists(PropAccess pacc | pacc = node.asExpr() |
+        isSafeLocationProperty(pacc)
+        or
+        // `$(location.hash)` is a fairly common and safe idiom
+        // (because `location.hash` always starts with `#`),
+        // so we mark `hash` as safe for the purposes of this query
+        pacc.getPropertyName() = "hash"
+      )
     }
+    
+    // override predicate isSanitizer(DataFlow::Node node) {
+    //   exists (float score | TSM::isSanitizer(node, score) and score>=minScore_san()) 
+    //   or
+    //   node instanceof DomBasedXss::Sanitizer
+    // }
 
     override predicate isSanitizerGuard(TaintTracking::SanitizerGuardNode guard) {
       guard instanceof TaintedObject::SanitizerGuard

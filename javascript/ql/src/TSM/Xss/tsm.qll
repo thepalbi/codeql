@@ -1,6 +1,6 @@
 import javascript
 
-import TSM.NodeRepresentation
+import tsm.NodeRepresentation
 import tsm_repr_pred
 
 module TSM {
@@ -28,27 +28,28 @@ module TSM {
         )
       }
 
-    string rep(DataFlow::Node node){
-        result = candidateRep(node, _)
+    string rep(DataFlow::Node node, boolean rhs){
+        // result = candidateRep(node, _, rhs)
+        result = chooseBestRep(node, rhs)
     }
 
     predicate isSink(DataFlow::Node node, float score){
         isSinkCandidate(node) and
-        (exists(rep(node)) and   score = sum(doGetReprScore(rep(node), "snk"))/count(rep(node)) or
-        not exists(rep(node)) and score = 0)
+        (exists(rep(node, true)) and   score = sum(doGetReprScore(rep(node, true), "snk"))/count(rep(node, true)) or
+        not exists(rep(node, true)) and score = 0)
     }
 
     predicate isSource(DataFlow::Node node, float score){
         isSourceCandidate(node) and
-        (exists(rep(node)) and   score = sum(doGetReprScore(rep(node), "src"))/count(rep(node)) or
-        not exists(rep(node)) and score = 0)
+        (exists(rep(node, false)) and   score = sum(doGetReprScore(rep(node, false), "src"))/count(rep(node, false)) or
+        not exists(rep(node, false)) and score = 0)
     }
 
     predicate isSanitizer(DataFlow::Node node, float score){
         isSanitizerCandidate(node) and
-        (exists(rep(node)) and
-        score = sum(doGetReprScore(rep(node), "san"))/count(rep(node)) or
-        not exists(rep(node)) and score = 0)
+        (exists(rep(node, false)) and
+        score = sum(doGetReprScore(rep(node, false), "san"))/count(rep(node, false)) or
+        not exists(rep(node, false)) and score = 0)
     }
 
     float doGetReprScore(string repr, string t){

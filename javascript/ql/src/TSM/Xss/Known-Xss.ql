@@ -2,7 +2,7 @@
  * @kind graph
  */
 import javascript
-import TSM.PropagationGraphs
+import TSM.PropagationGraphsAlt
 import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
 import semmle.javascript.security.dataflow.DomBasedXssCustomizations
 

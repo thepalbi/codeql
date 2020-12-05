@@ -2,7 +2,8 @@
  * @kind graph
  */
 import javascript
-import TSM.TSM
+import TSM.PropagationGraphsAlt
+import semmle.javascript.security.dataflow.SqlInjectionCustomizations
 import semmle.javascript.security.dataflow.SqlInjectionCustomizationsWorse
 
 // Note from Diego: This predicate didn't exist in the old Sanitizers.ql
