@@ -18,29 +18,12 @@ private string targetLibrary() {
 predicate isSourceWorse(DataFlow::Node source) {
   source instanceof NosqlInjectionWorse::Source
 }
+predicate isSanitizerWorse(DataFlow::Node sanitizer) {
+  sanitizer instanceof NosqlInjectionWorse::Sanitizer
+  // Maybe we can add BarrierGuard from semmle.go.dataflow.internal.DataFlowUtil
+  // or create a custom SanitizerGuard 
+}
 
-
-// predicate reachableFromSourceCandidate(
-//   PropagationGraph::SourceCandidate src, PropagationGraph::Node nd
-// ) {
-//   PropagationGraph::edge(src, nd)
-//   or
-//   exists(PropagationGraph::Node mid |
-//     reachableFromSourceCandidate(src, mid) and 
-//     PropagationGraph::edge(mid, nd)
-//   )
-// }
-
-// predicate reachableFromSanitizerCandidate(
-//   PropagationGraph::SanitizerCandidate san, PropagationGraph::Node nd
-// ) {
-//   PropagationGraph::edge(san, nd)
-//   or
-//   exists(PropagationGraph::Node mid |
-//     reachableFromSanitizerCandidate(san, mid) and
-//     PropagationGraph::edge(mid, nd)
-//   )
-// }
 
 /**
  * Holds if there is a path from `src` through `san` to `snk` in the propagation graph,
@@ -50,54 +33,9 @@ predicate triple(DataFlow::Node src, DataFlow::Node san, DataFlow::Node snk) {
   san = PropagationGraph::reachableFromSourceCandidate(src, DataFlow::TypeTracker::end()) and
   src != san and
   snk = PropagationGraph::reachableFromSanitizerCandidate(san, DataFlow::TypeTracker::end()) and
+  isCandidateSink(snk, targetLibrary()) and
   PropagationGraph::isSinkCandidate(_, snk)
 }
-
-
-// // print the set of connected triples
-// predicate triple(
-//   PropagationGraph::SourceCandidate src, PropagationGraph::SanitizerCandidate san, 
-//   PropagationGraph::SinkCandidate snk) {
-//   isSourceWorse(src.asDataFlowNode()) and
-//   reachableFromSourceCandidate(src, san) and
-//   src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
-//   isCandidateSink(snk.asDataFlowNode(), targetLibrary()) and
-//   reachableFromSanitizerCandidate(san, snk) 
-//   //snk.isSinkCandidate()  
-//   // NB: we do not require `san` and `snk` to be different, since we might have a situation like
-//   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
-// }
-
-// predicate tripleWAtleastOneRep(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk) {
-//   reachableFromSourceCandidate(src, san) and
-//   san.isSanitizerCandidate() and
-//   src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
-//   reachableFromSanitizerCandidate(san, snk) and
-//   snk.isSinkCandidate()
-//   // NB: we do not require `san` and `snk` to be different, since we might have a situation like
-//   // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
-// }
-
-// predicate tripleWRepID(string ssrc, string ssan, string ssnk) {
-//     exists(NodeWithFewReps src, NodeWithFewReps san, NodeWithFewReps snk |
-//     reachableFromSourceCandidate(src, san) and
-//     san.isSanitizerCandidate() and
-//     src.asDataFlowNode().getEnclosingExpr() != san.asDataFlowNode().getEnclosingExpr() and
-//     reachableFromSanitizerCandidate(san, snk) and
-//     snk.isSinkCandidate() and     
-//     ssrc = src.getconcatrep() and 
-//     ssan = san.getconcatrep() and 
-//     ssnk = snk.getconcatrep()
-//     )
-//     // NB: we do not require `san` and `snk` to be different, since we might have a situation like
-//     // `sink(sanitize(src))` where `san` and `snk` are both `sanitize(src)`
-// }
-
-// query predicate allCalls(PropagationGraph::Node callNode, int lineNumber, string repr) {
-//   callNode = callNode and
-//   callNode.asDataFlowNode().getStartLine() = lineNumber 
-//   and repr = concat(callNode.rep(),"::")
-// }
 
 
 query predicate pairSanSnk(string ssan, string ssnk){
@@ -114,7 +52,6 @@ query predicate pairSanSnk(string ssan, string ssnk){
       ssnk = PropagationGraph::getconcatrep(snk, true)    
       )
 }
-
 
 query predicate pairSrcSan(string ssrc, string ssan){
   exists(DataFlow::Node src, DataFlow::Node san, DataFlow::Node snk |
@@ -134,7 +71,7 @@ query predicate pairSrcSan(string ssrc, string ssan){
   predicate testSink(string ssnk, DataFlow::Node snk) {
     exists(DataFlow::Node src, DataFlow::Node san |
       isSourceWorse(src) and
-      // san = PropagationGraph::reachableFromSourceCandidate(src, DataFlow::TypeTracker::end()) and
+      san = PropagationGraph::reachableFromSourceCandidate(src, DataFlow::TypeTracker::end()) and
       src.getEnclosingExpr() != san.getEnclosingExpr() and
       snk = PropagationGraph::reachableFromSanitizerCandidate(san, DataFlow::TypeTracker::end()) and
       // We keep only sinks that are candidates
