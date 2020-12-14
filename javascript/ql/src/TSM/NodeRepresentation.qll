@@ -248,7 +248,7 @@ string genericMemberPattern() {
  * Select one 'candidate'repr. 
  * Prioritizes the canonical repr on the form:
  * (parameter x (return (member F (root package))))
- */
+*/
 string chooseBestRep(DataFlow::Node sink, boolean asRhs) {
   result = max(string rep, int depth, int score | 
     rep = candidateRep(sink, depth, asRhs) and
@@ -259,9 +259,9 @@ string chooseBestRep(DataFlow::Node sink, boolean asRhs) {
         cpr = count (rep.indexOf("parameter -1")) and
         croot = count (rep.indexOf("(root ")) and
         (
-          (cm = 1 and cr = 1 and cp = 1 and croot = 1 and cpr = 0 and plus = 200)
+          (asRhs = true and  cm = 1 and cr = 1 and cp = 1 and croot = 1 and cpr = 0 and plus = 200)
           or
-          (cm = 1 and cr = 1 and cp = 1 and cpr = 0 and plus = 80)
+          (asRhs = true and cm = 1 and cr = 1 and cp = 1 and cpr = 0 and plus = 80)
            or 
            plus = 0) and
         // Penalizes the receivers againts members
@@ -269,6 +269,7 @@ string chooseBestRep(DataFlow::Node sink, boolean asRhs) {
       )
     | rep order by score, depth, rep) 
 }
+
 
 
 string selectBestRep(DataFlow::Node sink, boolean asRhs) {

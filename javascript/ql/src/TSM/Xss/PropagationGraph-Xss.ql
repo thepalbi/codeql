@@ -5,15 +5,15 @@
 
 import javascript
 import TSM.PropagationGraphsAlt
-import semmle.javascript.security.dataflow.DomBasedXssCustomizationsWorse
+import evaluation.DomBasedXssCustomizationsWorse
 
 private string targetLibrary() { 
-  result = "jquey" 
-  or result = "angular"
-  or result = "XRegExp"
-  // exists(API::Node imp | 
-  //     imp = API::moduleImport(result)
-  // )
+  // result = "jquey" 
+  // or result = "angular"
+  // or result = "XRegExp"
+  exists(API::Node imp | 
+      imp = API::moduleImport(result)
+  )
 }
 
 predicate isSourceWorse(DataFlow::Node source) {
@@ -29,6 +29,7 @@ predicate triple(DataFlow::Node src, DataFlow::Node san, DataFlow::Node snk) {
   san = PropagationGraph::reachableFromSourceCandidate(src, DataFlow::TypeTracker::end()) and
   src != san and
   snk = PropagationGraph::reachableFromSanitizerCandidate(san, DataFlow::TypeTracker::end()) and
+  isCandidateSink(snk, targetLibrary()) and
   PropagationGraph::isSinkCandidate(_, snk)
 }
 
