@@ -63,7 +63,11 @@ class GenerateTSMQueryStep(OrchestrationStep):
         return ctx
 
     def run(self, ctx: Context) -> Context:
-        createReprPredicate(ctx, self.orchestrator.project_name, self.orchestrator.query_type, self.orchestrator.scores_file)
+        name = self.orchestrator.project_name
+        if not self.orchestrator.run_single:
+            name = "multiple"   
+
+        createReprPredicate(ctx, name, self.orchestrator.query_type, self.orchestrator.scores_file)
         return ctx
 
     def name(self) -> str:
@@ -94,6 +98,9 @@ class DataGenerator:
         self.working_dir = working_dir
         self.results_dir = results_dir
         self.generated_data_dir = self._get_generated_data_dir()
+
+    def get_generated_data_dir(self):
+        return self._get_generated_data_dir()
 
     def _get_generated_data_dir(self):
         generated_data_dir = os.path.join(

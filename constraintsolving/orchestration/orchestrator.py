@@ -45,7 +45,9 @@ class Orchestrator:
                 query_type: str, query_name: str, kind: str,  
                 working_dir: str, results_dir: str, 
                 scores_file: str, 
-                no_flow: bool):
+                no_flow: bool,
+                run_separate_on_multiple_projects: bool,
+                project_list: List[str]):
         self.query_type = query_type
         self.query_name = query_name
         self.kind = kind
@@ -54,6 +56,8 @@ class Orchestrator:
         self.working_dir = working_dir
         self.results_dir = results_dir
         self.no_flow = no_flow
+        self.project_list = project_list
+        self.run_single = run_separate_on_multiple_projects
         self.scores_file = scores_file
         if scores_file == None: 
             self.combinedScore = False
@@ -73,10 +77,13 @@ class Orchestrator:
 
     def compute_results_dir(self, new_directory=False):
         if(not self.combinedScore):
-            project_name = self.project_name
+            project_name = name = self.project_name
             #print(self.query_name)
             #print(self.results_dir)
-            patternToSearch = os.path.join(self.results_dir, project_name)+ "/{0}-*".format(self.query_name)
+            if not self.run_single:
+                name = "multiple"   
+
+            patternToSearch = os.path.join(self.results_dir, name)+ "/{0}-*".format(self.query_name)
             #print(patternToSearch)
             results_candidates = glob.glob(patternToSearch)
             print(results_candidates)
@@ -88,7 +95,7 @@ class Orchestrator:
                 #raise ValueError('Cannot find results directory for ' + self.project_name )           
                 timestamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
                 optimizer_run_name = f"{self.query_name}-{timestamp}"
-                results_dir = os.path.join(self.results_dir, project_name, optimizer_run_name)
+                results_dir = os.path.join(self.results_dir, name, optimizer_run_name)
 
             return results_dir
         else:

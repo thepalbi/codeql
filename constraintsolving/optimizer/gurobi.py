@@ -3,6 +3,7 @@ import os
 import shutil
 import traceback
 from glob import glob
+from generation.data import DataGenerator
 
 import sys
 import time
@@ -62,7 +63,12 @@ class GenerateModelStep(OrchestrationStep):
                                  working_dir=working_dir, results_dir=results_dir)
 
         projects_folder = os.path.join(config.working_dir, "data")
-        projects = glob(os.path.join(projects_folder, self.orchestrator.project_name))
+        if self.orchestrator.run_single:
+            projects_path = glob(os.path.join(projects_folder, self.orchestrator.project_name))
+        else:
+            projects_path = [ ps for p in self.orchestrator.project_list for ps in glob(os.path.join(projects_folder, p)) ]    
+            # constraints_dir = os.path.join(projects_folder, "multiple")
+
         # self.logger.info("Generating models for projects: %s", projects)
 
         # timestamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
@@ -80,19 +86,42 @@ class GenerateModelStep(OrchestrationStep):
         for directory in [constraints_dir, models_dir, logs_dir, results_dir]:
             os.makedirs(directory, exist_ok=True)
 
-        projects = [os.path.basename(k) for k in projects]
+        projects = [os.path.basename(k) for k in projects_path]
         self.logger.info("Collected {0} projects".format(len(projects)))
         self.logger.info("Creating events and reps")
-        constraint_builder = ConstraintBuilder(self.orchestrator.project_name,
+
+        name = self.orchestrator.project_name
+
+        if not self.orchestrator.run_single:
+            name = "multiple"   
+
+        constraint_builder = ConstraintBuilder(name,
                                                constraints_dir,
                                                config.min_rep_events,
                                                config.dataset_type,
                                                config.constraint_format,
                                                config.lambda_const,
                                                config.working_dir)
-        for project in projects:
+        for project_path in projects_path:
+            project = os.path.basename(project_path)
+            project_dir = os.path.dirname(project_path)
             try:
                 self.logger.info("Analizing project: %s", project)
+
+                # hack -> refactor using populate
+                if not self.orchestrator.run_single:
+                    dataGenerator = DataGenerator(project_dir, project, 
+                                                self.orchestrator.data_generator.working_dir, 
+                                                self.orchestrator.data_generator.results_dir)
+                    self.orchestrator.project_name = project
+       
+                    (ctx[SOURCE_ENTITIES],
+                    ctx[SINK_ENTITIES],
+                    ctx[SANITIZER_ENTITIES],
+                    ctx[SRC_SAN_TUPLES_ENTITIES],
+                    ctx[SAN_SNK_TUPLES_ENTITIES],
+                    ctx[REPR_MAP_ENTITIES]) = dataGenerator.get_entity_files(self.orchestrator.query_type)
+
                 constraint_builder.readEventsAndReps(project, ctx)
                 constraint_builder.readAllKnown(project, config.query_name, config.query_type,
                                                 config.use_all_sanitizers, ctx)
@@ -107,8 +136,23 @@ class GenerateModelStep(OrchestrationStep):
         constraint_builder.createVariables(ctx)
 
         self.logger.info("Adding constraints")
-        for project in projects:
+        for project_path in projects_path:
+            project = os.path.basename(project_path)
+        # for project in projects:
             self.logger.info(">>>>>>>>>>>>>Executing project %s" % project)
+            # hack -> refactor using populate
+            if not self.orchestrator.run_single:
+                dataGenerator = DataGenerator(project_dir, project, 
+                                            self.orchestrator.data_generator.working_dir, 
+                                            self.orchestrator.data_generator.results_dir)
+                self.orchestrator.project_name = project
+    
+                (ctx[SOURCE_ENTITIES],
+                ctx[SINK_ENTITIES],
+                ctx[SANITIZER_ENTITIES],
+                ctx[SRC_SAN_TUPLES_ENTITIES],
+                ctx[SAN_SNK_TUPLES_ENTITIES],
+                ctx[REPR_MAP_ENTITIES]) = dataGenerator.get_entity_files(self.orchestrator.query_type)
             try:
                 # Write flow constraints, as in Seldon 4.2
                 #constraint_builder.generate_flow_constraints(project, config.constraints_constant_C, config.query_name)
@@ -138,12 +182,18 @@ class OptimizeStep(OrchestrationStep):
         # TODO: Extract this and share between steps. Maybe add some context passing between steps
         # TODO: Share this in ctx
         ctx[RESULTS_DIR_KEY] = self.orchestrator.compute_results_dir(new_directory=True)
-        os.makedirs(ctx[RESULTS_DIR_KEY])
+        if not os.path.exists(ctx[RESULTS_DIR_KEY]):
+            os.makedirs(ctx[RESULTS_DIR_KEY])
+        else:
+            # file can only exist if we are running gurobi for multiple projects 
+            assert not self.orchestration.run_single
+
         results_dir = ctx[RESULTS_DIR_KEY]
         working_dir = ctx[WORKING_DIR_KEY]
 
         # If we a clean in ran, and each previous step once again (generate_entities and generate_model),
         # we might need to re-create the model dir, since it was previously deleted.
+
         os.makedirs(ctx[MODELS_DIR_KEY], exist_ok=True)
 
         config = SolverConfig(query_name=self.orchestrator.query_name, query_type=self.orchestrator.query_type,

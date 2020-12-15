@@ -61,6 +61,8 @@ parser.add_argument("--scores-file", dest="scores_file", required=False, type=st
 
 parser.add_argument("--no-flow", dest="no_flow", action='store_true', help='Ignore flow constraints')
 
+parser.add_argument("--multiple-projects", dest="multiple", action='store_true', help='Combine all projects in the model')
+
 subparsers = parser.add_subparsers(dest="command", required=True)
 run_parser = subparsers.add_parser("run")
 clean_parser = subparsers.add_parser("clean")
@@ -71,7 +73,6 @@ results_dir = global_config.results_directory
 working_dir = global_config.working_directory
 scores_file = None
 no_flow = False
-
 
 if parsed_arguments.results_dir is not None:
     results_dir = os.path.normpath(parsed_arguments.results_dir)
@@ -95,9 +96,15 @@ if parsed_arguments.projectListFile is not None:
 else:
     projectList = [project_dir]
 
+if parsed_arguments.multiple:
+    run_separate_on_multiple_projects = False
 
 if __name__ == '__main__':
-    for project in projectList:       
+    all_projects = projectList
+    if parsed_arguments.multiple:
+        all_projects = [projectList[0]]
+
+    for project in all_projects:       
         logging.info(f"Running orchestrator-{parsed_arguments.command} on project: {project}")
         project_name = os.path.basename(project)
         orchestrator = Orchestrator(project, project_name, 
@@ -105,7 +112,9 @@ if __name__ == '__main__':
                             parsed_arguments.query_name, 
                             parsed_arguments.kind, 
                             working_dir, results_dir,
-                            scores_file, no_flow)
+                            scores_file, no_flow,
+                            run_separate_on_multiple_projects,
+                            projectList) 
 
         if parsed_arguments.command == "run":
             if parsed_arguments.steps != "":
