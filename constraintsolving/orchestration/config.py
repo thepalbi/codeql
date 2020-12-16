@@ -4,6 +4,7 @@ CODEQL_SOURCES_ROOT_KEY = "codeQLSourcesRoot"
 CODEQL_EXECUTABLE_KEY = "codeQLExecutable"
 WORKING_DIRECTORY_KEY = "workingDirectory"
 RESULTS_DIRECTORY_KEY = "resultsDirectory"
+SEARCH_PATH_KEY = "searchPath"
 
 class Configuration:
     def __init__(self, config_file_path="config.json"):
@@ -25,6 +26,10 @@ class Configuration:
     @property
     def results_directory(self):
         return self.config[RESULTS_DIRECTORY_KEY]
+
+    @property
+    def search_path(self):
+        return self.config[SEARCH_PATH_KEY]
 
     def __getattr__(self, item):
         return self.config[item]

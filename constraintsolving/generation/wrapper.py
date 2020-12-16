@@ -25,7 +25,6 @@ class CodeQLWrapper:
     def database_query(self,
                          project: str,
                          query_file: str):
-        search_path="/persistent/diegog/repo2/codeql/"
         query_file_name = os.path.basename(query_file)
         output_file = os.path.join(project, "results", "codeql-javascript", "TSM", os.path.splitext(query_file_name)[0])+'.bqrs'
         command_and_arguments = [
@@ -34,7 +33,7 @@ class CodeQLWrapper:
             query_file,
             f"--database={project}",
             f"--output={output_file}",
-            f"--search-path={search_path}"
+            f"--search-path={global_config.search_path}"
         ]
         self._logger.info(
             "Running 'query run' for project=[%s] and query_file=[%s]", project, query_file)
@@ -47,7 +46,6 @@ class CodeQLWrapper:
                          query_file: str,
                          output_file: str, 
                          output_format="csv"):
-        search_path="/persistent/diegog/repo2/codeql/"
         command_and_arguments = [
             self._code_ql_binary_path,
             "database", "analyze",
@@ -56,7 +54,7 @@ class CodeQLWrapper:
             f"--format={output_format}",
             f"--logdir={self._logs_directory}",
             f"--output={output_file}",
-            f"--search-path={search_path}"
+            f"--search-path={global_config.search_path}"
         ]
         self._logger.info(
             "Running 'database analyze' for project=[%s] and query_file=[%s]", project, query_file)
