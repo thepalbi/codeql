@@ -8,12 +8,26 @@ import TSM.PropagationGraphsAlt
 import semmle.javascript.security.dataflow.TaintedPathCustomizationsWorse
 
 private string targetLibrary() { 
-  // result = "jquey" 
-  // or result = "angular"
-  // or result = "XRegExp"
-  exists(API::Node imp | 
-      imp = API::moduleImport(result)
-  )
+  result = "fs" 
+  or result = "fs-extra"
+  or result = "fstream"
+  or result = "file-system"
+  or result = "file-system-cache"
+  or result = "shell-js"
+  or result = "http"
+  or result = "https"
+  or result = "glob"
+  or result = "util"
+  or result = "fs-jetpack"
+  or result = "mv"
+  or result = "path"
+  or result = "path-exists"
+  or result = "vinyl-fs"
+  or result = "sane"
+
+  // exists(API::Node imp | 
+  //     imp = API::moduleImport(result)
+  // )
 }
 
 predicate isSourceWorse(DataFlow::Node source) {
