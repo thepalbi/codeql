@@ -137,8 +137,8 @@ module PropagationGraph {
       or
       u instanceof DataFlow::PropRead
     )
-    // or
-    // u instanceof SourceCandidate
+    or
+    u instanceof SourceCandidate
   }
 
   /**
@@ -146,11 +146,9 @@ module PropagationGraph {
    */
   predicate isSanitizerCandidate(DataFlow::CallNode u) {
     exists(rep(u, false)) and
-    (
-      not u = any(Import i).getImportedModuleNode() 
-      // or
-      // u instanceof SanitizerCandidate
-    )
+    not u = any(Import i).getImportedModuleNode()
+    or
+    u instanceof SanitizerCandidate
   }
 
   /**
@@ -169,8 +167,8 @@ module PropagationGraph {
         d = invk.getAnArgument()
       )
     )
-    // or
-    // d instanceof SinkCandidate
+    or
+    d instanceof SinkCandidate
   }
 
   /**

@@ -15,9 +15,9 @@ private string targetLibrary() {
   // )
 }
 
-// class NoSqlSourceCandidate extends PropagationGraph::SourceCandidate {
-//   NoSqlSourceCandidate() { isSourceWorse(this) }
-// }
+class NoSqlSourceCandidate extends PropagationGraph::SourceCandidate {
+  NoSqlSourceCandidate() { isSourceWorse(this) }
+}
 
 // No adding sinks to the propagation graph
 // class NoSqlSinkCandidate extends PropagationGraph::SinkCandidate {
