@@ -12,6 +12,13 @@ import sys
 from orchestration.steps import SOURCE_ENTITIES, SINK_ENTITIES, SANITIZER_ENTITIES, \
     SRC_SAN_TUPLES_ENTITIES, SAN_SNK_TUPLES_ENTITIES, REPR_MAP_ENTITIES
 
+def search(values, searchFor):
+    for k in values:
+        for v in values[k]:
+            if searchFor in v:
+                return k
+    return None
+
 def safe_str(obj):
     try: return str(obj)
     except UnicodeEncodeError:
@@ -375,14 +382,23 @@ class ConstraintBuilder:
         sanit_sink: (san,snk) -> [src]
         """
         # TODO: Propagate below paths on context from previous step
-        san_snk_pairs = readPairs(ctx[SRC_SAN_TUPLES_ENTITIES], self.events)
-        san_src_map =  {k: g["ssrc"].tolist() for k,g in san_snk_pairs.groupby("ssan")}
+        src_san_pairs = readPairs(ctx[SRC_SAN_TUPLES_ENTITIES], self.events)
+        print("src_san_pairs:", len(src_san_pairs))
+        san_src_map =  {k: g["ssrc"].tolist() for k,g in src_san_pairs.groupby("ssan")}
+        print("src_san:", len(san_src_map))
+
         san_snk_pairs = readPairs(ctx[SAN_SNK_TUPLES_ENTITIES], self.events)
+        print("src_san_pairs:", len(san_snk_pairs))
+
         san_snk_map = {k: g["ssnk"].tolist() for k,g in san_snk_pairs.groupby("ssan")}
+        print("san_snk:", len(san_snk_map))
+
+        # print("SEARCH", search(san_snk_map, "remove *"))
 
         sanit_sink = dict()
         source_sanit = dict()
         source_sink = dict()
+
 
         for san in san_snk_map.keys():
             # sanit_sink will contain for every pair of sanit -> sink, the possible
