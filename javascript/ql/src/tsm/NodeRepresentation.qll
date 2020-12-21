@@ -252,29 +252,44 @@ string genericMemberPattern() {
 }
 
 /**
- * Select one 'candidate'repr. 
- * Prioritizes the canonical repr on the form:
- * (parameter x (return (member F (root package))))
+ * Returns one `canonical` representation for a node
+ * For sinks it prioritizes paterns like `parameter x (return member fun )
+ * and the use of external functions, penalizes the receiver as parameter
  */
 string chooseBestRep(DataFlow::Node sink, boolean asRhs) {
-  result = max(string rep, int depth, int score | 
-    rep = candidateRep(sink, depth, asRhs) and
+  result =
+    max(string rep, int depth, int score |
+      rep = candidateRep(sink, depth, asRhs) and
       exists(int cm, int cr, int cp, int cpr, int croot, int plus |
-        cm = count (rep.indexOf("member")) and
-        cr = count (rep.indexOf("return")) and
-        cp = count (rep.indexOf("parameter")) and 
-        cpr = count (rep.indexOf("parameter -1")) and
-        croot = count (rep.indexOf("(root ")) and
+        cm = count(rep.indexOf("member")) and
+        cr = count(rep.indexOf("return")) and
+        cp = count(rep.indexOf("parameter")) and
+        cpr = count(rep.indexOf("parameter -1")) and
+        croot = count(rep.indexOf("(root ")) and
         (
-          (cm = 1 and cr = 1 and cp = 1 and croot = 1 and cpr = 0 and plus = 200)
+          asRhs = true and
+          cm = 1 and
+          cr = 1 and
+          cp = 1 and
+          croot = 1 and
+          cpr = 0 and
+          plus = 200
           or
-          (cm = 1 and cr = 1 and cp = 1 and cpr = 0 and plus = 80)
-           or 
-           plus = 0) and
+          asRhs = true and
+          cm = 1 and
+          cr = 1 and
+          cp = 1 and
+          cpr = 0 and
+          plus = 80
+          or
+          plus = 0
+        ) and
         // Penalizes the receivers againts members
-        score = cm*4 +  cr*3 +  cp*5  -  cpr *8 + plus
+        score = cm * 4 + cr * 3 + cp * 5 - cpr * 8 + plus
       )
-    | rep order by score, depth, rep) 
+    |
+      rep order by score, depth, rep
+    )
 }
 
 string selectBestRep(DataFlow::Node sink, boolean asRhs) {
