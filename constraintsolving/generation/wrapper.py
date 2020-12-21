@@ -33,6 +33,7 @@ class CodeQLWrapper:
             query_file,
             f"--database={project}",
             f"--output={output_file}",
+            "--threads=-1",
             f"--search-path={global_config.search_path}"
         ]
         self._logger.info(
@@ -54,7 +55,8 @@ class CodeQLWrapper:
             f"--format={output_format}",
             f"--logdir={self._logs_directory}",
             f"--output={output_file}",
-            f"--search-path={global_config.search_path}"
+            f"--search-path={global_config.search_path}",
+            "--threads=-1"
         ]
         self._logger.info(
             "Running 'database analyze' for project=[%s] and query_file=[%s]", project, query_file)
