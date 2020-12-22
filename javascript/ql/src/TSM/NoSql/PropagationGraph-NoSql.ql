@@ -20,9 +20,9 @@ class NoSqlSourceCandidate extends PropagationGraph::SourceCandidate {
 }
 
 // No adding sinks to the propagation graph
-// class NoSqlSinkCandidate extends PropagationGraph::SinkCandidate {
-//   NoSqlSinkCandidate() { isSinkWorse(this) }
-// }
+class NoSqlSinkCandidate extends PropagationGraph::SinkCandidate {
+  NoSqlSinkCandidate() { none() }
+}
 
 
 predicate isSourceWorse(DataFlow::Node source) { source instanceof NosqlInjectionWorse::Source }
@@ -49,7 +49,7 @@ predicate triple(DataFlow::Node src, DataFlow::Node san, DataFlow::Node snk) {
 
 query predicate pairSanSnk(string ssan, string ssnk) {
   exists(DataFlow::Node src, DataFlow::Node san, DataFlow::Node snk |
-    isSourceWorse(src) and
+    // isSourceWorse(src) and
     san = PropagationGraph::reachableFromSourceCandidate(src, DataFlow::TypeTracker::end()) and
     src.getEnclosingExpr() != san.getEnclosingExpr() and
     snk = PropagationGraph::reachableFromSanitizerCandidate(san, DataFlow::TypeTracker::end()) and
@@ -65,7 +65,7 @@ query predicate pairSanSnk(string ssan, string ssnk) {
 
 query predicate pairSrcSan(string ssrc, string ssan) {
   exists(DataFlow::Node src, DataFlow::Node san, DataFlow::Node snk |
-    isSourceWorse(src) and
+    // isSourceWorse(src) and
     san = PropagationGraph::reachableFromSourceCandidate(src, DataFlow::TypeTracker::end()) and
     src.getEnclosingExpr() != san.getEnclosingExpr() and
     snk = PropagationGraph::reachableFromSanitizerCandidate(san, DataFlow::TypeTracker::end()) and
