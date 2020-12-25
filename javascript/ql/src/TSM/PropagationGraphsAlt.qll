@@ -98,12 +98,14 @@ module PropagationGraph {
    * Gets a candidate representation for `nd`, filtering out very general representations.
    */
   string candidateRep2(DataFlow::Node nd, boolean asRhs) {
-    // result = candidateRep(nd, _, asRhs) and
-    result = chooseBestRep(nd, asRhs) and
+    exists (int depth |  2<depth  and depth<=6  
+            and  result = candidateRep(nd, depth, asRhs) and
+    // result = chooseBestRep(nd, asRhs) and
     // exclude some overly general representations like `(member data *)` or
     // `(parameter 0 (member exports *))`
     not result.regexpMatch("\\((parameter|member) \\w+ (\\*|\\(member exports \\*\\))\\)") and
     not result.regexpMatch("\\(root .*\\)")
+    )
   }
 
   /**

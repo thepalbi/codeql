@@ -23,7 +23,7 @@ class SolverConfig:
         self.trials = 1
         self.known_samples_ratio = 1.0
         self.no_flow_constraints = False
-        self.min_rep_events = 5
+        self.min_rep_events = 1
         # use the large dataset or the small one with atleast 5 reps
         self.dataset_type = "small"
         self.constraint_format = "gb"

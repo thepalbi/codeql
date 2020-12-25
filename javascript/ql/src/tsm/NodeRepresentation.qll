@@ -273,14 +273,14 @@ string chooseBestRep(DataFlow::Node sink, boolean asRhs) {
           cp = 1 and
           croot = 1 and
           cpr = 0 and
-          plus = 200
+          plus = 50
           or
           asRhs = true and
           cm = 1 and
           cr = 1 and
           cp = 1 and
           cpr = 0 and
-          plus = 80
+          plus = 150
           or
           plus = 0
         ) and
