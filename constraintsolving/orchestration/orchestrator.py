@@ -89,15 +89,19 @@ class Orchestrator:
             print(results_candidates)
             if len(results_candidates)>0 and not new_directory:
                 results_candidates.sort()
-                results_dir = results_candidates[-1]
-                print(results_dir)
+                results_folder = results_candidates[-1]
+                print("existing")
+                print(results_folder)
             else:
                 #raise ValueError('Cannot find results directory for ' + self.project_name )           
                 timestamp = str(int(time.mktime(datetime.datetime.now().timetuple())))
                 optimizer_run_name = f"{self.query_name}-{timestamp}"
-                results_dir = os.path.join(self.results_dir, name, optimizer_run_name)
+                results_folder = os.path.join(self.results_dir, name, optimizer_run_name)
+                print("not existing")
+                print(results_folder)
+                print(self.results_dir)
 
-            return results_dir
+            return results_folder
         else:
             return self.results_dir
 

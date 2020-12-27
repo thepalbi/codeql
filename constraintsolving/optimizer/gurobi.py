@@ -83,7 +83,7 @@ class GenerateModelStep(OrchestrationStep):
         #ctx[RESULTS_DIR_KEY] = results_dir
 
         # Create directories if needed
-        for directory in [constraints_dir, models_dir, logs_dir, results_dir]:
+        for directory in [constraints_dir, models_dir, logs_dir]: # results_dir]:
             os.makedirs(directory, exist_ok=True)
 
         projects = [os.path.basename(k) for k in projects_path]
@@ -181,12 +181,13 @@ class OptimizeStep(OrchestrationStep):
     def run(self, ctx: Context) -> Context:
         # TODO: Extract this and share between steps. Maybe add some context passing between steps
         # TODO: Share this in ctx
-        ctx[RESULTS_DIR_KEY] = self.orchestrator.compute_results_dir(new_directory=True)
+        ctx[RESULTS_DIR_KEY] = self.orchestrator.compute_results_dir(True)
         if not os.path.exists(ctx[RESULTS_DIR_KEY]):
+            self.logger.info("Creating dir %s" % ctx[RESULTS_DIR_KEY])
             os.makedirs(ctx[RESULTS_DIR_KEY])
         else:
             # file can only exist if we are running gurobi for multiple projects 
-            assert not self.orchestration.run_single
+            assert not self.orchestrator.run_single
 
         results_dir = ctx[RESULTS_DIR_KEY]
         working_dir = ctx[WORKING_DIR_KEY]
