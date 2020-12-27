@@ -103,7 +103,6 @@ module PropagationGraph {
     // `(parameter 0 (member exports *))`
     not result.regexpMatch("\\((parameter|member) \\w+ (\\*|\\(member exports \\*\\))\\)") and
     not result.regexpMatch("\\(root .*\\)")
-    )
   }
 
   /**
