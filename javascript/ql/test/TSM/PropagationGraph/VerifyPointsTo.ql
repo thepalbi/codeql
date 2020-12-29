@@ -8,6 +8,7 @@
 
 import javascript
 import TSM.PropagationGraphs
+import PropagationGraphAlt
 
 class CharacterizationConfiguration extends DataFlow::Configuration {
   CharacterizationConfiguration() { this = "Characterization" }
@@ -25,15 +26,21 @@ class FileSystemWriteAccessParameter extends DataFlow::Node {
   }
 }
 
+// predicate doStep(PropagationGraph::Node source, PropagationGraph::Node destination) {
+//   step(source.asDataFlowNode(), destination.asDataFlowNode())
+// }
+
+predicate doStep(PropagationGraph::Node source, PropagationGraph::Node destination) {
+  step(source, destination)
+}
+
 predicate propagationGraphReachable(
   PropagationGraph::Node source, PropagationGraph::Node destination
 ) {
-  // There's a direct floecho Hellow
-  PropagationGraph::edge(source, destination)
+  doStep(source, destination)
   or
-  // There's a flow through an intermediate node
   exists(PropagationGraph::Node intermediate |
-    PropagationGraph::edge(source, intermediate) and
+    doStep(source, intermediate) and
     propagationGraphReachable(intermediate, destination)
   )
 }
