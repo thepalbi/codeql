@@ -167,6 +167,8 @@ predicate step(DataFlow::Node pred, DataFlow::Node succ) {
   or
   succ.(DataFlow::SourceNode).hasPropertyWrite(_, pred)
   or
+  exists(DataFlow::PropWrite pw | pw.getBase() = succ and pw.getRhs() = pred)
+  or
   succ.(DataFlow::CallNode).getAnArgument() = pred
   or
   guard(pred, succ)
@@ -184,6 +186,16 @@ DataFlow::Node reachableFromSourceCandidate(DataFlow::Node src, DataFlow::TypeTr
   or
   exists(DataFlow::TypeTracker t2 | t = t2.smallstep(reachableFromSourceCandidate(src, t2), result))
 }
+
+DataFlow::Node reachableNode(DataFlow::Node src, DataFlow::TypeTracker t) {
+  src = result and
+  t.start()
+  or
+  step(reachableFromSourceCandidate(src, t), result)
+  or
+  exists(DataFlow::TypeTracker t2 | t = t2.smallstep(reachableFromSourceCandidate(src, t2), result))
+}
+
 
 /**
  * Gets a node that is reachable from a source candidate through a sanitiser candidate

@@ -30,19 +30,19 @@ class FileSystemWriteAccessParameter extends DataFlow::Node {
 //   step(source.asDataFlowNode(), destination.asDataFlowNode())
 // }
 
-predicate doStep(PropagationGraph::Node source, PropagationGraph::Node destination) {
-  step(source, destination)
-}
+// predicate doStep(PropagationGraph::Node source, PropagationGraph::Node destination) {
+//   step(source, destination)
+// }
 
 predicate propagationGraphReachable(
   PropagationGraph::Node source, PropagationGraph::Node destination
 ) {
-  doStep(source, destination)
-  or
-  exists(PropagationGraph::Node intermediate |
-    doStep(source, intermediate) and
-    propagationGraphReachable(intermediate, destination)
-  )
+  reachableNode(source.asDataFlowNode(), DataFlow::TypeTracker::end()) = destination.asDataFlowNode()
+}
+
+query predicate allSourceNodes(DataFlow::SourceNode nd, string name) {
+  nd.toString() = name and
+  exists(int i | nd.toString().indexOf("cont") = i)
 }
 
 from PropagationGraph::Node src, PropagationGraph::Node snk
