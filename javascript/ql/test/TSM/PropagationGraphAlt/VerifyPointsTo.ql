@@ -29,10 +29,7 @@ class FileSystemWriteAccessParameter extends DataFlow::Node {
 predicate propagationGraphReachable(
   PropagationGraph::Node source, PropagationGraph::Node destination
 ) {
-  PropagationGraph::edge(source, destination) or 
-  exists(PropagationGraph::Node mid | 
-    PropagationGraph::edge(source, mid) and propagationGraphReachable(mid, destination)
-  )
+  reachableNode(source.asDataFlowNode(), DataFlow::TypeTracker::end()) = destination.asDataFlowNode()
 }
 
 from PropagationGraph::Node src, PropagationGraph::Node snk

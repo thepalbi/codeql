@@ -191,9 +191,9 @@ DataFlow::Node reachableNode(DataFlow::Node src, DataFlow::TypeTracker t) {
   src = result and
   t.start()
   or
-  step(reachableFromSourceCandidate(src, t), result)
+  step(reachableNode(src, t), result)
   or
-  exists(DataFlow::TypeTracker t2 | t = t2.smallstep(reachableFromSourceCandidate(src, t2), result))
+  exists(DataFlow::TypeTracker t2 | t = t2.smallstep(reachableNode(src, t2), result))
 }
 
 
