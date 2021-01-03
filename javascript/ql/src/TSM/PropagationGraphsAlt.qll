@@ -216,6 +216,21 @@ module PropagationGraph {
     exists(StepSummary summary | t = aux(san, result, summary).append(summary))
   }
 
+  /**
+   * Gets a node that is reachable from a another node in the propagation graph. Used to characterize properties
+   * about the propagation graph.
+   */
+  DataFlow::Node reachableNode(DataFlow::Node src, DataFlow::TypeTracker t) {
+    src = result and
+    t.start()
+    or
+    step(reachableFromSourceCandidate(src, t), result)
+    or
+    exists(DataFlow::TypeTracker t2 |
+      t = t2.smallstep(reachableFromSourceCandidate(src, t2), result)
+    )
+  }
+
   private import semmle.javascript.dataflow.internal.StepSummary
 
   pragma[noinline]

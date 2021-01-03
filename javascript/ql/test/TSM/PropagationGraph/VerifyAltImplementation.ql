@@ -7,23 +7,23 @@
  */
 
 import javascript
-import TSM.PropagationGraphs
 import TSM.Characterization
 import TSM.PropagationGraphsAlt
 
-predicate propagationGraphReachable(
-  PropagationGraph::Node source, PropagationGraph::Node destination
-) {
-  destination.asDataFlowNode() = reachableNode(source.asDataFlowNode(), DataFlow::TypeTracker::end()) or 
-  exists(PropagationGraph::Node mid | 
-    mid.asDataFlowNode() = reachableNode(source.asDataFlowNode(), DataFlow::TypeTracker::end()) and
-    propagationGraphReachable(mid, destination)
+predicate edgeFromDFNode(DataFlow::Node src, DataFlow::Node dest) {
+    dest = PropagationGraph::reachableNode(src, DataFlow::TypeTracker::end())
+}
+
+predicate propagationGraphReachable(DataFlow::Node src, DataFlow::Node dest) {
+  edgeFromDFNode(src, dest) or
+  exists(DataFlow::Node mid | 
+    edgeFromDFNode(src, mid) and propagationGraphReachable(mid, dest)
   )
 }
 
-from PropagationGraph::Node src, PropagationGraph::Node snk
+from DataFlow::Node src, DataFlow::Node snk
 where
-  src.asDataFlowNode() instanceof RemoteFlowSource and
-  snk.asDataFlowNode() instanceof FileSystemWriteAccessParameter and
+  src instanceof RemoteFlowSource and
+  snk instanceof FileSystemWriteAccessParameter and
   propagationGraphReachable(src, snk)
 select src, snk
