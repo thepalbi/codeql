@@ -104,10 +104,6 @@ private int minOcurrences() { result = 1 }
 
     string candidateRep(boolean asRhs) { result = candidateRep(nd, _, asRhs) }
 
-
-      
-
-
     string rep(){
       result = this.rep(_)
         // result = candidateRep(_) and 
@@ -122,7 +118,6 @@ private int minOcurrences() { result = 1 }
     string getconcatrep(boolean rhs){
       result = strictconcat(string r | r = this.rep(rhs) | r, "::")
     }
-
 
     string rep1(){
         result = candidateRep(_)
@@ -261,6 +256,9 @@ private int minOcurrences() { result = 1 }
     string preciseRep() { result = preciseRep(true) }
   }
 
+  Node fromDataFlowNode(DataFlow::Node nd) {
+    result = any(Node propNd | propNd.asDataFlowNode() = nd)
+  }
 
   /**
    * Holds if there is an edge between `pred` and `succ` in the propagation graph
