@@ -116,6 +116,87 @@ app.post('/object-field-aliasing-with-tainted-assignment-to-field', (req, res) =
     });
 });
 
+// Tests simple interprocedural use case
+function doWriteToFile(path, contents) {
+    fs.writeFile(path, contents, (err) => {console.log(err)});
+}
+
+app.post('/test1', (req, res) => {
+    var containerObject = {};
+    containerObject.taintedField = path.join(appDir, req.body.path);
+    var aliasedVar = containerObject.taintedField;
+    // Sink method is called in the called function
+    doWriteToFile(aliasedVar, req.body.contents);
+});
+
+// Tests interprocedural use case with object method
+function OffendingWriter() {
+    this.write = function(path, contents) {
+        fs.writeFile(path, contents, (err) => {console.log(err)});
+    }
+}
+
+app.post('/test2', (req, res) => {
+    var writer = new OffendingWriter();
+    var containerObject = {};
+    containerObject.taintedField = path.join(appDir, req.body.path);
+    var aliasedVar = containerObject.taintedField;
+    // Sink method is called in the called function
+    writer.write(aliasedVar, req.body.contents);
+});
+
+// Tests interprocedural use case with callback containing offending sink, and dispatcher object
+
+function FileWriteDispatcher(callback) {
+    this.callback = callback;
+    this.dispatch = function(path, contents) {
+        this.callback(path, contents);
+    }
+}
+
+app.post('/test3', (req, res) => {
+    var writer = new OffendingWriter();
+    var dispatcher = new FileWriteDispatcher(writer.write);
+    var containerObject = {};
+    containerObject.taintedField = path.join(appDir, req.body.path);
+    var aliasedVar = containerObject.taintedField;
+    // Sink method is called in the called function
+    dispatcher.dispatch(aliasedVar, req.body.contents);
+});
+
+// Tests interprocedural with method dictionary as driver
+// The idea is to mimic a driver based implementation, who is responsible for having the actual implementation
+// of the wrapped method. See https://github.com/baseprime/dynamodb/blob/master/lib/table.js#L64 for an example.
+function DriverBasedWriter(driver) {
+    this.driver = driver;
+}
+DriverBasedWriter.prototype.write = function(path, contents) {
+    this.driver["write"].call(driver, path, contents);
+}
+
+function NonOffendingWriter() {}
+NonOffendingWriter.prototype.write = function(path, contents) {}
+
+// Using offending implementation
+app.post('/test4.1', (req, res) => {
+    var writer = new DriverBasedWriter(new OffendingWriter());
+    var containerObject = {};
+    containerObject.taintedField = path.join(appDir, req.body.path);
+    var aliasedVar = containerObject.taintedField;
+    // Sink method is called in the called function
+    writer.write(aliasedVar, req.body.contents);
+});
+
+// Using non-offending implementation
+app.post('/test4.2', (req, res) => {
+    var writer = new DriverBasedWriter(new NonOffendingWriter());
+    var containerObject = {};
+    containerObject.taintedField = path.join(appDir, req.body.path);
+    var aliasedVar = containerObject.taintedField;
+    // Sink method is called in the called function
+    writer.write(aliasedVar, req.body.contents);
+});
+
 app.listen(port, () => {
     console.log(`Application listenting on port ${port}...`);
 });
